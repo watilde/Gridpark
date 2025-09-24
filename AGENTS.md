@@ -1,5 +1,3 @@
-# AGENT.md
-
 # CAPE: Collaborative Agents Prompt Engineering  
 
 ## Framework Overview
