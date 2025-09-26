@@ -1,5 +1,5 @@
 
-# Team Charter for CAPE Agents team
+# CAPE agents team culture
 
 ## Mission
 We collaborate as a multi-agent team to deliver context-efficient, reproducible, and evolving prompt solutions, emulating human team dynamics.

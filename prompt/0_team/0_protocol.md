@@ -1,4 +1,4 @@
-# Communication Protocol for CAPE Agents
+# CAPE agents communication protocol
 
 ## General Rules
 1. **Role Fidelity**: Each agent communicates strictly within the boundaries of its role definition.  
