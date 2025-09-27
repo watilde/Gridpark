@@ -9,6 +9,30 @@ This metric captures how well each agent perceives it has fulfilled its role, en
 
 ---
 
+## Prompt Asset Index
+- `0_team/0_protocol.md`: Communication contract covering role fidelity, turn-taking, and required JSON message envelope.
+- `0_team/1_culture .md`: Team culture statement outlining mission, values, collaboration norms, and success definitions.
+- `0_team/2_dor.md`: Definition of Ready checklists for POA, DA, DevA, and shared prerequisites.
+- `0_team/3_dod.md`: Definition of Done checklist per agent plus cross-agent review gate.
+- `1_product/0_role.md`: Product Owner Agent charter with mission, responsibilities, constraints, and self-check questions.
+- `1_product/1_mvv.md`: Mission, vision, values, positioning, and success horizons for Gridpark.
+- `1_product/2_persona.md`: Developer, Designer, and Product Owner personas with needs, pain points, and success scenarios.
+- `1_product/3_milestone.md`: Multi-release roadmap detailing themes, feature sets, success criteria, and Excel compatibility targets.
+- `1_product/4_backlog.md`: Placeholder for prioritized backlog (currently empty).
+- `2_design/0_role.md`: Designer Agent role definition mirroring mission, scope, and evaluation prompts.
+- `2_design/1_principle.md`: Design principles emphasizing code-first experience, hackability, playful productivity, and immediate feedback.
+- `2_design/2_brand.md`: Brand guidelines for color palette, typography, and positioning statements.
+- `3_development/0_role.md`: Developer Agent role definition encapsulating responsibilities, constraints, and self-evaluation.
+- `3_development/coding_standards.md`: Placeholder for development standards (currently empty).
+- `3_development/architecture_patterns.md`: Placeholder for architecture guardrails (currently empty).
+- `4_orchestration/0_role.md`: Session Orchestrator Agent brief blending facilitation, measurement, and documentation duties.
+- `5_sessions/pair/`: Session artefact staging area (empty).
+- `5_sessions/retrospective/`: Retrospective archive staging area (empty).
+
+Use these assets as the single source of truth when orchestrating CAPE sessions; fill the placeholders before attempting full-fidelity simulations.
+
+---
+
 ## Core Principles
 
 ### 1. Human Team Dynamics Integration
@@ -21,6 +45,7 @@ This metric captures how well each agent perceives it has fulfilled its role, en
 - **Product Owner Agent (POA)**: Handles business requirements, prioritization, and value focus.  
 - **Designer Agent (DA)**: Handles UI/UX principles, wireframes, and design rationale.  
 - **Developer Agent (DevA)**: Handles technical architecture, implementation strategies, and code.  
+- **Session Orchestrator Agent (SOA)**: Facilitates collaboration flow, enforces protocol compliance, and captures in-session metrics.
 - **Facilitator Agent (FA)**: Handles process management, dialogue orchestration, and retrospective moderation.  
 - **Observer Agent (OA)**: Handles benchmark execution, metric logging, and satisfaction aggregation.  
 
@@ -58,10 +83,10 @@ This metric captures how well each agent perceives it has fulfilled its role, en
 ---
 
 ## Implementation Guidelines
-- **Role Prompts**: Each agent maintains prompts in `prompt/[role]/role_definition.md`.  
+- **Role Prompts**: Current definitions live in `1_product/0_role.md`, `2_design/0_role.md`, `3_development/0_role.md`, and `4_orchestration/0_role.md`.  
 - **Version Control**: All prompt assets are managed via Git.  
 - **Structured Logging**: JSON logs are maintained for all interactions and metrics.  
-- **Retrospectives**: The Facilitator ensures retrospective reports are archived under `prompt/5_sessions/ai_retrospectives/`.  
+- **Retrospectives**: Archive session reviews under `prompt/5_sessions/retrospective/`.  
 - **Self-Organization Principle**: Agents must autonomously adjust their collaboration and prompts to improve satisfaction and task outcomes over successive iterations.  
 
 ### Example: Recommended Folder Structure
@@ -69,49 +94,34 @@ This metric captures how well each agent perceives it has fulfilled its role, en
 ```
 prompt/
 ├── 0_team/
-│ ├── README.md # CAPE framework overview
-│ ├── team_charter.md # Team charter and shared values
-│ └── communication_protocol.md # Rules for agent-to-agent communication
+│   ├── 0_protocol.md
+│   ├── 1_culture .md
+│   ├── 2_dor.md
+│   └── 3_dod.md
 │
 ├── 1_product/
-│ ├── role_definition.md # Product Owner Agent prompts
-│ ├── backlog_templates.md # Task and backlog templates
-│ ├── user_story_formats.md # User story formats
-│ └── log/
-│ └── 2024-09-24_poa_session.md
+│   ├── 0_role.md
+│   ├── 1_mvv.md
+│   ├── 2_persona.md
+│   ├── 3_milestone.md
+│   └── 4_backlog.md
 │
 ├── 2_design/
-│ ├── role_definition.md # Designer Agent prompts
-│ ├── design_principles.md # Design guidelines
-│ ├── prototype_templates.md # Prototyping templates
-│ └── log/
-│ └── 2024-09-24_da_session.md
+│   ├── 0_role.md
+│   ├── 1_principle.md
+│   └── 2_brand.md
 │
 ├── 3_development/
-│ ├── role_definition.md # Developer Agent prompts
-│ ├── coding_standards.md # Coding standards
-│ ├── architecture_patterns.md # Architecture guidelines
-│ └── log/
-│ └── 2024-09-24_deva_session.md
+│   ├── 0_role.md
+│   ├── architecture_patterns.md
+│   └── coding_standards.md
 │
-├── 4_facilitation/
-│ ├── role_definition.md # Facilitator Agent prompts
-│ ├── facilitation_guides.md # Facilitation guidelines
-│ ├── retrospective_formats.md # Retrospective formats
-│ └── log/
-│ └── 2024-09-24_fa_session.md
+├── 4_orchestration/
+│   └── 0_role.md
 │
-├── 5_observer/
-│ ├── role_definition.md # Observer Agent prompts
-│ ├── metrics_schema.md # Definition of metrics (ASS, SV, TSR, etc.)
-│ └── log/
-│ └── 2024-09-24_oa_session.md
-│
-└── 6_sessions/
-├── cross_role_templates.md # Templates for multi-agent sessions
-├── decision_log.md # Records of team-level decisions
-└── ai_retrospectives/
-└── 2024-09-24_cape_retro.md
+└── 5_sessions/
+    ├── pair/
+    └── retrospective/
 ```
 
 
