@@ -1,6 +1,6 @@
 import React from 'react';
-import Button as JoyButton from '@mui/joy/Button';
-import type { ButtonProps as JoyButtonProps } from '@mui/joy/Button';
+import { Button as JoyButton } from '@mui/joy';
+import type { ButtonProps as JoyButtonProps } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
 
 // Gridpark Button extends Joy UI Button with brand-specific styling
