@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card as JoyCard, CardProps as JoyCardProps, CardContent, Typography } from '@mui/joy';
+import { Card as JoyCard, CardContent, Typography } from '@mui/joy';
+import type { CardProps as JoyCardProps } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
 
 const GridparkCard = styled(JoyCard)(({ theme }) => ({

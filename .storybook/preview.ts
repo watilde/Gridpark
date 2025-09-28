@@ -1,8 +1,21 @@
 import type { Preview } from '@storybook/react-webpack5';
+import type { Decorator } from '@storybook/react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import { theme } from '../src/renderer/theme/theme';
 import React from 'react';
 
+// Theme decorator for Joy UI integration
+const withTheme: Decorator = (Story) => {
+  return React.createElement(
+    CssVarsProvider, 
+    { 
+      theme,
+      defaultMode: 'dark',
+      modeStorageKey: 'gridpark-storybook-mode'
+    }, 
+    React.createElement(Story)
+  );
+};
 
 const preview: Preview = {
   parameters: {
@@ -23,15 +36,18 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ['UI'],
+        order: ['UI', 'Components', 'Features', 'Layout'],
+      },
+    },
+    docs: {
+      theme: {
+        base: 'dark',
+        brandTitle: 'Gridpark UI Components',
+        brandUrl: 'https://github.com/watilde/Gridpark',
       },
     },
   },
-  decorators: [
-    (Story) => (
-      React.createElement(CssVarsProvider, { theme }, React.createElement(Story))
-    ),
-  ],
+  decorators: [withTheme],
 };
 
 export default preview;
