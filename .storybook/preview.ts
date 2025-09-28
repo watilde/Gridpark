@@ -4,6 +4,16 @@ import { CssVarsProvider } from '@mui/joy/styles';
 import { theme } from '../src/renderer/theme/theme';
 import React from 'react';
 
+// Import Fontsource fonts for Storybook
+import '@fontsource/noto-sans/400.css';
+import '@fontsource/noto-sans/500.css';
+import '@fontsource/noto-sans/600.css';
+import '@fontsource/noto-sans/700.css';
+import '@fontsource/caveat/400.css';
+import '@fontsource/caveat/500.css';
+import '@fontsource/caveat/600.css';
+import '@fontsource/caveat/700.css';
+
 // Theme decorator for Joy UI integration
 const withTheme: Decorator = (Story) => {
   return React.createElement(
