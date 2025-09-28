@@ -8,7 +8,7 @@ const meta = {
     layout: 'padded',
     docs: {
       description: {
-        component: 'Component to test and verify that Caveat and Noto Sans fonts are loading correctly from Google Fonts.'
+        component: 'Component to test and verify that Caveat and Noto Sans fonts are loading correctly from Fontsource packages.'
       }
     }
   },

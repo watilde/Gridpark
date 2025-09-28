@@ -7,7 +7,7 @@ export interface FontTestProps {
 }
 
 /**
- * FontTest component to verify Caveat and Noto Sans fonts are loading correctly
+ * FontTest component to verify Caveat and Noto Sans fonts are loading correctly from Fontsource
  */
 export const FontTest: React.FC<FontTestProps> = ({
   text = 'The quick brown fox jumps over the lazy dog'
