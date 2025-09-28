@@ -1,5 +1,6 @@
 import React from 'react';
-import { Input as JoyInput, InputProps as JoyInputProps, FormControl, FormLabel, FormHelperText } from '@mui/joy';
+import { Input as JoyInput, FormControl, FormLabel, FormHelperText } from '@mui/joy';
+import type { InputProps as JoyInputProps } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
 
 const GridparkInput = styled(JoyInput)(({ theme }) => ({

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal as JoyModal, ModalProps as JoyModalProps, ModalDialog, DialogTitle, DialogContent, DialogActions, Divider } from '@mui/joy';
+import { Modal as JoyModal, ModalDialog, DialogTitle, DialogContent, DialogActions, Divider } from '@mui/joy';
+import type { ModalProps as JoyModalProps } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
 import { Close } from '@mui/icons-material';
 import { Button } from '../Button/Button';
