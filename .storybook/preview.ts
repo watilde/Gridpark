@@ -1,9 +1,12 @@
 import type { Preview } from '@storybook/react-webpack5';
-import '../src/index.css';
+import { CssVarsProvider } from '@mui/joy/styles';
+import { theme } from '../src/renderer/theme/theme';
+import React from 'react';
+
 
 const preview: Preview = {
   parameters: {
-    layout: 'fullscreen',
+    layout: 'centered',
     backgrounds: {
       default: 'workspace',
       values: [
@@ -20,10 +23,15 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ['Foundations', 'Components'],
+        order: ['UI'],
       },
     },
   },
+  decorators: [
+    (Story) => (
+      React.createElement(CssVarsProvider, { theme }, React.createElement(Story))
+    ),
+  ],
 };
 
 export default preview;
