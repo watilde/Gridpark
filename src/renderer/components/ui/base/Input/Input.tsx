@@ -43,7 +43,7 @@ const GridparkInput = styled(JoyInput)(({ theme }) => ({
   },
 }));
 
-export interface InputProps extends Omit<JoyInputProps, 'color'> {
+export interface InputProps extends Omit<JoyInputProps, 'color' | 'error'> {
   /**
    * Input label
    */
@@ -103,6 +103,7 @@ export const Input: React.FC<InputProps> = ({
       <GridparkInput
         variant={variant}
         color={inputColor}
+        error={!!error}
         data-code={code}
         {...props}
       />

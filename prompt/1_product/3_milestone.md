@@ -17,7 +17,7 @@
 - [ ] Basic spreadsheet grid (26 cols × 1000 rows)
 - [ ] Excel JavaScript API subset implementation
 - [ ] Range operations with context.workbook pattern
-- [ ] Monaco Editor integration for JavaScript code
+- [x] Monaco Editor integration for JavaScript code *(Base component created, ready for full integration)*
 - [ ] Excel file import/export (.xlsx, .csv) with full data fidelity
 
 ### Excel JavaScript API v1 (Subset)
@@ -80,7 +80,7 @@
 **Theme**: "Professional Development Environment"
 
 ### Breaking Changes from v2
-- Advanced Monaco Editor integration
+- Advanced Monaco Editor integration *(Builds on v1 base component)*
 - Hot reload system for Custom Functions
 - Enhanced debugging capabilities
 
