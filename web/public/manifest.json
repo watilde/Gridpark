@@ -1,0 +1,35 @@
+{
+  "name": "Gridpark",
+  "short_name": "Gridpark",
+  "description": "Excel superset with custom functions and developer-first experience",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#8B5CF6",
+  "orientation": "landscape-primary",
+  "categories": ["productivity", "business", "developer"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Workbook",
+      "short_name": "New",
+      "description": "Create a new workbook",
+      "url": "/?action=new",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}
