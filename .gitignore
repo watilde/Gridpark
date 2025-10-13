@@ -87,9 +87,14 @@ typings/
 
 # Vite
 .vite/
+dist-web/
 
 # Electron-Forge
 out/
+
+# Test files
+web/test.html
+web/excel-test.html
 
 *storybook.log
 storybook-static
