@@ -25,8 +25,14 @@ export default defineConfig({
   // Development server
   server: {
     port: 3000,
-    host: true,
+    host: '0.0.0.0',
     open: false, // Don't auto-open browser for local dev
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
   },
   
   // Path resolution (shared with Electron configs)
