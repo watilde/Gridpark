@@ -25,7 +25,7 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    open: true,
+    open: false, // Don't auto-open browser for local dev
   },
   
   // Path resolution

@@ -18,7 +18,8 @@
     "web:dev": "vite",
     "web:build": "vite build",
     "web:preview": "vite preview",
-    "web:serve": "npm run web:build && npm run web:preview"
+    "web:serve": "npm run web:build && npm run web:preview",
+    "dev:both": "concurrently \"npm start\" \"npm run web:dev\" --names \"electron,web\" --prefix-colors \"cyan,magenta\""
   },
   "keywords": [],
   "author": {
@@ -54,6 +55,7 @@
     "@typescript-eslint/parser": "^5.62.0",
     "@vercel/webpack-asset-relocator-loader": "^1.7.3",
     "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
     "css-loader": "^6.11.0",
     "electron": "38.1.2",
     "eslint": "^8.57.1",
