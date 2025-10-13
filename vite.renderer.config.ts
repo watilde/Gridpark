@@ -2,34 +2,32 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
-// Shared Vite configuration for web version
-// Electron uses separate vite.*.config.ts files via Forge
+// Vite config for Electron renderer process
 export default defineConfig({
   plugins: [react()],
   
-  // Entry point for web version
-  root: './web',
+  // Root directory for renderer
+  root: resolve(__dirname, 'src/renderer'),
   
   // Build configuration
   build: {
-    outDir: '../dist-web',
+    outDir: resolve(__dirname, '.vite/renderer'),
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'web/index.html'),
+        main: resolve(__dirname, 'src/renderer/index.html'),
       },
     },
   },
   
   // Development server
   server: {
-    port: 3000,
-    host: true,
-    open: false, // Don't auto-open browser for local dev
+    port: 5173,
+    strictPort: true,
   },
   
-  // Path resolution (shared with Electron configs)
+  // Path resolution
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
@@ -38,13 +36,7 @@ export default defineConfig({
     },
   },
   
-  // Environment variables
-  define: {
-    __IS_WEB__: true,
-    __IS_ELECTRON__: false,
-  },
-  
-  // Optimize dependencies (shared between web and Electron)
+  // Optimize dependencies
   optimizeDeps: {
     include: [
       'react',
@@ -53,5 +45,11 @@ export default defineConfig({
       '@emotion/react',
       '@emotion/styled',
     ],
+  },
+  
+  // Environment variables
+  define: {
+    __IS_WEB__: false,
+    __IS_ELECTRON__: true,
   },
 });
