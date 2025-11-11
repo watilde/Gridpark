@@ -4,6 +4,7 @@ import { Box, Typography, Sheet, IconButton } from '@mui/joy';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ExcelFile } from '../../../types/excel';
@@ -51,35 +52,37 @@ const ItemLabel = styled(Typography)({
 export interface FileNode {
   id: string;
   name: string;
-  type: 'file' | 'folder';
+  type: 'file' | 'folder' | 'sheet';
+  parentId?: string;
   children?: FileNode[];
   file?: ExcelFile;
+  sheetIndex?: number;
 }
 
 export interface FileTreeProps {
   files: FileNode[];
-  selectedFileId?: string;
-  onFileSelect?: (node: FileNode) => void;
+  selectedNodeId?: string;
+  onNodeSelect?: (node: FileNode) => void;
 }
 
 interface TreeNodeProps {
   node: FileNode;
   depth: number;
-  selectedFileId?: string;
-  onFileSelect?: (node: FileNode) => void;
+  selectedNodeId?: string;
+  onNodeSelect?: (node: FileNode) => void;
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedFileId, onFileSelect }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNodeSelect }) => {
   const [expanded, setExpanded] = useState(true);
-  const isFolder = node.type === 'folder';
-  const hasChildren = isFolder && node.children && node.children.length > 0;
-  const isSelected = node.id === selectedFileId;
+  const hasChildren = Boolean(node.children && node.children.length > 0);
+  const isSelected = node.id === selectedNodeId;
+  const isSelectable = node.type !== 'folder';
 
   const handleClick = () => {
-    if (isFolder) {
+    if (isSelectable) {
+      onNodeSelect?.(node);
+    } else if (hasChildren) {
       setExpanded(!expanded);
-    } else {
-      onFileSelect?.(node);
     }
   };
 
@@ -100,11 +103,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedFileId, onFile
           </IconButton>
         )}
         <ItemIcon>
-          {isFolder ? (
-            expanded ? <FolderOpenIcon fontSize="small" /> : <FolderIcon fontSize="small" />
-          ) : (
-            <InsertDriveFileIcon fontSize="small" />
-          )}
+          {node.type === 'folder'
+            ? expanded
+              ? <FolderOpenIcon fontSize="small" />
+              : <FolderIcon fontSize="small" />
+            : node.type === 'sheet'
+            ? <TableChartIcon fontSize="small" />
+            : <InsertDriveFileIcon fontSize="small" />
+          }
         </ItemIcon>
         <ItemLabel>{node.name}</ItemLabel>
       </TreeItem>
@@ -115,8 +121,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedFileId, onFile
               key={child.id}
               node={child}
               depth={depth + 1}
-              selectedFileId={selectedFileId}
-              onFileSelect={onFileSelect}
+              selectedNodeId={selectedNodeId}
+              onNodeSelect={onNodeSelect}
             />
           ))}
         </Box>
@@ -130,18 +136,18 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedFileId, onFile
  * 
  * Displays a hierarchical file tree for Excel files
  */
-export const FileTree: React.FC<FileTreeProps> = ({ files, selectedFileId, onFileSelect }) => {
+export const FileTree: React.FC<FileTreeProps> = ({ files, selectedNodeId, onNodeSelect }) => {
   return (
     <Sheet
       variant="outlined"
       sx={{
         height: '100%',
-        borderRadius: 'sm',
+        borderRadius: 0,
         overflow: 'hidden',
       }}
     >
       <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography level="title-md">Files</Typography>
+        <Typography level="title-md">Explore</Typography>
       </Box>
       <TreeContainer>
         {files.map((node) => (
@@ -149,8 +155,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ files, selectedFileId, onFil
             key={node.id}
             node={node}
             depth={0}
-            selectedFileId={selectedFileId}
-            onFileSelect={onFileSelect}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={onNodeSelect}
           />
         ))}
       </TreeContainer>
