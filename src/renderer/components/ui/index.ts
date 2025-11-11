@@ -16,6 +16,8 @@ export { SpreadsheetGrid } from './features/Spreadsheet/SpreadsheetGrid';
 export { FormulaBar } from './features/FormulaBar/FormulaBar';
 export { MonacoEditor } from './features/Monaco/MonacoEditor';
 export { Toolbar } from './features/Toolbar/Toolbar';
+export { FileTree } from './features/FileTree/FileTree';
+export { ExcelViewer } from './features/ExcelViewer/ExcelViewer';
 
 // Test Components
 export { FontTest } from './test/FontTest';

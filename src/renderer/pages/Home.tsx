@@ -1,67 +1,154 @@
-import type { JSX } from 'react';
+import React, { useState, useRef } from 'react';
+import { Box, Button, Typography, Stack } from '@mui/joy';
+import { AppLayout } from '../components/ui/layout/AppLayout';
+import { FileTree, FileNode } from '../components/ui/features/FileTree/FileTree';
+import { ExcelViewer } from '../components/ui/features/ExcelViewer/ExcelViewer';
+import { ExcelFile, CellPosition, CellRange } from '../types/excel';
+import { createSampleExcelFile, loadExcelFile } from '../utils/excelUtils';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import Link from '@mui/joy/Link';
-import Stack from '@mui/joy/Stack';
-import Typography from '@mui/joy/Typography';
+export const Home: React.FC = () => {
+  const [files, setFiles] = useState<FileNode[]>([
+    {
+      id: 'sample',
+      name: 'Sample.xlsx',
+      type: 'file',
+      file: createSampleExcelFile(),
+    },
+  ]);
+  const [selectedFileId, setSelectedFileId] = useState<string>('sample');
+  const [selectedFile, setSelectedFile] = useState<ExcelFile | null>(createSampleExcelFile());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-export const Home = (): JSX.Element => (
-  <Box
-    sx={{
-      minHeight: '100vh',
-      bgcolor: 'background.body',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      px: 4,
-      py: 10,
-    }}
-  >
-    <Stack spacing={3} alignItems="center" textAlign="center" maxWidth={440} sx={{ width: '100%' }}>
-      <Stack spacing={1}>
-        <Typography level="h1" fontSize={{ xs: '2.5rem', md: '3rem' }}>
-          Gridpark
-        </Typography>
-        <Typography level="body-lg" sx={{ color: 'neutral.600' }}>
-          Kickstart your Electron + React app with Joy UI design tokens and theming in place.
-        </Typography>
-      </Stack>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} useFlexGap>
-        <Button
-          component="a"
-          href="https://www.electronforge.io/"
-          target="_blank"
-          rel="noreferrer"
-          variant="solid"
-        >
-          Electron Forge Docs
-        </Button>
-        <Button
-          component="a"
-          href="https://mui.com/joy-ui/getting-started/overview/"
-          target="_blank"
-          rel="noreferrer"
-          variant="outlined"
-        >
-          Joy UI Overview
-        </Button>
-      </Stack>
-      <Typography level="body-sm" sx={{ color: 'neutral.500' }}>
-        Need to add more pages? Create them under `src/renderer/pages` and hook them up through the router
-        of your choice.
-      </Typography>
-      <Link
-        href="https://github.com/electron/forge"
-        target="_blank"
-        rel="noreferrer"
-        fontWeight="lg"
-        sx={{ color: 'primary.plainColor' }}
-      >
-        View on GitHub
-      </Link>
-    </Stack>
-  </Box>
-);
+  const handleFileSelect = (node: FileNode) => {
+    if (node.type === 'file' && node.file) {
+      setSelectedFileId(node.id);
+      setSelectedFile(node.file);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const excelFile = await loadExcelFile(file);
+      const newNode: FileNode = {
+        id: `file-${Date.now()}`,
+        name: file.name,
+        type: 'file',
+        file: excelFile,
+      };
+
+      setFiles((prev) => [...prev, newNode]);
+      setSelectedFileId(newNode.id);
+      setSelectedFile(excelFile);
+    } catch (error) {
+      console.error('Failed to load Excel file:', error);
+      alert('Failed to load Excel file. Please make sure it is a valid .xlsx file.');
+    }
+  };
+
+  const handleCellSelect = (position: CellPosition) => {
+    console.log('Cell selected:', position);
+  };
+
+  const handleRangeSelect = (range: CellRange) => {
+    console.log('Range selected:', range);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleTestStyling = () => {
+    // Test the styling API
+    if (typeof window !== 'undefined' && (window as any).gridparkAPI) {
+      const api = (window as any).gridparkAPI;
+      
+      // Style header row (row 0) with blue background
+      api.setRangeStyle(
+        { startRow: 0, startCol: 0, endRow: 0, endCol: 3 },
+        {
+          backgroundColor: '#3b82f6',
+          color: '#ffffff',
+          fontWeight: 'bold',
+          textAlign: 'center',
+        }
+      );
+
+      // Style some cells with different colors
+      api.setCellStyle(1, 3, { backgroundColor: '#10b981', color: '#ffffff' });
+      api.setCellStyle(2, 3, { backgroundColor: '#f59e0b', color: '#ffffff' });
+      api.setCellStyle(3, 3, { backgroundColor: '#ef4444', color: '#ffffff' });
+
+      alert('Styling applied! Check the spreadsheet.');
+    }
+  };
+
+  return (
+    <AppLayout
+      header={
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <Typography level="h4" sx={{ fontWeight: 'bold' }}>
+            Gridpark
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              size="sm"
+              onClick={handleTestStyling}
+            >
+              Test Styling
+            </Button>
+            <Button
+              variant="solid"
+              size="sm"
+              startDecorator={<UploadFileIcon />}
+              onClick={handleUploadClick}
+            >
+              Upload Excel
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+            />
+          </Stack>
+        </Box>
+      }
+      sidebar={
+        <FileTree
+          files={files}
+          selectedFileId={selectedFileId}
+          onFileSelect={handleFileSelect}
+        />
+      }
+      footer={
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography level="body-sm">
+            Ready
+          </Typography>
+          {selectedFile && (
+            <Typography level="body-sm" sx={{ color: 'neutral.500' }}>
+              File: {selectedFile.name} | Sheets: {selectedFile.sheets.length}
+            </Typography>
+          )}
+          <Typography level="body-sm" sx={{ ml: 'auto', color: 'neutral.500' }}>
+            Gridpark v1.0.0
+          </Typography>
+        </Box>
+      }
+    >
+      <ExcelViewer
+        file={selectedFile}
+        onCellSelect={handleCellSelect}
+        onRangeSelect={handleRangeSelect}
+      />
+    </AppLayout>
+  );
+};
 
 export default Home;
