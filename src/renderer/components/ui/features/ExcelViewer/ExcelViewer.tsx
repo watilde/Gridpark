@@ -265,7 +265,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({ file, onCellSelect, on
           size="sm"
           sx={{ minWidth: 200 }}
         >
-          {file.sheets.map((sheet, index) => (
+          {file.sheets.map((sheet: ExcelSheet, index: number) => (
             <Option key={index} value={index}>
               {sheet.name}
             </Option>
@@ -287,10 +287,10 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({ file, onCellSelect, on
             </tr>
           </thead>
           <tbody>
-            {currentSheet.data.map((row, rowIndex) => (
+            {currentSheet.data.map((row: CellData[], rowIndex: number) => (
               <tr key={rowIndex}>
                 <RowHeaderCell>{rowIndex + 1}</RowHeaderCell>
-                {row.map((cell, colIndex) => (
+                {row.map((cell: CellData, colIndex: number) => (
                   <Cell
                     key={colIndex}
                     selected={selectedCell?.row === rowIndex && selectedCell?.col === colIndex}
