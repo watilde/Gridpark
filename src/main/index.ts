@@ -1,12 +1,15 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { join } from 'path';
 
-// These constants are injected by Electron Forge's Webpack plugin at build time.
-declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
-declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+// Injected by Electron Forge's Vite plugin at build time.
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
+declare const MAIN_WINDOW_VITE_NAME: string;
 
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
+
+const WINDOW_TITLE_FALLBACK = 'Gridpark';
 
 const createMainWindow = (): void => {
   const window = new BrowserWindow({
@@ -15,11 +18,18 @@ const createMainWindow = (): void => {
     minWidth: 720,
     minHeight: 480,
     webPreferences: {
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      preload: join(__dirname, 'preload.js'),
     },
+    title: WINDOW_TITLE_FALLBACK,
   });
 
-  window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  } else {
+    window.loadFile(
+      join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+    );
+  }
 
   if (process.env.NODE_ENV === 'development') {
     window.webContents.openDevTools({ mode: 'detach' });
@@ -41,3 +51,10 @@ app.on('window-all-closed', () => {
 });
 
 // Add additional listeners and IPC setup here as the app grows.
+
+ipcMain.on('app:set-title', (event, title: string) => {
+  const senderWindow = BrowserWindow.fromWebContents(event.sender);
+  if (senderWindow) {
+    senderWindow.setTitle(title || WINDOW_TITLE_FALLBACK);
+  }
+});

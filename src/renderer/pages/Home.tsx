@@ -1,51 +1,134 @@
-import React, { useState, useRef } from 'react';
-import { Box, Button, Typography, Stack } from '@mui/joy';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Box, Typography, Stack, Input, Tabs, TabList, Tab, IconButton } from '@mui/joy';
 import { AppLayout } from '../components/ui/layout/AppLayout';
 import { FileTree, FileNode } from '../components/ui/features/FileTree/FileTree';
 import { ExcelViewer } from '../components/ui/features/ExcelViewer/ExcelViewer';
 import { ExcelFile, CellPosition, CellRange } from '../types/excel';
-import { createSampleExcelFile, loadExcelFile } from '../utils/excelUtils';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
+import { createSampleExcelFile } from '../utils/excelUtils';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
+
+const cloneSheetData = (data: ExcelFile['sheets'][number]['data']) =>
+  data.map((row) => row.map((cell) => ({ ...cell })));
+
+const createDemoExcelFile = (name: string): ExcelFile => {
+  const base = createSampleExcelFile();
+  return {
+    ...base,
+    name,
+    path: `/sample/${name}`,
+    sheets: base.sheets.map((sheet) => ({
+      ...sheet,
+      data: cloneSheetData(sheet.data),
+    })),
+  };
+};
+
+const createFileNodeWithSheets = (excelFile: ExcelFile, id: string, parentId?: string): FileNode => ({
+  id,
+  name: excelFile.name,
+  type: 'file',
+  parentId,
+  file: excelFile,
+  children: excelFile.sheets.map((sheet, index) => ({
+    id: `${id}-sheet-${index}`,
+    name: sheet.name,
+    type: 'sheet',
+    parentId: id,
+    file: excelFile,
+    sheetIndex: index,
+  })),
+});
+
+type SheetTab = {
+  id: string;
+  sheetNodeId: string;
+  fileNodeId: string;
+  sheetIndex: number;
+  fileName: string;
+  sheetName: string;
+  file: ExcelFile;
+};
+
+const createTabFromSheetNode = (sheetNode: FileNode): SheetTab | null => {
+  if (sheetNode.type !== 'sheet' || !sheetNode.file || typeof sheetNode.sheetIndex !== 'number') {
+    return null;
+  }
+  return {
+    id: sheetNode.id,
+    sheetNodeId: sheetNode.id,
+    fileNodeId: sheetNode.parentId ?? '',
+    sheetIndex: sheetNode.sheetIndex,
+    fileName: sheetNode.file.name,
+    sheetName: sheetNode.name,
+    file: sheetNode.file,
+  };
+};
 
 export const Home: React.FC = () => {
-  const [files, setFiles] = useState<FileNode[]>([
+  const demoFiles = useMemo(
+    () => [
+      createDemoExcelFile('Sample.xlsx'),
+      createDemoExcelFile('Sales Forecast.xlsx'),
+      createDemoExcelFile('Inventory.xlsx'),
+    ],
+    []
+  );
+  const demoFileNodes = useMemo(
+    () => demoFiles.map((file, index) => createFileNodeWithSheets(file, `demo-${index}`, 'workspace-root')),
+    [demoFiles]
+  );
+
+  const initialSheetNode = demoFileNodes[0]?.children?.[0] ?? null;
+  const initialTab = initialSheetNode ? createTabFromSheetNode(initialSheetNode) : null;
+
+  const [workbookNodes] = useState<FileNode[]>(demoFileNodes);
+  const [openTabs, setOpenTabs] = useState<SheetTab[]>(initialTab ? [initialTab] : []);
+  const [activeTabId, setActiveTabId] = useState<string>(initialTab?.id ?? '');
+  const [selectedFile, setSelectedFile] = useState<ExcelFile | null>(initialTab?.file ?? demoFiles[0] ?? null);
+  const [selectedSheetIndex, setSelectedSheetIndex] = useState<number>(initialTab?.sheetIndex ?? 0);
+  const [selectedNodeId, setSelectedNodeId] = useState<string>(initialTab?.sheetNodeId ?? initialSheetNode?.id ?? '');
+  const treeData = useMemo<FileNode[]>(() => [
     {
-      id: 'sample',
-      name: 'Sample.xlsx',
-      type: 'file',
-      file: createSampleExcelFile(),
+      id: 'workspace-root',
+      name: 'Workspace',
+      type: 'folder',
+      children: workbookNodes,
     },
-  ]);
-  const [selectedFileId, setSelectedFileId] = useState<string>('sample');
-  const [selectedFile, setSelectedFile] = useState<ExcelFile | null>(createSampleExcelFile());
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  ], [workbookNodes]);
 
-  const handleFileSelect = (node: FileNode) => {
-    if (node.type === 'file' && node.file) {
-      setSelectedFileId(node.id);
-      setSelectedFile(node.file);
+  const focusTab = useCallback((tab: SheetTab) => {
+    setActiveTabId(tab.id);
+    setSelectedFile(tab.file);
+    setSelectedSheetIndex(tab.sheetIndex);
+    setSelectedNodeId(tab.sheetNodeId);
+  }, []);
+
+  const openTabForSheetNode = useCallback(
+    (sheetNode: FileNode) => {
+      const tab = createTabFromSheetNode(sheetNode);
+      if (!tab) return;
+      setOpenTabs((prev) => {
+        if (prev.some((existing) => existing.id === tab.id)) {
+          return prev;
+        }
+        return [...prev, tab];
+      });
+      focusTab(tab);
+    },
+    [createTabFromSheetNode, focusTab]
+  );
+
+  const handleNodeSelect = (node: FileNode) => {
+    if (node.type === 'sheet') {
+      openTabForSheetNode(node);
+      return;
     }
-  };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const excelFile = await loadExcelFile(file);
-      const newNode: FileNode = {
-        id: `file-${Date.now()}`,
-        name: file.name,
-        type: 'file',
-        file: excelFile,
-      };
-
-      setFiles((prev) => [...prev, newNode]);
-      setSelectedFileId(newNode.id);
-      setSelectedFile(excelFile);
-    } catch (error) {
-      console.error('Failed to load Excel file:', error);
-      alert('Failed to load Excel file. Please make sure it is a valid .xlsx file.');
+    if (node.type === 'file' && node.children && node.children.length > 0) {
+      openTabForSheetNode(node.children[0]);
     }
   };
 
@@ -57,73 +140,106 @@ export const Home: React.FC = () => {
     console.log('Range selected:', range);
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
+  const handleBack = () => {
+    console.log('Navigate back');
   };
 
-  const handleTestStyling = () => {
-    // Test the styling API
-    if (typeof window !== 'undefined' && (window as any).gridparkAPI) {
-      const api = (window as any).gridparkAPI;
-      
-      // Style header row (row 0) with blue background
-      api.setRangeStyle(
-        { startRow: 0, startCol: 0, endRow: 0, endCol: 3 },
-        {
-          backgroundColor: '#3b82f6',
-          color: '#ffffff',
-          fontWeight: 'bold',
-          textAlign: 'center',
-        }
-      );
+  const handleProceed = () => {
+    console.log('Proceed action');
+  };
 
-      // Style some cells with different colors
-      api.setCellStyle(1, 3, { backgroundColor: '#10b981', color: '#ffffff' });
-      api.setCellStyle(2, 3, { backgroundColor: '#f59e0b', color: '#ffffff' });
-      api.setCellStyle(3, 3, { backgroundColor: '#ef4444', color: '#ffffff' });
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Search query:', event.target.value);
+  };
 
-      alert('Styling applied! Check the spreadsheet.');
+  const activeTitle = selectedFile
+    ? `${selectedFile.sheets[selectedSheetIndex]?.name ?? 'Sheet'} - ${selectedFile.name}`
+    : 'Gridpark';
+
+  useEffect(() => {
+    window.electronAPI?.setWindowTitle(activeTitle);
+  }, [activeTitle]);
+
+  const handleTabChange = (_event: React.SyntheticEvent | null, value: string | number | null) => {
+    if (!value || typeof value !== 'string') return;
+    const tab = openTabs.find((t) => t.id === value);
+    if (tab) {
+      focusTab(tab);
     }
   };
+
+  const handleCloseTab = useCallback(
+    (tabId: string) => {
+      setOpenTabs((prev) => {
+        const nextTabs = prev.filter((tab) => tab.id !== tabId);
+        if (tabId === activeTabId) {
+          const nextActive = nextTabs[nextTabs.length - 1];
+          if (nextActive) {
+            focusTab(nextActive);
+          } else {
+            setActiveTabId('');
+            setSelectedFile(null);
+            setSelectedSheetIndex(0);
+            setSelectedNodeId('');
+          }
+        }
+        return nextTabs;
+      });
+    },
+    [activeTabId, focusTab]
+  );
+
+  useEffect(() => {
+    if (!openTabs.length) {
+      const fallbackSheet = demoFileNodes[0]?.children?.[0];
+      if (fallbackSheet) {
+        const tab = createTabFromSheetNode(fallbackSheet);
+        if (tab) {
+          setOpenTabs([tab]);
+          focusTab(tab);
+        }
+      }
+    }
+  }, [openTabs.length, demoFileNodes, focusTab]);
 
   return (
     <AppLayout
       header={
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <Typography level="h4" sx={{ fontWeight: 'bold' }}>
-            Gridpark
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined"
+        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}>
+          <Stack direction="row" spacing={0.5}>
+            <IconButton
               size="sm"
-              onClick={handleTestStyling}
+              variant="plain"
+              color="neutral"
+              onClick={handleBack}
+              aria-label="Go back"
             >
-              Test Styling
-            </Button>
-            <Button
-              variant="solid"
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+            <IconButton
               size="sm"
-              startDecorator={<UploadFileIcon />}
-              onClick={handleUploadClick}
+              variant="plain"
+              color="neutral"
+              onClick={handleProceed}
+              aria-label="Go forward"
             >
-              Upload Excel
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-            />
+              <ArrowForwardIcon fontSize="small" />
+            </IconButton>
           </Stack>
+          <Input
+            placeholder="Search files or sheets"
+            size="sm"
+            startDecorator={<SearchIcon fontSize="small" />}
+            sx={{ flex: 1, minWidth: 200 }}
+            onChange={handleSearchChange}
+          />
         </Box>
       }
       sidebar={
         <FileTree
-          files={files}
-          selectedFileId={selectedFileId}
-          onFileSelect={handleFileSelect}
+          files={treeData}
+          selectedNodeId={selectedNodeId}
+          onNodeSelect={handleNodeSelect}
         />
       }
       footer={
@@ -142,11 +258,63 @@ export const Home: React.FC = () => {
         </Box>
       }
     >
-      <ExcelViewer
-        file={selectedFile}
-        onCellSelect={handleCellSelect}
-        onRangeSelect={handleRangeSelect}
-      />
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {openTabs.length > 0 && (
+          <Tabs
+            value={activeTabId}
+            onChange={handleTabChange}
+            sx={{ backgroundColor: 'background.surface', borderRadius: 'sm', boxShadow: 'sm' }}
+          >
+            <TabList
+              variant="soft"
+              sx={{
+                gap: 0.5,
+                flexWrap: 'nowrap',
+                overflowX: 'auto',
+                scrollbarWidth: 'thin',
+                '&::-webkit-scrollbar': { height: 4 },
+              }}
+            >
+              {openTabs.map((tab) => (
+                <Tab
+                  key={tab.id}
+                  value={tab.id}
+                  sx={{
+                    textTransform: 'none',
+                    minHeight: '28px',
+                    fontWeight: 500,
+                    fontSize: '0.85rem',
+                    px: 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <span>{tab.sheetName}</span>
+                    <IconButton
+                      size="sm"
+                      variant="plain"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCloseTab(tab.id);
+                      }}
+                    >
+                      <CloseIcon fontSize="inherit" />
+                    </IconButton>
+                  </Box>
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        )}
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          <ExcelViewer
+            file={selectedFile}
+            sheetIndex={selectedSheetIndex}
+            onCellSelect={handleCellSelect}
+            onRangeSelect={handleRangeSelect}
+          />
+        </Box>
+      </Box>
     </AppLayout>
   );
 };

@@ -4,28 +4,11 @@ import { Sheet } from '@mui/joy';
 
 const LayoutContainer = styled('div')(({ theme }) => ({
   display: 'flex',
-  flexDirection: 'column',
+  flex: 1,
   height: '100vh',
   backgroundColor: theme.palette.background.body,
   fontFamily: theme.fontFamily.body,
 }));
-
-const Header = styled(Sheet)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '12px 20px',
-  backgroundColor: theme.palette.background.surface,
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  zIndex: 100,
-  minHeight: '60px',
-}));
-
-const MainArea = styled('div')({
-  display: 'flex',
-  flex: 1,
-  overflow: 'hidden',
-});
 
 const Sidebar = styled(Sheet)(({ theme }) => ({
   width: '280px',
@@ -36,12 +19,32 @@ const Sidebar = styled(Sheet)(({ theme }) => ({
   overflow: 'auto',
 }));
 
+const MainContent = styled('div')({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  minWidth: 0,
+  minHeight: 0,
+});
+
+const HeaderBar = styled(Sheet)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '12px 20px',
+  backgroundColor: theme.palette.background.surface,
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  minHeight: '60px',
+  zIndex: 1,
+}));
+
 const Content = styled('main')(({ theme }) => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   backgroundColor: theme.palette.background.body,
   overflow: 'auto',
+  minHeight: 0,
 }));
 
 const Footer = styled(Sheet)(({ theme }) => ({
@@ -102,29 +105,29 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   return (
     <LayoutContainer>
-      {header && (
-        <Header variant="outlined">
-          {header}
-        </Header>
+      {!hideSidebar && sidebar && (
+        <Sidebar variant="outlined">
+          {sidebar}
+        </Sidebar>
       )}
 
-      <MainArea>
-        {!hideSidebar && sidebar && (
-          <Sidebar variant="outlined">
-            {sidebar}
-          </Sidebar>
+      <MainContent>
+        {header && (
+          <HeaderBar variant="outlined">
+            {header}
+          </HeaderBar>
         )}
 
         <Content>
           {children}
         </Content>
-      </MainArea>
 
-      {!hideFooter && footer && (
-        <Footer variant="outlined">
-          {footer}
-        </Footer>
-      )}
+        {!hideFooter && footer && (
+          <Footer variant="outlined">
+            {footer}
+          </Footer>
+        )}
+      </MainContent>
     </LayoutContainer>
   );
 };

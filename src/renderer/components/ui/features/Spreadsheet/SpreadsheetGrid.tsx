@@ -104,9 +104,11 @@ interface CellProps {
   isEditing?: boolean;
 }
 
-const Cell = styled('div', {
-  shouldForwardProp: (prop) => prop !== 'isSelected' && prop !== 'isEditing',
-})<CellProps>(({ theme, isSelected, isEditing }) => ({
+const CellBase = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & CellProps>(
+  ({ isSelected, isEditing, ...rest }, ref) => <div ref={ref} {...rest} />
+);
+
+const Cell = styled(CellBase)<CellProps>(({ theme, isSelected, isEditing }) => ({
   border: `1px solid ${theme.palette.divider}`,
   padding: '0',
   position: 'relative',

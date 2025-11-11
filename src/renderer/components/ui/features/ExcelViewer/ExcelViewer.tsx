@@ -1,63 +1,61 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { styled } from '@mui/joy/styles';
-import { Box, Sheet, Typography, Select, Option } from '@mui/joy';
-import { ExcelFile, ExcelSheet, CellData, CellRange, CellPosition, CellStyle } from '../../../types/excel';
+import { Box, Sheet, Typography } from '@mui/joy';
+import { ExcelFile, CellData, CellRange, CellPosition, CellStyle } from '../../../types/excel';
 
-const ViewerContainer = styled(Box)({
+const ViewerContainer = styled(Sheet)({
   display: 'flex',
   flexDirection: 'column',
   height: '100%',
   overflow: 'hidden',
+  backgroundColor: '#ffffff',
+  borderRadius: 0,
 });
-
-const SheetSelector = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(2),
-  padding: theme.spacing(2),
-  borderBottom: `1px solid ${theme.palette.divider}`,
-}));
 
 const GridContainer = styled(Box)({
   flex: 1,
   overflow: 'auto',
   position: 'relative',
+  backgroundColor: '#ffffff',
 });
 
-const Grid = styled('table')(({ theme }) => ({
+const Grid = styled('table')({
   borderCollapse: 'collapse',
   fontSize: '13px',
-  fontFamily: theme.fontFamily.body,
+  fontFamily: 'inherit',
   minWidth: '100%',
   userSelect: 'none',
-}));
+  color: '#000000',
+});
 
-const HeaderCell = styled('th')(({ theme }) => ({
+const HeaderCell = styled('th')({
   position: 'sticky',
   top: 0,
   left: 0,
-  backgroundColor: theme.palette.background.surface,
-  border: `1px solid ${theme.palette.divider}`,
+  backgroundColor: '#ffffff',
+  border: '1px solid #d1d1d1',
   padding: '4px 8px',
   fontWeight: 600,
   fontSize: '12px',
   textAlign: 'center',
-  minWidth: '80px',
+  minWidth: '64px',
   zIndex: 2,
-}));
+});
 
-const RowHeaderCell = styled('th')(({ theme }) => ({
+const RowHeaderCell = styled('th')({
   position: 'sticky',
   left: 0,
-  backgroundColor: theme.palette.background.surface,
-  border: `1px solid ${theme.palette.divider}`,
+  backgroundColor: '#ffffff',
+  border: '1px solid #d1d1d1',
   padding: '4px 8px',
   fontWeight: 600,
   fontSize: '12px',
   textAlign: 'center',
-  minWidth: '40px',
+  minWidth: '28px',
+  maxWidth: '28px',
+  width: '28px',
   zIndex: 1,
-}));
+});
 
 interface StyledCellProps {
   selected: boolean;
@@ -67,31 +65,53 @@ interface StyledCellProps {
 
 const Cell = styled('td', {
   shouldForwardProp: (prop) => prop !== 'selected' && prop !== 'inRange' && prop !== 'customStyle',
-})<StyledCellProps>(({ theme, selected, inRange, customStyle }) => ({
-  border: `1px solid ${theme.palette.divider}`,
+})<StyledCellProps>(({ selected, inRange, customStyle }) => ({
+  border: '1px solid #e0e0e0',
   padding: '4px 8px',
-  minWidth: '80px',
   cursor: 'cell',
   backgroundColor: selected
-    ? theme.palette.primary.softBg
+    ? '#cfe8ff'
     : inRange
-    ? theme.palette.primary.softBg + '40'
-    : customStyle?.backgroundColor || 'transparent',
-  color: customStyle?.color || theme.palette.text.primary,
+    ? '#e5f2ff'
+    : customStyle?.backgroundColor || '#ffffff',
+  color: customStyle?.color || '#000000',
   fontWeight: customStyle?.fontWeight || 'normal',
   fontStyle: customStyle?.fontStyle || 'normal',
   textAlign: (customStyle?.textAlign as any) || 'left',
   fontSize: customStyle?.fontSize || 'inherit',
   ...(customStyle?.border && { border: customStyle.border }),
   '&:hover': {
-    backgroundColor: selected
-      ? theme.palette.primary.softBg
-      : theme.palette.neutral.softHoverBg,
+    backgroundColor: selected ? '#cfe8ff' : '#f5f5f5',
   },
 }));
 
+const CellInput = styled('input')({
+  width: '100%',
+  border: 'none',
+  background: 'transparent',
+  outline: 'none',
+  font: 'inherit',
+  color: 'inherit',
+});
+
+const getColumnWidth = (colIndex: number) => (colIndex === 0 ? 56 : 96);
+const calculateRowHeaderWidth = (rowCount: number) => {
+  const digits = rowCount > 0 ? Math.floor(Math.log10(rowCount)) + 1 : 1;
+  return Math.max(20, 8 + digits * 8);
+};
+
+const columnStyle = (colIndex: number) => {
+  const width = getColumnWidth(colIndex);
+  return {
+    minWidth: `${width}px`,
+    maxWidth: `${width}px`,
+    width: `${width}px`,
+  };
+};
+
 export interface ExcelViewerProps {
   file: ExcelFile | null;
+  sheetIndex?: number;
   onCellSelect?: (position: CellPosition) => void;
   onRangeSelect?: (range: CellRange) => void;
 }
@@ -107,15 +127,47 @@ export interface ExcelViewerProps {
  * - JavaScript API for cell operations
  * - CSS API for cell styling
  */
-export const ExcelViewer: React.FC<ExcelViewerProps> = ({ file, onCellSelect, onRangeSelect }) => {
-  const [currentSheetIndex, setCurrentSheetIndex] = useState(0);
+export const ExcelViewer: React.FC<ExcelViewerProps> = ({ file, sheetIndex = 0, onCellSelect, onRangeSelect }) => {
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
   const [selectionRange, setSelectionRange] = useState<CellRange | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [cellStyles, setCellStyles] = useState<Map<string, CellStyle>>(new Map());
+  const [gridData, setGridData] = useState<CellData[][]>([]);
   const gridRef = useRef<HTMLTableElement>(null);
 
-  const currentSheet = file?.sheets[currentSheetIndex] || null;
+  const normalizedSheetIndex = useMemo(() => {
+    if (!file || file.sheets.length === 0) return 0;
+    const clampedIndex = Math.max(0, Math.min(sheetIndex, file.sheets.length - 1));
+    return clampedIndex;
+  }, [file, sheetIndex]);
+
+  const currentSheet = file?.sheets[normalizedSheetIndex] || null;
+  const rowHeaderWidth = useMemo(
+    () => calculateRowHeaderWidth(currentSheet?.rowCount ?? 1),
+    [currentSheet?.rowCount],
+  );
+  const rowHeaderStyle = useMemo(
+    () => ({
+      minWidth: `${rowHeaderWidth}px`,
+      maxWidth: `${rowHeaderWidth}px`,
+      width: `${rowHeaderWidth}px`,
+    }),
+    [rowHeaderWidth],
+  );
+
+  const sheetData = useMemo(() => {
+    if (gridData.length > 0) return gridData;
+    return currentSheet?.data ?? [];
+  }, [gridData, currentSheet]);
+
+  useEffect(() => {
+    if (currentSheet) {
+      const copied = currentSheet.data.map((row) => row.map((cell) => ({ ...cell })));
+      setGridData(copied);
+    } else {
+      setGridData([]);
+    }
+  }, [currentSheet]);
 
   // Generate column headers (A, B, C, ...)
   const getColumnLabel = (index: number): string => {
@@ -178,12 +230,31 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({ file, onCellSelect, on
     };
   }, [handleMouseUp]);
 
+  const handleCellChange = useCallback((row: number, col: number, value: string) => {
+    setGridData((prev) => {
+      if (!prev.length) return prev;
+      return prev.map((rowData, rowIndex) =>
+        rowIndex === row
+          ? rowData.map((cellData, colIndex) =>
+              colIndex === col
+                ? {
+                    ...cellData,
+                    value,
+                    type: value === '' ? 'empty' : isNaN(Number(value)) ? 'string' : 'number',
+                  }
+                : cellData,
+            )
+          : rowData,
+      );
+    });
+  }, []);
+
   // Public API: Get cell value
   const getCellValue = useCallback((row: number, col: number): CellData | null => {
-    if (!currentSheet || row < 0 || col < 0) return null;
-    if (row >= currentSheet.data.length || col >= currentSheet.data[row].length) return null;
-    return currentSheet.data[row][col];
-  }, [currentSheet]);
+    if (!sheetData || row < 0 || col < 0) return null;
+    if (row >= sheetData.length || col >= sheetData[row].length) return null;
+    return sheetData[row][col];
+  }, [sheetData]);
 
   // Public API: Set cell style
   const setCellStyle = useCallback((row: number, col: number, style: CellStyle) => {
@@ -256,50 +327,37 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({ file, onCellSelect, on
   }
 
   return (
-    <ViewerContainer>
-      <SheetSelector>
-        <Typography level="title-sm">Sheet:</Typography>
-        <Select
-          value={currentSheetIndex}
-          onChange={(_, value) => setCurrentSheetIndex(value as number)}
-          size="sm"
-          sx={{ minWidth: 200 }}
-        >
-          {file.sheets.map((sheet: ExcelSheet, index: number) => (
-            <Option key={index} value={index}>
-              {sheet.name}
-            </Option>
-          ))}
-        </Select>
-        <Typography level="body-sm" sx={{ color: 'neutral.500', ml: 'auto' }}>
-          {currentSheet.rowCount} rows × {currentSheet.colCount} columns
-        </Typography>
-      </SheetSelector>
-
+    <ViewerContainer variant="plain">
       <GridContainer>
         <Grid ref={gridRef}>
           <thead>
             <tr>
-              <HeaderCell />
+              <HeaderCell style={rowHeaderStyle} />
               {Array.from({ length: currentSheet.colCount }, (_, i) => (
-                <HeaderCell key={i}>{getColumnLabel(i)}</HeaderCell>
+                <HeaderCell key={i} style={columnStyle(i)}>
+                  {getColumnLabel(i)}
+                </HeaderCell>
               ))}
             </tr>
           </thead>
           <tbody>
-            {currentSheet.data.map((row: CellData[], rowIndex: number) => (
+            {sheetData.map((row: CellData[], rowIndex: number) => (
               <tr key={rowIndex}>
-                <RowHeaderCell>{rowIndex + 1}</RowHeaderCell>
+                <RowHeaderCell style={rowHeaderStyle}>{rowIndex + 1}</RowHeaderCell>
                 {row.map((cell: CellData, colIndex: number) => (
                   <Cell
                     key={colIndex}
+                    style={columnStyle(colIndex)}
                     selected={selectedCell?.row === rowIndex && selectedCell?.col === colIndex}
                     inRange={isCellInRange(rowIndex, colIndex)}
                     customStyle={cellStyles.get(getCellKey(rowIndex, colIndex))}
                     onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
                     onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
                   >
-                    {cell.value !== null && cell.value !== undefined ? String(cell.value) : ''}
+                    <CellInput
+                      value={cell.value !== null && cell.value !== undefined ? String(cell.value) : ''}
+                      onChange={(event) => handleCellChange(rowIndex, colIndex, event.target.value)}
+                    />
                   </Cell>
                 ))}
               </tr>
