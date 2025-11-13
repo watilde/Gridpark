@@ -43,13 +43,19 @@ const demoSheets: ExcelSheet[] = [
     ["2024-09-02", "Yuzu", "R-03", 4100, 18, 7, 10],
     ["2024-09-03", "Koko", "R-02", 2950, 11, 8, 9],
     ["2024-09-04", "Mochi", "R-01", 3600, 15, 10, 10],
+    ["2024-09-05", "Sora", "R-04", 2200, 8, 7, 8],
+    ["2024-09-06", "Pip", "R-03", 4300, 20, 9, 9],
+    ["2024-09-07", "Miso", "R-05", 2600, 6, 6, 7],
   ]),
   createSheet("Route_Master", [
     ["Route_ID", "Route_Name", "Distance_meters", "Path_Type", "Dog_Friendliness (1–10)"],
     ["R-01", "Downtown Loop", 3500, "Road", 8],
-    ["R-02", "Canal Park", 2900, "Park", 10],
+    ["R-02", "Canal Park Cruise", 2950, "Park", 10],
     ["R-03", "Riverside Sprint", 4200, "Riverside", 9],
     ["R-04", "Elm Street Stroll", 2100, "Road", 7],
+    ["R-05", "Meadow Circuit", 2600, "Park", 9],
+    ["R-06", "Harbor Run", 3800, "Riverside", 8],
+    ["R-07", "Sunset Ridge", 3100, "Road", 8],
   ]),
 ];
 
@@ -120,8 +126,8 @@ const demoPackage: GridparkPackage = {
 };
 
 export const demoWorkbook: ExcelFile = {
-  name: "Dog_Walking_Route.xlsx",
-  path: "/demo/Dog_Walking_Route.xlsx",
+  name: "Dog_Walking_Route_Optimizer.xlsx",
+  path: "/demo/Dog_Walking_Route_Optimizer.xlsx",
   sheets: demoSheets,
   lastModified: new Date(),
   manifest: {
@@ -137,7 +143,7 @@ export const demoWorkbook: ExcelFile = {
 export const demoFileNodes: FileNode[] = [
   {
     id: "walk-root",
-    name: "Dog_Walking_Route.xlsx",
+    name: "Dog_Walking_Route_Optimizer.xlsx",
     type: "workbook",
     children: [
       {

@@ -1,8 +1,8 @@
 # Gridpark
 
-**Excel superset with custom functions and developer-first experience**
+**Reasonably compatible with Excel and developer-first experience**
 
-A desktop-first Electron application that also works on the web, providing Excel-compatible spreadsheet functionality with powerful custom functions and modern developer tools.
+A desktop-first Electron application that also works on the web, providing Excel reasonably compatible spreadsheet functionality with powerful custom functions and modern developer tools.
 
 ## 🚀 Quick Start
 
@@ -42,21 +42,23 @@ npm run test:coverage
 npm run storybook
 ```
 
-## 🏗️ Architecture
+## 📘 Docs Site
 
-### Dual Platform Support
+The marketing site lives under `src/site` and builds into the `docs/` directory for static hosting.
 
-- **🖥️ Electron**: Full desktop app with native OS integration
-- **🌐 Web**: Browser-based version with modern web APIs
-- **🔄 Shared Codebase**: Same React components work on both platforms
+- Hosted URL: `https://watilde.github.io/Gridpark/` (Vite `base` is set to `/Gridpark/` so all assets load correctly there).
 
-### Key Features
+- `npm run docs:dev` — Launch the Vite dev server for the site.
+- `npm run docs:build` — Build the site and dump the generated HTML/JS/CSS under `docs/`.
+- `npm run docs:preview` — Preview the production build locally.
 
-- **📊 Excel Compatibility**: Import/export `.xlsx` files with full data fidelity
-- **⚡ Custom Functions**: JavaScript-based custom functions with Excel API compatibility
-- **🎨 Modern UI**: Joy UI design system with dark theme
-- **🧪 Full Test Coverage**: 51 tests covering all components
-- **⌨️ Developer-First**: Monaco editor integration for code editing
+## 🏗️ Key features
+
+- **📊 Reasonably compatible with Excel**: Import/export `.xlsx` files with most data fidelity
+- **⚡ Custom Functions**: Standard JavaScript custom functions
+- **🎨 Custom Styles**: Standard CSS styling with Excel-elector
+- **🧪 Care Test Coverage**: Best effort and this is not v1 yet
+- **⌨️ Developer-First**: Editor integration for code editing
 
 ## 📁 Project Structure
 
@@ -82,14 +84,6 @@ web/                       # Web-specific entry point
 - `npm run package` - Package for distribution
 - `npm run make` - Create distributable packages
 
-### Web Development  
-- `npm run web:dev` - Start web development server (port 3000)
-- `npm run web:build` - Build for production
-- `npm run web:preview` - Preview production build
-
-### Combined Development
-- `npm run dev:both` - Run both Electron and web simultaneously
-
 ### Quality Assurance
 - `npm test` - Run Jest test suite
 - `npm run test:watch` - Run tests in watch mode
@@ -97,26 +91,12 @@ web/                       # Web-specific entry point
 - `npm run lint` - ESLint code checking
 - `npm run storybook` - Component library development
 
-## 🎯 Platform Detection
-
-The app automatically detects whether it's running in Electron or web environment:
-
-```typescript
-import { isElectron, isWeb, getPlatformCapabilities } from './src/renderer/utils/platform';
-
-if (isElectron()) {
-  // Native desktop features
-} else if (isWeb()) {
-  // Web-specific features
-}
-```
-
 ## 🧪 Testing
 
-Comprehensive test suite with 51 tests covering:
-- **Input Component**: Error handling, validation, styling (100% coverage)
-- **MonacoEditor**: Placeholder implementation, theming (~95% coverage)  
-- **Toolbar**: Actions, tooltips, grouping (~97% coverage)
+Comprehensive test suite:
+- **Input Component**: Error handling, validation, styling
+- **Editor**: Placeholder implementation, theming
+- **Toolbar**: Actions, tooltips, grouping
 
 ## 🎨 Design System
 
@@ -128,7 +108,7 @@ Based on Joy UI with Gridpark-specific customizations:
 ## 📋 Development Workflow
 
 1. **Setup**: Clone and run `npm install`
-2. **Development**: Use `npm run dev:both` to test both platforms
+2. **Development**: Use `npm start` for Electron app
 3. **Testing**: Write tests for new components
 4. **Component**: Use Storybook for component development
 5. **Platform**: Use platform utilities for cross-platform features
@@ -137,4 +117,4 @@ Based on Joy UI with Gridpark-specific customizations:
 
 ## License
 
-MIT - see LICENSE file for details
+Apache-2.0 - see LICENSE file for details
