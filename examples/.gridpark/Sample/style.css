@@ -1,0 +1,31 @@
+sheet[name="Employees"] {
+  font-family: "Noto Sans", system-ui;
+  background: #f9f8ff;
+}
+
+cell.sorted {
+  background: #3dd6f5;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+row.active cell {
+  background: #ff4da6;
+  color: #fff;
+}
+
+cell.over-limit {
+  color: #ff6b35;
+  font-weight: bold;
+}
+
+.gridpark-tooltip {
+  position: absolute;
+  background: #1c2541;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}

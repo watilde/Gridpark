@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@renderer/*": ["../../src/renderer/*"]
+    }
+  },
+  "include": ["src", "../../src/renderer/types/global.d.ts"],
+  "exclude": ["dist"]
+}

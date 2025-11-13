@@ -2,10 +2,12 @@ import React from 'react';
 import { styled } from '@mui/joy/styles';
 import { Sheet } from '@mui/joy';
 
-const LayoutContainer = styled('div')(({ theme }) => ({
+const LayoutContainer = styled('div', {
+  shouldForwardProp: (prop) => prop !== 'fullHeight',
+})<{ fullHeight: boolean }>(({ theme, fullHeight }) => ({
   display: 'flex',
   flex: 1,
-  height: '100vh',
+  height: fullHeight ? '100vh' : 'auto',
   backgroundColor: theme.palette.background.body,
   fontFamily: theme.fontFamily.body,
 }));
@@ -60,41 +62,16 @@ const Footer = styled(Sheet)(({ theme }) => ({
 }));
 
 export interface AppLayoutProps {
-  /**
-   * Header content (toolbar, navigation, etc.)
-   */
   header?: React.ReactNode;
-  /**
-   * Sidebar content (panels, navigation, etc.)
-   */
   sidebar?: React.ReactNode;
-  /**
-   * Main content area
-   */
   children: React.ReactNode;
-  /**
-   * Footer content (status bar, info, etc.)
-   */
   footer?: React.ReactNode;
-  /**
-   * Hide sidebar completely
-   */
   hideSidebar?: boolean;
-  /**
-   * Hide footer completely
-   */
   hideFooter?: boolean;
+  className?: string;
+  fullHeight?: boolean;
 }
 
-/**
- * Gridpark AppLayout Component
- * 
- * Main application layout with header, sidebar, content, and footer areas:
- * - Code-first: IDE-like layout with familiar zones
- * - Flexible: Optional sidebar and footer
- * - Responsive: Proper overflow handling and scrolling
- * - Developer-friendly: Clear content separation and z-index management
- */
 export const AppLayout: React.FC<AppLayoutProps> = ({
   header,
   sidebar,
@@ -102,31 +79,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   footer,
   hideSidebar = false,
   hideFooter = false,
+  className,
+  fullHeight = true,
 }) => {
   return (
-    <LayoutContainer>
-      {!hideSidebar && sidebar && (
-        <Sidebar variant="outlined">
-          {sidebar}
-        </Sidebar>
-      )}
-
+    <LayoutContainer className={className} fullHeight={fullHeight}>
+      {!hideSidebar && sidebar && <Sidebar variant="outlined">{sidebar}</Sidebar>}
       <MainContent>
-        {header && (
-          <HeaderBar variant="outlined">
-            {header}
-          </HeaderBar>
-        )}
-
-        <Content>
-          {children}
-        </Content>
-
-        {!hideFooter && footer && (
-          <Footer variant="outlined">
-            {footer}
-          </Footer>
-        )}
+        {header && <HeaderBar variant="outlined">{header}</HeaderBar>}
+        <Content>{children}</Content>
+        {!hideFooter && footer && <Footer variant="outlined">{footer}</Footer>}
       </MainContent>
     </LayoutContainer>
   );

@@ -1,0 +1,25 @@
+{
+  "name": "Sales Forecast Workbook",
+  "version": "1.0.0",
+  "description": "Sales Forecast Workbook manifest",
+  "apiVersion": 1,
+  "main": "index.js",
+  "style": "style.css",
+  "sheets": {
+    "sheet-1": {
+      "name": "Q1",
+      "main": "sheets/q1/main.js",
+      "style": "sheets/q1/style.css"
+    },
+    "sheet-2": {
+      "name": "Q2",
+      "main": "sheets/q2/main.js",
+      "style": "sheets/q2/style.css"
+    }
+  },
+  "permissions": {
+    "filesystem": "workbook",
+    "network": false,
+    "runtime": []
+  }
+}

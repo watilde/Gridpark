@@ -1,6 +1,6 @@
 {
   "name": "gridpark",
-  "productName": "gridpark",
+  "productName": "Gridpark",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/index.js",
@@ -15,11 +15,9 @@
     "test:coverage": "jest --coverage",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "web:dev": "vite",
-    "web:build": "vite build",
-    "web:preview": "vite preview",
-    "web:serve": "npm run web:build && npm run web:preview",
-    "dev:both": "concurrently \"npm start\" \"npm run web:dev\" --names \"electron,web\" --prefix-colors \"cyan,magenta\""
+    "docs:dev": "vite --config src/site/vite.config.ts",
+    "docs:build": "vite build --config src/site/vite.config.ts",
+    "docs:preview": "vite preview --config src/site/vite.config.ts"
   },
   "keywords": [],
   "author": {
@@ -71,10 +69,13 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/caveat": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/noto-sans": "^5.2.10",
+    "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.2",
     "@mui/joy": "^5.0.0-beta.52",
     "electron-squirrel-startup": "^1.0.1",
+    "monaco-editor": "^0.54.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "xlsx": "^0.18.5"

@@ -1,26 +1,25 @@
-import React, { useRef, useEffect } from 'react';
-import { Box } from '@mui/joy';
-import { styled } from '@mui/joy/styles';
+import React, { useMemo, useRef, useCallback } from "react";
+import { Box } from "@mui/joy";
+import { styled } from "@mui/joy/styles";
+import Editor, { OnMount } from "@monaco-editor/react";
+import type { editor as MonacoEditor } from "monaco-editor";
 
 const EditorContainer = styled(Box)(({ theme }) => ({
-  width: '100%',
-  height: '100%',
-  minHeight: '200px',
+  width: "100%",
+  height: "100%",
+  minHeight: "200px",
   border: `1px solid ${theme.palette.divider}`,
-  borderRadius: theme.radius.sm,
-  overflow: 'hidden',
+  borderRadius: 0,
   fontFamily: '"JetBrains Mono", monospace',
   backgroundColor: theme.palette.background.surface,
-  
-  // Developer-focused dark theme
-  '& .monaco-editor': {
-    backgroundColor: 'transparent',
+  overflow: "hidden",
+  "& .monaco-editor": {
+    backgroundColor: "transparent",
+    fontFamily: '"JetBrains Mono", monospace',
   },
-  
-  // Focus states for better accessibility
-  '&:focus-within': {
+  "&:focus-within": {
     outline: `2px solid ${theme.palette.primary[400]}`,
-    outlineOffset: '2px',
+    outlineOffset: "2px",
   },
 }));
 
@@ -50,72 +49,97 @@ export interface MonacoEditorProps {
    */
   onChange?: (value: string) => void;
   /**
+   * Save handler (Cmd/Ctrl + S)
+   */
+  onSave?: (value: string) => void;
+  /**
    * Theme for the editor
    */
-  theme?: 'vs' | 'vs-dark' | 'hc-black';
+  theme?: "vs" | "vs-dark" | "hc-black";
   /**
-   * Additional options for Monaco editor
+   * Monaco editor options
    */
-  options?: Record<string, any>;
+  options?: MonacoEditor.IStandaloneEditorConstructionOptions;
 }
 
 /**
  * Gridpark Monaco Editor Component
- * 
+ *
  * A code editor component based on Monaco Editor with Gridpark design principles:
  * - Code-first experience with syntax highlighting
  * - Developer-friendly with monospace fonts and dark theme
  * - Immediate feedback and accessibility features
  * - Hackable through Monaco editor options
- * 
- * Note: This is a placeholder implementation. For full Monaco integration,
- * install @monaco-editor/react and implement the actual editor.
+ *
+ * Note: Requires @monaco-editor/react + monaco-editor.
  */
 export const MonacoEditor: React.FC<MonacoEditorProps> = ({
-  value = '',
-  language = 'javascript',
-  height = '200px',
-  width = '100%',
+  value = "",
+  language = "javascript",
+  height = "200px",
+  width = "100%",
   readOnly = false,
   onChange,
-  theme = 'vs-dark',
-  options = {},
+  onSave,
+  theme = "vs-dark",
+  options,
 }) => {
-  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const onSaveRef = useRef(onSave);
+  const readOnlyRef = useRef(readOnly);
 
-  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = event.target.value;
-    onChange?.(newValue);
-  };
+  onSaveRef.current = onSave;
+  readOnlyRef.current = readOnly;
+
+  const editorOptions =
+    useMemo<MonacoEditor.IStandaloneEditorConstructionOptions>(
+      () => ({
+        fontSize: 14,
+        fontFamily: '"JetBrains Mono", monospace',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        readOnly,
+        wordWrap: "on",
+        contextmenu: true,
+        smoothScrolling: true,
+        lineNumbersMinChars: 2,
+        lineDecorationsWidth: 8,
+        ...options,
+      }),
+      [options, readOnly],
+    );
+
+  const normalizedTheme =
+    theme === "hc-black" ? "hc-black" : theme === "vs-dark" ? "vs-dark" : "vs";
+
+  const handleMount = useCallback<OnMount>((editorInstance, monacoInstance) => {
+    editorRef.current = editorInstance;
+    editorInstance.addCommand(
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
+      () => {
+        if (!onSaveRef.current || readOnlyRef.current) return;
+        onSaveRef.current(editorInstance.getValue());
+      },
+    );
+  }, []);
 
   return (
     <EditorContainer sx={{ height, width }}>
-      {/* Placeholder implementation - replace with actual Monaco editor */}
-      <textarea
-        ref={editorRef}
+      <Editor
+        height="100%"
+        width="100%"
         value={value}
-        onChange={handleChange}
-        readOnly={readOnly}
-        placeholder={`// ${language} code editor\n// Install @monaco-editor/react for full Monaco functionality`}
-        style={{
-          width: '100%',
-          height: '100%',
-          border: 'none',
-          outline: 'none',
-          padding: '16px',
-          fontFamily: '"JetBrains Mono", monospace',
-          fontSize: '14px',
-          lineHeight: '1.6',
-          backgroundColor: 'transparent',
-          color: 'inherit',
-          resize: 'none',
-        }}
-        data-language={language}
-        data-theme={theme}
-        {...options}
+        defaultValue={value}
+        language={language}
+        theme={normalizedTheme}
+        options={editorOptions}
+        onChange={(nextValue) => onChange?.(nextValue ?? "")}
+        onMount={handleMount}
+        loading={<Box sx={{ p: 2 }}>Loading editor…</Box>}
       />
     </EditorContainer>
   );
 };
 
-MonacoEditor.displayName = 'GridparkMonacoEditor';
+MonacoEditor.displayName = "GridparkMonacoEditor";

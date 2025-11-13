@@ -1,0 +1,25 @@
+{
+  "name": "Sample Workbook",
+  "version": "1.0.0",
+  "description": "Sample Workbook manifest",
+  "apiVersion": 1,
+  "main": "index.js",
+  "style": "style.css",
+  "sheets": {
+    "sheet-1": {
+      "name": "Employees",
+      "main": "sheets/employees/main.js",
+      "style": "sheets/employees/style.css"
+    },
+    "sheet-2": {
+      "name": "Products",
+      "main": "sheets/products/main.js",
+      "style": "sheets/products/style.css"
+    }
+  },
+  "permissions": {
+    "filesystem": "workbook",
+    "network": false,
+    "runtime": []
+  }
+}
