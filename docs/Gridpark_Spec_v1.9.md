@@ -179,8 +179,7 @@ cell:edited {
 
 Gridpark exposes a **virtual spreadsheet DOM**, manipulable with
 DOM-like APIs.\
-Developers can use either **`gridpark.querySelector`** or
-**`document.querySelector`**, since Gridpark proxies the latter when
+Developers can use **`document.querySelector`**, since Gridpark proxies the latter when
 mounted.
 
 ## 5.1 Core Example
@@ -197,9 +196,6 @@ cell.style.background = "#ff4da6";
 
   Method                               Description
   ------------------------------------ --------------------------------
-  `gridpark.querySelector(sel)`        Query inside the Gridpark DOM
-  `gridpark.querySelectorAll(sel)`     Query multiple nodes
-  `gridpark.on(event, sel, handler)`   Event binding
   `document.querySelector(sel)`        Proxy to Gridpark when mounted
   `document.querySelectorAll(sel)`     Proxy-enabled alias
 
