@@ -3,6 +3,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ChangeEvent,
   type SyntheticEvent,
 } from "react";
 import {
@@ -61,6 +62,26 @@ const flattenNodes = (nodes: FileNode[]): FileNode[] =>
   ]);
 
 const demoFlatNodes = flattenNodes(demoFileNodes);
+const filterTreeByName = (nodes: FileNode[], term: string): FileNode[] => {
+  if (!term.trim()) return nodes;
+  const lower = term.toLowerCase();
+
+  const walk = (items: FileNode[]): FileNode[] => {
+    return items
+      .map((item) => {
+        const children = item.children ? walk(item.children) : [];
+        const matches = item.name.toLowerCase().includes(lower) || children.length > 0;
+        if (!matches) return null;
+        return {
+          ...item,
+          children: children.length ? children : item.children,
+        };
+      })
+      .filter((item): item is FileNode => Boolean(item));
+  };
+
+  return walk(nodes);
+};
 const sheetTabsCatalog: SheetDemoTab[] = demoFlatNodes
   .filter(
     (node): node is FileNode & { sheetIndex: number } =>
@@ -90,10 +111,24 @@ const tabCatalog: Record<string, DemoTab> = [...sheetTabsCatalog, ...codeTabsCat
   },
   {} as Record<string, DemoTab>,
 );
+const walkSheetTab = sheetTabsCatalog.find((tab) => tab.label === "Walk_Data");
+const walkSheetCodeMainTab = codeTabsCatalog.find(
+  (tab): tab is CodeDemoTab =>
+    tab.kind === "code" &&
+    tab.codeFile.sheetName === "Walk_Data" &&
+    tab.codeFile.role === "main",
+);
+const walkSheetCodeStyleTab = codeTabsCatalog.find(
+  (tab): tab is CodeDemoTab =>
+    tab.kind === "code" &&
+    tab.codeFile.sheetName === "Walk_Data" &&
+    tab.codeFile.role === "style",
+);
+
 const defaultTabs: DemoTab[] = [
-  sheetTabsCatalog[0],
-  sheetTabsCatalog[1],
-  codeTabsCatalog[0],
+  walkSheetTab,
+  walkSheetCodeMainTab,
+  walkSheetCodeStyleTab,
 ].filter(Boolean) as DemoTab[];
 
 const unsavedDotSx = {
@@ -130,6 +165,7 @@ export const HeroDemo = () => {
   const [codeContentState, setCodeContentState] = useState<
     Record<string, string>
   >(() => ({ ...codeContents }));
+  const [searchTerm, setSearchTerm] = useState("");
 
   const activeTab = useMemo(
     () => openTabs.find((tab) => tab.id === activeTabId),
@@ -233,6 +269,35 @@ export const HeroDemo = () => {
     [codeContentState],
   );
 
+  const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.currentTarget.value);
+  }, []);
+
+  const handlePrevTab = useCallback(() => {
+    if (openTabs.length < 2) return;
+    const currentIndex = openTabs.findIndex((tab) => tab.id === activeTabId);
+    if (currentIndex === -1) return;
+    const prevIndex = (currentIndex - 1 + openTabs.length) % openTabs.length;
+    const tab = openTabs[prevIndex];
+    setActiveTabId(tab.id);
+    setSelectedNodeId(tab.id);
+  }, [activeTabId, openTabs]);
+
+  const handleNextTab = useCallback(() => {
+    if (openTabs.length < 2) return;
+    const currentIndex = openTabs.findIndex((tab) => tab.id === activeTabId);
+    if (currentIndex === -1) return;
+    const nextIndex = (currentIndex + 1) % openTabs.length;
+    const tab = openTabs[nextIndex];
+    setActiveTabId(tab.id);
+    setSelectedNodeId(tab.id);
+  }, [activeTabId, openTabs]);
+
+  const filteredTreeNodes = useMemo(
+    () => (searchTerm ? filterTreeByName(demoFileNodes, searchTerm) : demoFileNodes),
+    [searchTerm],
+  );
+
   const activeContent = useMemo(() => {
     if (!activeTab) {
       return (
@@ -292,10 +357,22 @@ export const HeroDemo = () => {
   const headerControls = (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
       <Stack direction="row" spacing={0.5}>
-        <IconButton size="sm" variant="plain" color="neutral" aria-label="Go back">
+        <IconButton
+          size="sm"
+          variant="plain"
+          color="neutral"
+          aria-label="Go back"
+          onClick={handlePrevTab}
+        >
           <ArrowBackIcon fontSize="small" />
         </IconButton>
-        <IconButton size="sm" variant="plain" color="neutral" aria-label="Go forward">
+        <IconButton
+          size="sm"
+          variant="plain"
+          color="neutral"
+          aria-label="Go forward"
+          onClick={handleNextTab}
+        >
           <ArrowForwardIcon fontSize="small" />
         </IconButton>
       </Stack>
@@ -304,6 +381,9 @@ export const HeroDemo = () => {
         startDecorator={<SearchIcon fontSize="small" />}
         placeholder="Search files or sheets"
         sx={{ flex: 1, minWidth: 160 }}
+        value={searchTerm}
+        onChange={handleSearchChange}
+        type="search"
       />
       <IconButton
         size="sm"
@@ -324,7 +404,7 @@ export const HeroDemo = () => {
         header={headerControls}
         sidebar={
           <FileTree
-            files={demoFileNodes}
+            files={filteredTreeNodes}
             title="Files"
             selectedNodeId={selectedNodeId}
             onNodeSelect={handleNodeSelect}
@@ -343,6 +423,8 @@ export const HeroDemo = () => {
                 backgroundColor: "background.surface",
                 borderRadius: "sm",
                 boxShadow: "sm",
+                px: 1,
+                py: 0.5,
               }}
             >
               <TabList
@@ -352,6 +434,7 @@ export const HeroDemo = () => {
                   flexWrap: "nowrap",
                   overflowX: "auto",
                   scrollbarWidth: "thin",
+                  width: "100%",
                   "&::-webkit-scrollbar": { height: 4 },
                 }}
               >

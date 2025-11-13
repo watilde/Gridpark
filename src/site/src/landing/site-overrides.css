@@ -1,0 +1,136 @@
+@import url("https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Rubik:wght@300;400;500;700;900&display=swap");
+
+:root {
+  font-family: "Rubik", sans-serif;
+}
+
+body {
+  font-family: "Rubik", sans-serif;
+}
+
+.demo-container {
+  width: min(1300px, 100%);
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  justify-items: center;
+}
+
+@media (min-width: 1100px) {
+  .demo-container {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+.demo-live-app {
+  border: 6px solid var(--spray-red);
+  border-radius: 24px;
+  background: linear-gradient(160deg, rgba(6, 6, 9, 0.95), rgba(26, 18, 32, 0.9));
+  padding: 1.75rem;
+  box-shadow:
+    5px 5px 0 var(--spray-orange),
+    10px 10px 0 var(--spray-yellow),
+    15px 15px 0 var(--spray-lime),
+    0 25px 70px rgba(0, 0, 0, 0.6);
+  position: relative;
+  z-index: 5;
+  transform: rotate(-1deg);
+  width: min(1300px, 100%);
+}
+
+.demo-live-app::after {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border-radius: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.demo-shell {
+  width: 100%;
+  background: linear-gradient(180deg, rgba(15, 15, 17, 0.95), rgba(11, 10, 12, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  position: relative;
+  padding: 48px 0 0;
+}
+
+.demo-shell::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 24px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5f56;
+  box-shadow:
+    20px 0 0 #ffbd2e,
+    40px 0 0 #27c93f;
+}
+
+.demo-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.03), transparent 55%);
+  opacity: 0.3;
+  pointer-events: none;
+  animation: gritBlink 8s ease-in-out infinite;
+}
+
+.demo-app-layout {
+  width: 100%;
+  height: 640px;
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(4, 6, 10, 0.9), rgba(27, 20, 38, 0.85));
+  backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.demo-app-layout .MuiSheet-root {
+  border-radius: 0;
+}
+
+@media (max-width: 960px) {
+  .demo-live-app {
+    transform: none;
+  }
+
+  .demo-app-layout {
+    height: auto;
+    min-height: 520px;
+  }
+}
+
+.demo-shell,
+.hero__logo {
+  animation: subtleTilt 12s ease-in-out infinite;
+}
+
+@keyframes gritBlink {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes subtleTilt {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(0.6deg);
+  }
+}

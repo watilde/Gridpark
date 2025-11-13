@@ -1,0 +1,405 @@
+/* ==========================================
+   PHILOSOPHY SECTION - STREET ART STYLE
+   ========================================== */
+
+.philosophy {
+    padding: 8rem 2rem;
+    background: var(--wall-2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 背景の巨大落書き */
+.philosophy::before {
+    content: 'WHY WE EXIST なぜ存在するか';
+    position: absolute;
+    top: 5%;
+    left: 2%;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 4rem;
+    color: transparent;
+    -webkit-text-stroke: 3px rgba(255, 68, 129, 0.08);
+    transform: rotate(-8deg);
+    z-index: 0;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.philosophy::after {
+    content: '哲学 PHILOSOPHY';
+    position: absolute;
+    bottom: 5%;
+    right: 2%;
+    font-family: 'Rubik', sans-serif;
+    font-size: 8rem;
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 4px rgba(0, 229, 255, 0.1);
+    transform: rotate(12deg);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.philosophy-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6rem;
+    position: relative;
+    z-index: 10;
+}
+
+/* ==========================================
+   PHILOSOPHY BLOCKS
+   ========================================== */
+
+.philosophy-block {
+    background: var(--wall-3);
+    border: 5px solid transparent;
+    border-radius: 12px;
+    padding: 3rem;
+    position: relative;
+    overflow: visible;
+    box-shadow: 
+        8px 8px 0 rgba(0, 0, 0, 0.3),
+        0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: blockFloat 8s ease-in-out infinite;
+}
+
+@keyframes blockFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+.mission-block {
+    border-color: var(--spray-red);
+    box-shadow: 
+        8px 8px 0 var(--spray-orange),
+        16px 16px 0 var(--spray-yellow),
+        0 10px 40px rgba(255, 23, 68, 0.4);
+    transform: rotate(-1deg);
+}
+
+.mission-block:hover {
+    transform: rotate(-1deg) scale(1.02);
+    box-shadow: 
+        12px 12px 0 var(--spray-orange),
+        24px 24px 0 var(--spray-yellow),
+        0 15px 50px rgba(255, 23, 68, 0.5);
+}
+
+.vision-block {
+    border-color: var(--spray-lime);
+    box-shadow: 
+        8px 8px 0 var(--spray-green),
+        16px 16px 0 var(--spray-cyan),
+        0 10px 40px rgba(118, 255, 3, 0.4);
+    transform: rotate(1deg);
+}
+
+.vision-block:hover {
+    transform: rotate(1deg) scale(1.02);
+    box-shadow: 
+        12px 12px 0 var(--spray-green),
+        24px 24px 0 var(--spray-cyan),
+        0 15px 50px rgba(118, 255, 3, 0.5);
+}
+
+.values-block {
+    border-color: var(--spray-purple);
+    box-shadow: 
+        8px 8px 0 var(--spray-pink),
+        16px 16px 0 var(--spray-hotpink),
+        0 10px 40px rgba(213, 0, 249, 0.4);
+    transform: rotate(-0.5deg);
+}
+
+.values-block:hover {
+    transform: rotate(-0.5deg) scale(1.02);
+    box-shadow: 
+        12px 12px 0 var(--spray-pink),
+        24px 24px 0 var(--spray-hotpink),
+        0 15px 50px rgba(213, 0, 249, 0.5);
+}
+
+/* ==========================================
+   BLOCK HEADERS
+   ========================================== */
+
+.block-header {
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.block-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.jp-title {
+    font-family: 'Rubik', sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--spray-white);
+    text-shadow: 
+        3px 3px 0 var(--spray-red),
+        6px 6px 0 var(--spray-orange),
+        9px 9px 0 var(--spray-yellow),
+        2px 2px 20px rgba(0, 0, 0, 0.9);
+    transform: rotate(-2deg);
+    display: inline-block;
+    animation: titleWiggle 4s ease-in-out infinite;
+}
+
+.en-title {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2rem;
+    color: var(--spray-cyan);
+    text-shadow: 
+        2px 2px 0 var(--spray-blue),
+        4px 4px 0 var(--spray-purple),
+        1px 1px 15px rgba(0, 0, 0, 0.9);
+    transform: rotate(2deg);
+    display: inline-block;
+    opacity: 0.8;
+}
+
+@keyframes titleWiggle {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(-4deg); }
+}
+
+/* ==========================================
+   BLOCK CONTENT
+   ========================================== */
+
+.block-content {
+    position: relative;
+    z-index: 5;
+}
+
+.main-quote {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2rem;
+    color: var(--spray-yellow);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+    text-shadow: 
+        2px 2px 0 var(--spray-orange),
+        4px 4px 0 var(--spray-red),
+        1px 1px 12px rgba(0, 0, 0, 0.9);
+    transform: rotate(-1deg);
+}
+
+.jp-quote {
+    font-family: 'Rubik', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--spray-cyan);
+    margin-bottom: 2rem;
+    text-shadow: 
+        2px 2px 0 var(--spray-blue),
+        1px 1px 10px rgba(0, 0, 0, 0.8);
+    transform: rotate(1deg);
+}
+
+.description {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.highlight {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--spray-pink), var(--spray-orange));
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    color: white;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    transform: rotate(-1deg);
+    box-shadow: 
+        3px 3px 0 rgba(0, 0, 0, 0.3),
+        0 4px 12px rgba(255, 64, 129, 0.4);
+}
+
+/* ==========================================
+   BLOCK GRAFFITI
+   ========================================== */
+
+.block-graffiti {
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 200px;
+    height: 200px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 1;
+    animation: graffitiSpin 20s linear infinite;
+}
+
+@keyframes graffitiSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   VALUES GRID
+   ========================================== */
+
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.value-item {
+    background: var(--wall-1);
+    border: 3px solid var(--spray-cyan);
+    border-radius: 10px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s;
+    box-shadow: 
+        4px 4px 0 rgba(0, 0, 0, 0.3),
+        0 6px 20px rgba(0, 0, 0, 0.4);
+    transform: rotate(var(--value-rotation, 0deg));
+}
+
+.value-item:nth-child(1) { --value-rotation: -1deg; border-color: var(--spray-red); }
+.value-item:nth-child(2) { --value-rotation: 1deg; border-color: var(--spray-orange); }
+.value-item:nth-child(3) { --value-rotation: -0.5deg; border-color: var(--spray-yellow); }
+.value-item:nth-child(4) { --value-rotation: 1.5deg; border-color: var(--spray-lime); }
+.value-item:nth-child(5) { --value-rotation: -1.5deg; border-color: var(--spray-cyan); }
+.value-item:nth-child(6) { --value-rotation: 0.5deg; border-color: var(--spray-purple); }
+
+.value-item:hover {
+    transform: rotate(var(--value-rotation, 0deg)) scale(1.05) translateY(-5px);
+    box-shadow: 
+        6px 6px 0 rgba(0, 0, 0, 0.4),
+        0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.value-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%);
+    pointer-events: none;
+}
+
+.value-item h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--spray-white);
+    text-shadow: 
+        2px 2px 0 var(--spray-red),
+        1px 1px 8px rgba(0, 0, 0, 0.8);
+}
+
+.value-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+.value-name {
+    font-family: 'Rubik', sans-serif;
+    transform: rotate(-1deg);
+}
+
+
+
+.value-item p:last-child {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 768px) {
+    .philosophy {
+        padding: 4rem 1rem;
+    }
+    
+    .philosophy-block {
+        padding: 2rem;
+    }
+    
+    .jp-title {
+        font-size: 2.5rem;
+    }
+    
+    .en-title {
+        font-size: 1.5rem;
+    }
+    
+    .main-quote {
+        font-size: 1.5rem;
+    }
+    
+    .jp-quote {
+        font-size: 1.3rem;
+    }
+    
+    .values-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .block-graffiti {
+        width: 150px;
+        height: 150px;
+        top: -20px;
+        right: -20px;
+    }
+}
+
+/* ==========================================
+   EXTRA ANIMATIONS
+   ========================================== */
+
+@keyframes valuesPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.95; }
+}
+
+.values-block {
+    animation: blockFloat 8s ease-in-out infinite, valuesPulse 4s ease-in-out infinite;
+}
+
+/* 背景の追加装飾 */
+.philosophy-block::after {
+    content: '✦';
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    font-size: 3rem;
+    opacity: 0.2;
+    animation: starTwinkle 3s ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1) rotate(0deg); }
+    50% { opacity: 0.4; transform: scale(1.2) rotate(180deg); }
+}
+
+.mission-block::after { color: var(--spray-red); }
+.vision-block::after { color: var(--spray-lime); }
+.values-block::after { color: var(--spray-purple); }

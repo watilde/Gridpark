@@ -9,7 +9,11 @@ import "@fontsource/noto-sans/700.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import { App } from "./App";
-import "./styles.css";
+import "./landing/style.css";
+import "./landing/chaos.css";
+import "./landing/japanese-street.css";
+import "./landing/philosophy.css";
+import "./landing/site-overrides.css";
 import "./mockElectron";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

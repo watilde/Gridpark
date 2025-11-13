@@ -24,8 +24,8 @@ Everyone has a unique way of thinking about data. Our tools amplify personal cre
 ### Hackable Within Limits
 The best tools bend to your will while keeping you safe. Everything is customizable and extensible within our protected environment.
 
-### Excel Superset Philosophy
-Innovation builds upon what people already know. We enhance Excel compatibility rather than replace it.
+### Reasonably compatible with Excel
+Innovation builds on what people already know. We provide reasonable compatibility with Excel.
 
 ### Local-First Control
 Your data belongs on your machine. We build desktop-first experiences that work offline and keep you in complete control.

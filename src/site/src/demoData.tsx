@@ -28,22 +28,28 @@ const createSheet = (name: string, rows: Array<Array<string | number>>) => {
 };
 
 const demoSheets: ExcelSheet[] = [
-  createSheet("Overview", [
-    ["Region", "Revenue", "Change", "Status"],
-    ["North", 182000, "+12%", "Growing"],
-    ["South", 95000, "+2%", "Stable"],
-    ["West", 124500, "-4%", "Focus"],
+  createSheet("Walk_Data", [
+    [
+      "Date",
+      "Dog_Name",
+      "Route_ID",
+      "Distance_meters",
+      "Sniff_Points",
+      "Dog_Motivation (1–10)",
+      "Happiness (1–10)",
+    ],
+    ["2024-09-01", "Mochi", "R-01", 3400, 12, 9, 10],
+    ["2024-09-01", "Haru", "R-02", 2800, 9, 8, 9],
+    ["2024-09-02", "Yuzu", "R-03", 4100, 18, 7, 10],
+    ["2024-09-03", "Koko", "R-02", 2950, 11, 8, 9],
+    ["2024-09-04", "Mochi", "R-01", 3600, 15, 10, 10],
   ]),
-  createSheet("Warehouse A", [
-    ["Item", "Stock", "Status", "Notes"],
-    ["LED Panels", 120, "Ready", "Live styling"],
-    ["Microchips", 45, "Restock", "JS warning"],
-    ["Fiber Units", 88, "Ready", "Synced"],
-  ]),
-  createSheet("Warehouse B", [
-    ["Item", "Stock", "Status", "Notes"],
-    ["Edge Nodes", 62, "Ready", ""],
-    ["Batteries", 31, "Restock", ""],
+  createSheet("Route_Master", [
+    ["Route_ID", "Route_Name", "Distance_meters", "Path_Type", "Dog_Friendliness (1–10)"],
+    ["R-01", "Downtown Loop", 3500, "Road", 8],
+    ["R-02", "Canal Park", 2900, "Park", 10],
+    ["R-03", "Riverside Sprint", 4200, "Riverside", 9],
+    ["R-04", "Elm Street Stroll", 2100, "Road", 7],
   ]),
 ];
 
@@ -114,14 +120,14 @@ const demoPackage: GridparkPackage = {
 };
 
 export const demoWorkbook: ExcelFile = {
-  name: "Inventory.xlsx",
-  path: "/demo/Inventory.xlsx",
+  name: "Dog_Walking_Route.xlsx",
+  path: "/demo/Dog_Walking_Route.xlsx",
   sheets: demoSheets,
   lastModified: new Date(),
   manifest: {
-    name: "Gridpark Inventory",
+    name: "Dog Walking Route Optimizer",
     version: "1.0.0",
-    description: "Inventory dashboard",
+    description: "Route planner for happy pups",
     main: "workbook/main.js",
     style: "workbook/style.css",
   },
@@ -130,15 +136,15 @@ export const demoWorkbook: ExcelFile = {
 
 export const demoFileNodes: FileNode[] = [
   {
-    id: "inventory-root",
-    name: "Inventory.xlsx",
+    id: "walk-root",
+    name: "Dog_Walking_Route.xlsx",
     type: "workbook",
     children: [
       {
-        id: "inventory-sheets",
+        id: "walk-sheets",
         name: "Sheets",
         type: "folder",
-        parentId: "inventory-root",
+        parentId: "walk-root",
         children: demoSheets.map((sheet, index) => {
           const jsFile = sheetCodeFiles.find(
             (file) => file.sheetName === sheet.name && file.role === "main",
@@ -171,63 +177,36 @@ export const demoFileNodes: FileNode[] = [
             name: sheet.name,
             type: "sheet",
             sheetIndex: index,
-            parentId: "inventory-sheets",
+            parentId: "walk-sheets",
             children: sheetChildren,
           };
         }),
       },
       {
-        id: "inventory-main",
+        id: "walk-main",
         name: "JavaScript",
         type: "code",
-        parentId: "inventory-root",
+        parentId: "walk-root",
         codeFile: demoCodeFiles[0],
       },
       {
-        id: "inventory-style",
+        id: "walk-style",
         name: "CSS",
         type: "code",
-        parentId: "inventory-root",
+        parentId: "walk-root",
         codeFile: demoCodeFiles[1],
       },
     ],
   },
 ];
 
-export const codeContents: Record<string, string> = {
-  "/demo/workbook/main.js": demoCodeFiles[0]
-    ? `document.addEventListener("change", (event) => {
-  if (!event.target.matches('col[index="2"] cell')) return;
-  const sum = [...document.querySelectorAll('col[index="2"] cell')]
-    .reduce((acc, cell) => acc + Number(cell.value || 0), 0);
-  document.querySelector('cell[name="Total"]').value = sum;
-});`
-    : "",
-  "/demo/workbook/style.css": `cell[value="Restock"] {
-  background: #ff6b3520;
-  color: #ff6b35;
-}
-
-cell[ref="B2"] {
-  font-weight: 600;
-  color: #b197fc;
-}`,
+export const codeContents: Record<string,string> = {
+  "/demo/workbook/main.js": "",
+  "/demo/workbook/style.css": "",
 };
-+
+
 sheetCodeFiles.forEach((file) => {
-  if (file.role === "main") {
-    codeContents[file.absolutePath] = `// JavaScript for ${file.sheetName}
-document.addEventListener("input", (event) => {
-  if (!event.target.closest('[data-sheet-id="${file.sheetName}"]')) return;
-  console.log("Live coding ${file.sheetName}", event.target.value);
-});`;
-  } else {
-    codeContents[file.absolutePath] = `/* CSS for ${file.sheetName} */
-.gp-sheet[data-sheet-id="${file.sheetName}"] cell[value="Restock"] {
-  color: #ff6b35;
-  font-weight: 600;
-}`;
-  }
+  codeContents[file.absolutePath] = "";
 });
 
 export const demoCodeFile = demoCodeFiles[0];

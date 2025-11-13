@@ -1,0 +1,299 @@
+/* ==========================================
+   CHAOS MODE - EXTRA GRAFFITI ELEMENTS
+   ========================================== */
+
+/* Random floating tags */
+@keyframes floatTag1 {
+    0%, 100% { transform: translate(0, 0) rotate(-5deg); }
+    50% { transform: translate(-20px, -30px) rotate(-8deg); }
+}
+
+@keyframes floatTag2 {
+    0%, 100% { transform: translate(0, 0) rotate(5deg); }
+    50% { transform: translate(30px, -20px) rotate(8deg); }
+}
+
+@keyframes floatTag3 {
+    0%, 100% { transform: translate(0, 0) rotate(-3deg); }
+    50% { transform: translate(-15px, 25px) rotate(-6deg); }
+}
+
+/* Hero extra chaos - JAPAN STYLE */
+.hero::before {
+    content: 'ヤバイ!';
+    position: absolute;
+    top: 20%;
+    left: 10%;
+    font-family: 'Rubik', sans-serif;
+    font-size: 5rem;
+    font-weight: 900;
+    color: var(--spray-red);
+    opacity: 0.35;
+    transform: rotate(-25deg);
+    z-index: 1;
+    pointer-events: none;
+    animation: floatTag1 6s ease-in-out infinite, rainbowText 4s linear infinite;
+    text-shadow: 
+        4px 4px 0 var(--spray-orange),
+        8px 8px 0 var(--spray-yellow),
+        12px 12px 0 var(--spray-lime);
+}
+
+.hero::after {
+    content: '最高！';
+    position: absolute;
+    bottom: 15%;
+    right: 8%;
+    font-family: 'Rubik', sans-serif;
+    font-size: 4.5rem;
+    font-weight: 900;
+    color: var(--spray-cyan);
+    opacity: 0.4;
+    transform: rotate(20deg);
+    z-index: 1;
+    pointer-events: none;
+    animation: floatTag2 8s ease-in-out infinite, rainbowText 5s linear infinite;
+    text-shadow: 
+        4px 4px 0 var(--spray-blue),
+        8px 8px 0 var(--spray-purple),
+        12px 12px 0 var(--spray-pink);
+}
+
+@keyframes rainbowText {
+    0% { color: var(--spray-red); }
+    14% { color: var(--spray-orange); }
+    28% { color: var(--spray-yellow); }
+    42% { color: var(--spray-lime); }
+    57% { color: var(--spray-cyan); }
+    71% { color: var(--spray-blue); }
+    85% { color: var(--spray-purple); }
+    100% { color: var(--spray-red); }
+}
+
+/* Nav extra style */
+.nav::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 20%;
+    width: 60%;
+    height: 8px;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--spray-red) 0px,
+        var(--spray-orange) 20px,
+        var(--spray-yellow) 40px,
+        var(--spray-lime) 60px,
+        var(--spray-cyan) 80px,
+        var(--spray-blue) 100px,
+        var(--spray-purple) 120px,
+        var(--spray-pink) 140px
+    );
+    opacity: 0.6;
+    border-radius: 4px;
+}
+
+/* Color palette extra style - JAPAN */
+.color-palette::before {
+    content: '色を選べ！ PICK YOUR COLOR!';
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    font-family: 'Rubik', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--spray-yellow);
+    text-shadow: 
+        2px 2px 0 var(--spray-orange),
+        4px 4px 0 var(--spray-red),
+        1px 1px 12px rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+    animation: rainbowText 5s linear infinite;
+}
+
+.color-palette {
+    position: relative;
+}
+
+/* Button extra effects */
+.btn-hero::after,
+.btn-download::after {
+    content: '→';
+    margin-left: 0.5rem;
+    display: inline-block;
+    transition: transform 0.3s;
+}
+
+.btn-hero:hover::after,
+.btn-download:hover::after {
+    transform: translateX(10px) rotate(360deg);
+}
+
+/* Footer chaos - JAPAN */
+.footer::before {
+    content: '東京からお届け🗼';
+    position: absolute;
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-1deg);
+    font-family: 'Rubik', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--spray-pink);
+    opacity: 0.5;
+    text-shadow: 2px 2px 0 var(--spray-purple);
+    animation: rainbowText 6s linear infinite;
+}
+
+.footer {
+    position: relative;
+}
+
+/* Random spray splashes across sections */
+body::after {
+    content: '';
+    position: fixed;
+    top: 30%;
+    right: 5%;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, var(--spray-lime) 0%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0.15;
+    filter: blur(20px);
+    pointer-events: none;
+    z-index: -1;
+    animation: floatTag3 12s ease-in-out infinite;
+}
+
+/* Glitch text effect enhancement */
+@keyframes textGlitch {
+    0%, 100% {
+        text-shadow: 
+            3px 3px 0 var(--spray-red),
+            6px 6px 0 var(--spray-orange),
+            9px 9px 0 var(--spray-yellow);
+    }
+    25% {
+        text-shadow: 
+            -2px 3px 0 var(--spray-cyan),
+            4px -2px 0 var(--spray-pink),
+            8px 8px 0 var(--spray-purple);
+    }
+    50% {
+        text-shadow: 
+            4px -3px 0 var(--spray-lime),
+            -3px 6px 0 var(--spray-blue),
+            7px 9px 0 var(--spray-hotpink);
+    }
+    75% {
+        text-shadow: 
+            -3px -2px 0 var(--spray-orange),
+            5px 4px 0 var(--spray-green),
+            9px -2px 0 var(--spray-indigo);
+    }
+}
+
+/* Wild rotation for feature icons */
+.feature-icon svg {
+    animation: iconWild 6s ease-in-out infinite;
+}
+
+@keyframes iconWild {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(-10deg) scale(1.1); }
+    50% { transform: rotate(5deg) scale(0.95); }
+    75% { transform: rotate(-5deg) scale(1.05); }
+}
+
+/* Spray can cursor effect (on desktop) */
+@media (min-width: 769px) {
+    .demo-grid:hover {
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="%23ff1744" opacity="0.7"/></svg>') 16 16, auto;
+    }
+}
+
+/* Rainbow border animation */
+@keyframes rainbowBorder {
+    0% { border-color: var(--spray-red); }
+    14% { border-color: var(--spray-orange); }
+    28% { border-color: var(--spray-yellow); }
+    42% { border-color: var(--spray-lime); }
+    57% { border-color: var(--spray-cyan); }
+    71% { border-color: var(--spray-blue); }
+    85% { border-color: var(--spray-purple); }
+    100% { border-color: var(--spray-red); }
+}
+
+.demo-grid {
+    animation: rainbowBorder 5s linear infinite;
+}
+
+/* Extra wild animations for hover states */
+.feature-card:hover .feature-icon svg {
+    animation: iconCrazy 0.5s ease-in-out infinite;
+}
+
+@keyframes iconCrazy {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(-15deg) scale(1.2); }
+    50% { transform: rotate(15deg) scale(0.9); }
+    75% { transform: rotate(-10deg) scale(1.1); }
+}
+
+/* Text scramble effect on load */
+@keyframes scramble {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.hero-title {
+    animation: scramble 2s ease-in-out infinite, graffitiCrazy 4s ease-in-out infinite;
+}
+
+/* Spray mist effect */
+@keyframes sprayMist {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    50% {
+        opacity: 0.3;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(2);
+    }
+}
+
+/* Add more visual noise */
+.section-title::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: -30px;
+    width: 15px;
+    height: 15px;
+    background: var(--spray-red);
+    border-radius: 50%;
+    opacity: 0.5;
+    filter: blur(5px);
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    right: -30px;
+    width: 20px;
+    height: 20px;
+    background: var(--spray-cyan);
+    border-radius: 50%;
+    opacity: 0.5;
+    filter: blur(5px);
+}
+
+.section-title {
+    position: relative;
+}
