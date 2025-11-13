@@ -1,6 +1,6 @@
 # Gridpark
 
-**Reasonably compatible with Excel and developer-first experience**
+**[Experimental] Reasonably compatible with Excel and developer-first experience**
 
 A desktop-first Electron application that also works on the web, providing Excel reasonably compatible spreadsheet functionality with powerful custom functions and modern developer tools.
 
