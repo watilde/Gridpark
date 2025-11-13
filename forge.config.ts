@@ -14,6 +14,7 @@ const config: ForgeConfig = {
     asar: true,
     icon: path.resolve(__dirname, 'assets/icon'),
     extraResource: ['assets'],
+    executableName: 'Gridpark',
   },
   rebuildConfig: {},
   makers: [
