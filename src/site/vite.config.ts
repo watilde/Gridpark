@@ -5,7 +5,7 @@ import path from "path";
 export default defineConfig({
   root: path.resolve(__dirname),
   plugins: [react()],
-  base: "./",
+  base: "/Gridpark/",
   resolve: {
     alias: {
       "@renderer": path.resolve(__dirname, "../renderer"),

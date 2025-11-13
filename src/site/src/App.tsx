@@ -242,16 +242,18 @@ export const App = () => {
   const handleDemoClick = useCallback(() => scrollToSection("demo"), []);
   const handleFeaturesClick = useCallback(() => scrollToSection("features"), []);
   const handleDownloadClick = useCallback(() => scrollToSection("download"), []);
-  const handleTopClick = useCallback(() => scrollToSection("hero"), []);
+  const handleTopClick = useCallback(() => scrollToSection("top"), []);
 
   return (
     <ThemeProvider>
-      <div className="graffiti-bg" id="graffitiBg" ref={graffitiBgRef} />
-      <nav className="nav">
+      <div id="top">
+        <div className="graffiti-bg" id="graffitiBg" ref={graffitiBgRef} />
+        <nav className="nav">
         <div className="nav-container">
           <div className="logo">
             <a
               className="logo-link"
+              id="logo-link"
               href="#top"
               onClick={(event) => {
                 event.preventDefault();
@@ -591,7 +593,7 @@ export const App = () => {
               </div>
               <div className="feature-card-content">
                 <h3>1. OOXML-Compliant File Structure</h3>
-                <p>Gridpark workbooks live inside standard OOXML packages, so every .xlsx stays compatible with Excel while carrying Gridpark styles and logic.</p>
+                <p>Gridpark workbooks are built on a fully OOXML-compliant architecture, meaning every .xlsx file remains 100% compatible with Excel. We embed Gridpark logic and styles inside the standard ZIP container—no proprietary format, no black boxes.</p>
               </div>
             </div>
             <div className="feature-card">
@@ -604,7 +606,7 @@ export const App = () => {
               </div>
               <div className="feature-card-content">
                 <h3>2. Spreadsheet Operations as Selectors</h3>
-                <p>Every row, column, cell, and sheet becomes a selector target, transforming the spreadsheet into a DOM-like surface.</p>
+                <p>Rows, columns, cells, sheets—everything becomes selectable. Gridpark turns the spreadsheet into a DOM-like surface where every part can be addressed with expressive, CSS-style selectors.</p>
               </div>
             </div>
             <div className="feature-card">
@@ -618,7 +620,7 @@ export const App = () => {
               </div>
               <div className="feature-card-content">
                 <h3>3. Style with Standard CSS</h3>
-                <p>Use pure CSS to style typography, gradients, animations, and effects—if the browser can render it, Gridpark can paint it.</p>
+                <p>Instead of Excel's limited formatting rules, Gridpark lets you style spreadsheets using pure CSS, from typography and colors to animations, gradients, and custom effects. If the browser can render it, Gridpark can style it.</p>
               </div>
             </div>
             <div className="feature-card">
@@ -632,7 +634,7 @@ export const App = () => {
               </div>
               <div className="feature-card-content">
                 <h3>4. Program with Standard JavaScript</h3>
-                <p>Write logic in vanilla JavaScript and bind it to spreadsheet selectors to build interactive experiences.</p>
+                <p>Logic is written in vanilla JavaScript, applied directly to spreadsheet elements via selectors. Build interactive behaviors, reactive rules, or entire mini-apps inside your workbook—no custom language needed.</p>
               </div>
             </div>
             <div className="feature-card">
@@ -644,7 +646,7 @@ export const App = () => {
               </div>
               <div className="feature-card-content">
                 <h3>5. Switchable Themes</h3>
-                <p>Flip between built-in themes or load your own so the spreadsheet matches your workflow or mood.</p>
+                <p>Gridpark supports theme switching out of the box. Users can instantly switch between visual styles—minimal, playful, dark mode, or fully customized themes—to match their workflow or mood.</p>
               </div>
             </div>
             <div className="feature-card">
@@ -657,7 +659,7 @@ export const App = () => {
               </div>
               <div className="feature-card-content">
                 <h3>6. Entirely Open Source</h3>
-                <p>Gridpark is 100% open source—every feature, extension, and theme is open to inspect, fork, and improve.</p>
+                <p>Gridpark is 100% open source. Every feature, every extension point, every theme—open to inspect, fork, remix, and improve. The spreadsheet becomes not just a tool but a creative playground for the community.</p>
               </div>
             </div>
           </div>
@@ -771,22 +773,22 @@ export const App = () => {
               DΛ雲WN爐LOAD🛣️ﾀﾞｳN露-ﾛｰ度$DΛWN炉ADﾄﾞ
             </p>
             <div className="cta-buttons">
-              <button className="btn-download btn-glow" type="button">
+              <a className="btn-download btn-glow" href="https://github.com/watilde/Gridpark/releases" target="_blank">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
                 Download for Mac
-              </button>
-              <button className="btn-download btn-glow" type="button">
+              </a>
+              <a className="btn-download btn-glow" href="https://github.com/watilde/Gridpark/releases" target="_blank">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <rect x="7" y="7" width="3" height="9" />
                   <rect x="14" y="7" width="3" height="5" />
                 </svg>
                 Download for Windows
-              </button>
+              </a>
             </div>
           </div>
           <svg className="cta-spray" viewBox="0 0 400 400">
@@ -844,6 +846,7 @@ export const App = () => {
           </div>
         </div>
       </footer>
+      </div>
     </ThemeProvider>
   );
 };
