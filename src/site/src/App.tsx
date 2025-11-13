@@ -323,7 +323,7 @@ export const App = () => {
             <p className="hero-description">
               Turn spreadsheets into a playground for ideas.
               <br />
-              An <span className="oss-badge">OSS</span> canvas for creation.
+              An <span className="oss-badge">OSS</span> experimental canvas for creation.
             </p>
             <div className="hero-buttons">
               <button className="btn-hero btn-neon" type="button" onClick={handleDemoClick}>
