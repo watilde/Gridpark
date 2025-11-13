@@ -317,7 +317,7 @@ export const App = () => {
           <div className="spray-container" id="sprayContainer" ref={sprayContainerRef} />
           <div className="hero-content">
             <div className="hero-icon-wrapper">
-              <img src="/images/app-icon.png" alt="Gridpark Icon" className="hero-app-icon" />
+              <img src="./images/app-icon.png" alt="Gridpark Icon" className="hero-app-icon" />
             </div>
             <p className="hero-subtitle">Excel × Web Technologies = 🔥</p>
             <p className="hero-description">
