@@ -38,8 +38,14 @@ import { themeOptions, DEFAULT_THEME_ID } from "../renderer/theme/theme";
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-if (require("electron-squirrel-startup")) {
-  app.quit();
+if (process.platform === 'win32') {
+  try {
+    if (require('electron-squirrel-startup')) {
+      app.quit();
+    }
+  } catch (e) {
+    console.warn('Squirrel startup skipped on macOS/Linux');
+  }
 }
 
 app.setName("Gridpark");
@@ -180,11 +186,10 @@ const createMainWindow = (): void => {
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    window.loadFile(
-      join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
-  }
+    } else {
+      const rendererIndex = join(app.getAppPath(), ".vite", "renderer", "index.html");
+      window.loadFile(rendererIndex);
+    }
 
   if (process.env.NODE_ENV === "development") {
     window.webContents.openDevTools({ mode: "detach" });
