@@ -1,11 +1,30 @@
 import React from 'react';
 import { render, screen, fireEvent } from '../../../../../test/utils';
 import { MonacoEditor } from './MonacoEditor';
+import Editor from '@monaco-editor/react';
+
+jest.mock('@monaco-editor/react', () => {
+  const Mock = jest.fn(
+    ({ value = '', onChange, readOnly, language, theme }: Record<string, any>) => (
+      <textarea
+        data-testid="monaco-editor"
+        value={value}
+        readOnly={readOnly}
+        data-language={language}
+        data-theme={theme}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+    ),
+  );
+  return { __esModule: true, default: Mock };
+});
+
+const mockedEditor = Editor as jest.Mock;
 
 describe('MonacoEditor Component', () => {
   it('renders without crashing', () => {
     render(<MonacoEditor />);
-    const editorElement = screen.getByRole('textbox');
+    const editorElement = screen.getByTestId('monaco-editor');
     expect(editorElement).toBeInTheDocument();
   });
 
@@ -17,19 +36,17 @@ describe('MonacoEditor Component', () => {
     expect(editorElement).toBeInTheDocument();
   });
 
-  it('displays placeholder text', () => {
-    render(<MonacoEditor language="javascript" />);
-    
-    // Check placeholder attribute instead of text content
-    const editorElement = screen.getByRole('textbox');
-    expect(editorElement).toHaveAttribute('placeholder', expect.stringContaining('javascript code editor'));
-    expect(editorElement).toHaveAttribute('placeholder', expect.stringContaining('Install @monaco-editor/react'));
+  it('passes language and theme props to monaco', () => {
+    render(<MonacoEditor language="typescript" theme="vs" />);
+    const editorElement = screen.getByTestId('monaco-editor');
+    expect(editorElement).toHaveAttribute('data-language', 'typescript');
+    expect(editorElement).toHaveAttribute('data-theme', 'vs');
   });
 
   it('applies correct dimensions', () => {
     render(<MonacoEditor height="400px" width="100%" />);
     
-    const container = screen.getByRole('textbox').parentElement;
+    const container = screen.getByTestId('monaco-editor').parentElement;
     expect(container).toHaveStyle('height: 400px');
     expect(container).toHaveStyle('width: 100%');
   });
@@ -38,7 +55,7 @@ describe('MonacoEditor Component', () => {
     const handleChange = jest.fn();
     render(<MonacoEditor value="" onChange={handleChange} />);
     
-    const editorElement = screen.getByRole('textbox');
+    const editorElement = screen.getByTestId('monaco-editor');
     fireEvent.change(editorElement, { target: { value: 'new code' } });
     
     expect(handleChange).toHaveBeenCalledWith('new code');
@@ -47,38 +64,27 @@ describe('MonacoEditor Component', () => {
   it('applies readOnly mode correctly', () => {
     render(<MonacoEditor readOnly={true} />);
     
-    const editorElement = screen.getByRole('textbox');
+    const editorElement = screen.getByTestId('monaco-editor');
     expect(editorElement).toHaveAttribute('readonly');
-  });
-
-  it('sets correct data attributes for language and theme', () => {
-    render(<MonacoEditor language="typescript" theme="vs-dark" />);
-    
-    const editorElement = screen.getByRole('textbox');
-    expect(editorElement).toHaveAttribute('data-language', 'typescript');
-    expect(editorElement).toHaveAttribute('data-theme', 'vs-dark');
   });
 
   it('applies default props correctly', () => {
     render(<MonacoEditor />);
     
-    const editorElement = screen.getByRole('textbox');
+    const editorElement = screen.getByTestId('monaco-editor');
     expect(editorElement).toHaveAttribute('data-language', 'javascript');
     expect(editorElement).toHaveAttribute('data-theme', 'vs-dark');
     expect(editorElement).not.toHaveAttribute('readonly');
   });
 
-  it('passes through custom options', () => {
-    const customOptions = {
-      'data-testid': 'custom-editor',
-      tabIndex: 0,
-    };
-    
-    render(<MonacoEditor options={customOptions} />);
-    
-    const editorElement = screen.getByTestId('custom-editor');
-    expect(editorElement).toBeInTheDocument();
-    expect(editorElement).toHaveAttribute('tabIndex', '0');
+  it('passes custom options to monaco', () => {
+    render(<MonacoEditor options={{ fontSize: 20 }} />);
+    expect(mockedEditor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ fontSize: 20 }),
+      }),
+      expect.anything(),
+    );
   });
 
   it('applies monospace font styling', () => {
@@ -125,36 +131,32 @@ describe('MonacoEditor Component', () => {
   it('applies container styling correctly', () => {
     render(<MonacoEditor />);
     
-    const container = screen.getByRole('textbox').parentElement;
-    expect(container).toHaveStyle('overflow: hidden');
-    expect(container).toHaveStyle('border-radius: 8px'); // Actual theme value
+    const container = screen.getByTestId('monaco-editor').parentElement;
+    expect(container).toHaveStyle('border-radius: 8px');
+    expect(container).toHaveStyle('border: 1px solid');
   });
 
   it('handles different themes', () => {
     const themes = ['vs', 'vs-dark', 'hc-black'] as const;
     
-    themes.forEach((theme, index) => {
-      const { container } = render(<MonacoEditor theme={theme} />);
-      const editorElement = container.querySelector('textarea');
+    themes.forEach((theme) => {
+      const { unmount } = render(<MonacoEditor theme={theme} />);
+      const editorElement = screen.getByTestId('monaco-editor');
       expect(editorElement).toHaveAttribute('data-theme', theme);
+      unmount();
     });
   });
 
   it('supports custom width and height values', () => {
     render(<MonacoEditor height={300} width="50%" />);
     
-    const container = screen.getByRole('textbox').parentElement;
+    const container = screen.getByTestId('monaco-editor').parentElement;
     expect(container).toHaveStyle('height: 300px');
     expect(container).toHaveStyle('width: 50%');
   });
 
-  it('maintains proper textarea styling', () => {
-    render(<MonacoEditor />);
-    
-    const editorElement = screen.getByRole('textbox');
-    expect(editorElement).toHaveStyle('outline: none');
-    expect(editorElement).toHaveStyle('resize: none');
-    expect(editorElement).toHaveStyle('background-color: rgba(0, 0, 0, 0)'); // transparent in rgba format
-    // Note: border style may be overridden by Joy UI theme
+  it('maintains controlled value', () => {
+    render(<MonacoEditor value="abc" />);
+    expect(screen.getByDisplayValue('abc')).toBeInTheDocument();
   });
 });

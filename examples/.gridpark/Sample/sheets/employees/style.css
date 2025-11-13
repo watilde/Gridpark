@@ -1,0 +1,3 @@
+sheet[name="Employees"].employees-ready cell[ref="A1"] {
+  text-transform: uppercase;
+}

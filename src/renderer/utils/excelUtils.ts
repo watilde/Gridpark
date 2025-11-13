@@ -176,3 +176,34 @@ export const loadExcelFile = async (file: File): Promise<ExcelFile> => {
     reader.readAsArrayBuffer(file);
   });
 };
+
+const normalizeCellValue = (cell: CellData): any => {
+  if (cell.type === 'number') {
+    const num = Number(cell.value);
+    return Number.isFinite(num) ? num : 0;
+  }
+  if (cell.type === 'boolean') {
+    return Boolean(cell.value);
+  }
+  if (cell.type === 'formula') {
+    return cell.value ?? '';
+  }
+  return cell.value ?? '';
+};
+
+export const serializeExcelFile = (file: ExcelFile): ArrayBuffer => {
+  const workbook = XLSX.utils.book_new();
+  file.sheets.forEach((sheet) => {
+    const data =
+      sheet.data.length > 0
+        ? sheet.data.map((row) => row.map((cell) => normalizeCellValue(cell)))
+        : [[]];
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      sheet.name || 'Sheet',
+    );
+  });
+  return XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+};

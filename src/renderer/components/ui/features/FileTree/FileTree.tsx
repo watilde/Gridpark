@@ -4,10 +4,13 @@ import { Box, Typography, Sheet, IconButton } from '@mui/joy';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
+import PaletteIcon from '@mui/icons-material/Palette';
+import DescriptionIcon from '@mui/icons-material/Description';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { ExcelFile } from '../../../types/excel';
+import { ExcelFile, GridparkCodeFile } from '../../../types/excel';
 
 const TreeContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -47,22 +50,45 @@ const ItemLabel = styled(Typography)({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
 });
+
+const DirtyDot = styled('span')(({ theme }) => ({
+  width: 6,
+  height: 6,
+  borderRadius: '50%',
+  backgroundColor: theme.palette.warning[400],
+  display: 'inline-block',
+  animation: 'gridparkPulse 1.5s ease-in-out infinite',
+  boxShadow: `0 0 8px ${theme.palette.warning[400]}55`,
+  '@keyframes gridparkPulse': {
+    '0%': { transform: 'scale(0.9)', opacity: 0.6 },
+    '50%': { transform: 'scale(1.2)', opacity: 1 },
+    '100%': { transform: 'scale(0.9)', opacity: 0.6 },
+  },
+}));
 
 export interface FileNode {
   id: string;
   name: string;
-  type: 'file' | 'folder' | 'sheet';
+  type: 'folder' | 'workbook' | 'sheet' | 'manifest' | 'code';
   parentId?: string;
+  workbookId?: string;
+  sheetIndex?: number;
   children?: FileNode[];
   file?: ExcelFile;
-  sheetIndex?: number;
+  codeFile?: GridparkCodeFile;
 }
 
 export interface FileTreeProps {
   files: FileNode[];
   selectedNodeId?: string;
   onNodeSelect?: (node: FileNode) => void;
+  title?: string;
+  fullHeight?: boolean;
+  dirtyNodeIds?: Record<string, boolean>;
 }
 
 interface TreeNodeProps {
@@ -70,13 +96,15 @@ interface TreeNodeProps {
   depth: number;
   selectedNodeId?: string;
   onNodeSelect?: (node: FileNode) => void;
+  dirtyNodeIds?: Record<string, boolean>;
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNodeSelect }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNodeSelect, dirtyNodeIds }) => {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = Boolean(node.children && node.children.length > 0);
   const isSelected = node.id === selectedNodeId;
   const isSelectable = node.type !== 'folder';
+  const isDirty = Boolean(dirtyNodeIds?.[node.id]);
 
   const handleClick = () => {
     if (isSelectable) {
@@ -109,10 +137,18 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
               : <FolderIcon fontSize="small" />
             : node.type === 'sheet'
             ? <TableChartIcon fontSize="small" />
-            : <InsertDriveFileIcon fontSize="small" />
-          }
+            : node.type === 'manifest'
+            ? <DescriptionIcon fontSize="small" />
+            : node.codeFile?.role === 'main'
+            ? <FlashOnIcon fontSize="small" />
+            : node.codeFile?.role === 'style'
+            ? <PaletteIcon fontSize="small" />
+            : <InsertDriveFileIcon fontSize="small" />}
         </ItemIcon>
-        <ItemLabel>{node.name}</ItemLabel>
+        <ItemLabel>
+          <span>{node.name}</span>
+          {isDirty && <DirtyDot aria-hidden="true" />}
+        </ItemLabel>
       </TreeItem>
       {hasChildren && expanded && (
         <Box>
@@ -123,6 +159,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
               depth={depth + 1}
               selectedNodeId={selectedNodeId}
               onNodeSelect={onNodeSelect}
+              dirtyNodeIds={dirtyNodeIds}
             />
           ))}
         </Box>
@@ -136,19 +173,21 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
  * 
  * Displays a hierarchical file tree for Excel files
  */
-export const FileTree: React.FC<FileTreeProps> = ({ files, selectedNodeId, onNodeSelect }) => {
+export const FileTree: React.FC<FileTreeProps> = ({ files, selectedNodeId, onNodeSelect, title, fullHeight = true, dirtyNodeIds }) => {
   return (
     <Sheet
       variant="outlined"
       sx={{
-        height: '100%',
+        height: fullHeight ? '100%' : 'auto',
         borderRadius: 0,
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography level="title-md">Explore</Typography>
-      </Box>
+      {title && (
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography level="title-md">{title}</Typography>
+        </Box>
+      )}
       <TreeContainer>
         {files.map((node) => (
           <TreeNode
@@ -157,6 +196,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ files, selectedNodeId, onNod
             depth={0}
             selectedNodeId={selectedNodeId}
             onNodeSelect={onNodeSelect}
+            dirtyNodeIds={dirtyNodeIds}
           />
         ))}
       </TreeContainer>

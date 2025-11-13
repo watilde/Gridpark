@@ -1,0 +1,25 @@
+{
+  "name": "Inventory Workbook",
+  "version": "1.0.0",
+  "description": "Inventory Workbook manifest",
+  "apiVersion": 1,
+  "main": "index.js",
+  "style": "style.css",
+  "sheets": {
+    "sheet-1": {
+      "name": "Warehouse A",
+      "main": "sheets/warehouse-a/main.js",
+      "style": "sheets/warehouse-a/style.css"
+    },
+    "sheet-2": {
+      "name": "Warehouse B",
+      "main": "sheets/warehouse-b/main.js",
+      "style": "sheets/warehouse-b/style.css"
+    }
+  },
+  "permissions": {
+    "filesystem": "workbook",
+    "network": false,
+    "runtime": []
+  }
+}
