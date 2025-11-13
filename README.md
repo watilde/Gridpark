@@ -46,11 +46,15 @@ npm run storybook
 
 The marketing site lives under `src/site` and builds into the `docs/` directory for static hosting.
 
-- Hosted URL: `https://watilde.github.io/Gridpark/` (Vite `base` is set to `/Gridpark/` so all assets load correctly there).
+Hosted URL: `https://watilde.github.io/Gridpark/` (Vite `base` is set to `/Gridpark/` so all assets load correctly there).
 
 - `npm run docs:dev` — Launch the Vite dev server for the site.
 - `npm run docs:build` — Build the site and dump the generated HTML/JS/CSS under `docs/`.
 - `npm run docs:preview` — Preview the production build locally.
+
+## ⚙️ CI & Releases
+
+- The [`ci-release.yml`](.github/workflows/ci-release.yml) workflow runs on `push` to `v*` tags, builds docs plus the desktop app on Ubuntu/macOS/Windows, uploads each `out/make` bundle, and publishes them as release assets in GitHub Releases.
 
 ## 🏗️ Key features
 
