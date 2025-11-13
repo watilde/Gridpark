@@ -10,13 +10,15 @@
  */
 export const isElectron = (): boolean => {
   // Check multiple indicators for Electron
+  const hasProcessElectron =
+    typeof process !== "undefined" && (process as any).versions?.electron;
   return !!(
-    typeof window !== 'undefined' &&
+    typeof window !== "undefined" &&
     (
       (window as any).electron ||
       (window as any).__IS_ELECTRON__ ||
-      process?.versions?.electron ||
-      navigator.userAgent.toLowerCase().indexOf('electron') > -1
+      hasProcessElectron ||
+      navigator.userAgent.toLowerCase().indexOf("electron") > -1
     )
   );
 };

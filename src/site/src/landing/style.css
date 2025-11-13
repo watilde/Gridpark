@@ -808,7 +808,7 @@ body::before {
 .feature-card:nth-child(2)::before { content: 'ヤバイ!'; color: var(--spray-red); font-family: 'Rubik', sans-serif; }
 .feature-card:nth-child(3)::before { content: '神!'; color: var(--spray-cyan); font-family: 'Rubik', sans-serif; }
 .feature-card:nth-child(4)::before { content: '最高!'; color: var(--spray-pink); font-family: 'Rubik', sans-serif; }
-.feature-card:nth-child(5)::before { content: 'エグい!'; color: var(--spray-lime); font-family: 'Rubik', sans-serif; }
+.feature-card:nth-child(5)::before { content: 'エモい!'; color: var(--spray-lime); font-family: 'Rubik', sans-serif; }
 .feature-card:nth-child(6)::before { content: '革命!'; color: var(--spray-orange); font-family: 'Rubik', sans-serif; }
 
 .feature-card:hover::before {
