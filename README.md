@@ -67,18 +67,15 @@ Hosted URL: `https://watilde.github.io/Gridpark/` (Vite `base` is set to `/Gridp
 ## 📁 Project Structure
 
 ```
+assets/                    # shared assets (icons, fonts, etc.)
+docs/                      # marketing site build output (static hosting)
+examples/                  # experimental apps or sample data
+out/                       # build artifacts from packaging (cleaned between runs)
 src/
-├── main/                   # Electron main process
-├── renderer/               # React application
-│   ├── components/ui/      # Reusable UI components
-│   ├── app/               # App shell and routing
-│   ├── theme/             # Joy UI theme configuration
-│   └── utils/             # Platform utilities
-├── test/                  # Test utilities and setup
-web/                       # Web-specific entry point
-├── index.html            # HTML entry
-├── main.tsx             # Web React entry
-└── WebApp.tsx           # Web app wrapper
+├── main/                   # Electron main process, menu, platform helpers
+├── renderer/               # React-based desktop/web renderer (components, themes, utils)
+├── site/                   # Vite marketing/demo site (landing page + HeroDemo)
+└── test/                   # Jest test suites & helpers
 ```
 
 ## 🛠️ Development Scripts
