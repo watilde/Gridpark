@@ -4,10 +4,28 @@ import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
+import { MakerDMG } from '@electron-forge/maker-dmg';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import child from 'node:child_process';
+
+// ---------------------------------------------------------------------
+// 🔥 Apple Silicon GitHub Actions で hdiutil detach が壊れる問題対策（retry）
+const originalDetach = MakerDMG.prototype.detach;
+MakerDMG.prototype.detach = async function (device) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      return originalDetach.call(this, device);
+    } catch (err) {
+      console.warn(`Retrying detach (${i + 1}/3):`, err.message);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  throw new Error(`Failed to detach device: ${device}`);
+};
+// ---------------------------------------------------------------------
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -16,8 +34,10 @@ const config: ForgeConfig = {
     extraResource: ['assets'],
     executableName: 'Gridpark',
   },
+
   rebuildConfig: {},
-makers: [
+
+  makers: [
     {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin', 'linux', 'win32'],
@@ -26,7 +46,11 @@ makers: [
     {
       name: '@electron-forge/maker-dmg',
       platforms: ['darwin'],
-      config: {},
+      config: {
+        title: 'Gridpark',     // ★ Volume 名を固定
+        overwrite: true,       // ★ CIビルドの競合防止
+        format: 'ULFO',        // ★ Apple Silicon に最適（既定値より安定）
+      },
     },
     {
       name: '@electron-forge/maker-squirrel',
@@ -37,7 +61,7 @@ makers: [
       name: '@electron-forge/maker-deb',
       platforms: ['linux'],
       config: {
-        options: { 
+        options: {
           bin: 'Gridpark',
         },
       },
@@ -52,14 +76,12 @@ makers: [
       },
     },
   ],
+
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new VitePlugin({
-      // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
-      // If you are familiar with Vite configuration, it will look really familiar.
       build: [
         {
-          // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
           entry: 'src/main/index.ts',
           config: 'vite.main.config.ts',
         },
@@ -75,8 +97,7 @@ makers: [
         },
       ],
     }),
-    // Fuses are used to enable/disable various Electron functionality
-    // at package time, before code signing the application
+
     new FusesPlugin({
       version: FuseVersion.V1,
       [FuseV1Options.RunAsNode]: false,
