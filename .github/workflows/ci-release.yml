@@ -1,5 +1,8 @@
 name: Build & Release Gridpark
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
@@ -36,7 +39,7 @@ jobs:
             out/make/**/*.zip
             out/make/**/*.exe
             out/make/**/*.deb
-            out/make/**/*.AppImage
+            out/make/**/*.rpm
 
   release:
     needs: build
@@ -46,11 +49,17 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./dist
+          path: dist
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./dist/**/*.{dmg,zip,exe,deb,AppImage}
+          tag_name: ${{ github.ref_name }}
+          files: |
+            dist/**/*.dmg
+            dist/**/*.zip
+            dist/**/*.exe
+            dist/**/*.deb
+            dist/**/*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
