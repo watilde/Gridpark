@@ -50,7 +50,7 @@ const config: ForgeConfig = {
       },
     },
     {
-      name: '@electron-forge/maker-appimage',
+      name: '@electron-forge/maker-zip',
       platforms: ['linux'],
       config: {
         options: { bin: 'gridpark' },
