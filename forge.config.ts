@@ -17,7 +17,7 @@ const config: ForgeConfig = {
     executableName: 'Gridpark',
   },
   rebuildConfig: {},
-  makers: [
+makers: [
     {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin', 'linux', 'win32'],
@@ -33,27 +33,22 @@ const config: ForgeConfig = {
       platforms: ['win32'],
       config: {},
     },
-
-    // 🔥 Linux only — override bin name here
     {
       name: '@electron-forge/maker-deb',
       platforms: ['linux'],
       config: {
-        options: { bin: 'gridpark' },
+        options: { 
+          bin: 'Gridpark',
+        },
       },
     },
     {
       name: '@electron-forge/maker-rpm',
       platforms: ['linux'],
       config: {
-        options: { bin: 'gridpark' },
-      },
-    },
-    {
-      name: '@electron-forge/maker-zip',
-      platforms: ['linux'],
-      config: {
-        options: { bin: 'gridpark' },
+        options: {
+          bin: 'Gridpark',
+        },
       },
     },
   ],
