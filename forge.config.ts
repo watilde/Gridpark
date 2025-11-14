@@ -18,10 +18,44 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
-    new MakerZIP({}, ['darwin']),
-    new MakerRpm({}),
-    new MakerDeb({}),
+    {
+      name: '@electron-forge/maker-zip',
+      platforms: ['darwin', 'linux', 'win32'],
+      config: {},
+    },
+    {
+      name: '@electron-forge/maker-dmg',
+      platforms: ['darwin'],
+      config: {},
+    },
+    {
+      name: '@electron-forge/maker-squirrel',
+      platforms: ['win32'],
+      config: {},
+    },
+
+    // 🔥 Linux only — override bin name here
+    {
+      name: '@electron-forge/maker-deb',
+      platforms: ['linux'],
+      config: {
+        options: { bin: 'gridpark' },
+      },
+    },
+    {
+      name: '@electron-forge/maker-rpm',
+      platforms: ['linux'],
+      config: {
+        options: { bin: 'gridpark' },
+      },
+    },
+    {
+      name: '@electron-forge/maker-appimage',
+      platforms: ['linux'],
+      config: {
+        options: { bin: 'gridpark' },
+      },
+    },
   ],
   plugins: [
     new AutoUnpackNativesPlugin({}),
