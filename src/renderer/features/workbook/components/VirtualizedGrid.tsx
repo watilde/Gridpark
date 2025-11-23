@@ -235,6 +235,7 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
   }, [handleScroll]);
 
   // Render cells
+  const CellComponent = renderCell as React.ComponentType<any>;
   const cells: React.ReactNode[] = [];
   for (let rowIndex = visibleRange.startRow; rowIndex < visibleRange.endRow; rowIndex++) {
     let left = rowHeaderWidth;
@@ -252,19 +253,19 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
       const height = rowHeight(rowIndex);
       
       cells.push(
-        <div key={`cell-${rowIndex}-${columnIndex}`}>
-          {renderCell({ 
-            columnIndex, 
-            rowIndex, 
-            style: { 
-              position: 'absolute', 
-              left, 
-              top, 
-              width, 
-              height 
-            } 
-          })}
-        </div>
+        <CellComponent
+          key={`cell-${rowIndex}-${columnIndex}`}
+          columnIndex={columnIndex}
+          rowIndex={rowIndex}
+          style={{ 
+            position: 'absolute', 
+            left, 
+            top, 
+            width, 
+            height 
+          }}
+          data={itemData}
+        />
       );
       
       left += width;
@@ -280,9 +281,10 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
   
   for (let columnIndex = visibleRange.startCol; columnIndex < visibleRange.endCol; columnIndex++) {
     const width = columnWidth(columnIndex);
-    columnHeaders.push(
-      <div key={`col-header-${columnIndex}`}>
-        {renderColumnHeader({ 
+    
+    // Check if renderColumnHeader is a function or component
+    const columnHeaderElement = typeof renderColumnHeader === 'function' 
+      ? renderColumnHeader({ 
           columnIndex, 
           style: { 
             position: 'absolute', 
@@ -291,7 +293,12 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
             width, 
             height: headerHeight 
           } 
-        })}
+        })
+      : null;
+    
+    columnHeaders.push(
+      <div key={`col-header-${columnIndex}`}>
+        {columnHeaderElement}
       </div>
     );
     headerLeft += width;
@@ -306,9 +313,10 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
   
   for (let rowIndex = visibleRange.startRow; rowIndex < visibleRange.endRow; rowIndex++) {
     const height = rowHeight(rowIndex);
-    rowHeaders.push(
-      <div key={`row-header-${rowIndex}`}>
-        {renderRowHeader({ 
+    
+    // Check if renderRowHeader is a function or component
+    const rowHeaderElement = typeof renderRowHeader === 'function'
+      ? renderRowHeader({ 
           rowIndex, 
           style: { 
             position: 'absolute', 
@@ -317,7 +325,12 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
             width: rowHeaderWidth, 
             height 
           } 
-        })}
+        })
+      : null;
+    
+    rowHeaders.push(
+      <div key={`row-header-${rowIndex}`}>
+        {rowHeaderElement}
       </div>
     );
     headerTop += height;
