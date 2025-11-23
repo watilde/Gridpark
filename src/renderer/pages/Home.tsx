@@ -333,7 +333,7 @@ export const Home: React.FC = () => {
         onSaveManifest={handleSaveManifest}
         onReloadManifest={readManifestFile}
         onCodeChange={handleCodeChange}
-        onSaveCode={handleSaveCode}
+        onSaveCode={onSaveCode}
         onCloseCodeTab={handleCloseTab}
         sheetSearchQuery={searchState.sheetSearchQuery}
         searchNavigation={searchState.searchNavigation}
