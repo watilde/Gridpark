@@ -180,7 +180,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
     <FormulaBarContainer>
       <CellReferenceContainer>
         <CellReferenceText>
-          {activeCellAddress || 'A1'}
+          {activeCellAddress}
         </CellReferenceText>
         <CellReferenceDropdown
           type="button"
