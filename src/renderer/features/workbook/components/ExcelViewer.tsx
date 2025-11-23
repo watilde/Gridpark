@@ -887,6 +887,13 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     emitActiveCellDetails(selectedCell.row, selectedCell.col);
   }, [selectedCell, sheetData, emitActiveCellDetails]);
 
+  // Initialize with cell A1 (0,0) selected on mount
+  useEffect(() => {
+    if (sheetData.length > 0 && !selectedCell) {
+      setSelectedCell({ row: 0, col: 0 });
+    }
+  }, [sheetData.length, selectedCell]);
+
   useEffect(() => {
     return () => {
       if (onSessionChange) {

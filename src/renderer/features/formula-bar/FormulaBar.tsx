@@ -131,6 +131,7 @@ const FormulaInput = styled('input')<{ hasError?: boolean }>(({ theme, hasError 
 export interface FormulaBarProps {
   /**
    * Formula bar state from useFormulaBarOptimized hook
+   * Only the properties needed by FormulaBar component
    */
   formulaBarState: {
     activeCellAddress: string;
@@ -140,6 +141,8 @@ export interface FormulaBarProps {
     handleFormulaKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
     handleFormulaFxToggle: () => void;
     formulaInputRef: React.RefObject<HTMLInputElement>;
+    // Note: The full useFormulaBarOptimized return type includes many more properties,
+    // but FormulaBar only needs these specific ones
   };
 }
 
