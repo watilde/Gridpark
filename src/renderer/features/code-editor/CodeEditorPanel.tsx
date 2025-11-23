@@ -38,18 +38,27 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
 
   const handleKeydown = useCallback(
     (event: KeyboardEvent) => {
+      // Handle Cmd+S (Mac) or Ctrl+S (Windows/Linux) for save
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        console.log('[CodeEditorPanel] Save shortcut detected', { 
+          platform: isMacPlatform ? 'Mac' : 'Windows/Linux',
+          metaKey: event.metaKey, 
+          ctrlKey: event.ctrlKey,
+          canSave
+        });
         event.preventDefault();
         runSave();
         return;
       }
+      // Handle Cmd+W (Mac) or Ctrl+W (Windows/Linux) for close tab
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "w") {
         if (!onCloseTab) return;
+        console.log('[CodeEditorPanel] Close tab shortcut detected');
         event.preventDefault();
         onCloseTab();
       }
     },
-    [runSave, onCloseTab],
+    [runSave, onCloseTab, canSave, isMacPlatform],
   );
 
   useEffect(() => {

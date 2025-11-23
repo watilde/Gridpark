@@ -115,9 +115,15 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
   const handleMount = useCallback<OnMount>((editorInstance, monacoInstance) => {
     editorRef.current = editorInstance;
+    // Register Cmd+S (Mac) or Ctrl+S (Windows/Linux) shortcut
+    // KeyMod.CtrlCmd automatically uses the correct modifier for the platform
     editorInstance.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
       () => {
+        console.log('[MonacoEditor] Save command triggered', {
+          hasOnSave: !!onSaveRef.current,
+          readOnly: readOnlyRef.current
+        });
         if (!onSaveRef.current || readOnlyRef.current) return;
         onSaveRef.current(editorInstance.getValue());
       },
