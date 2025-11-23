@@ -21,10 +21,14 @@ const GridContainer = styled(Box)({
   backgroundColor: excelPalette.gridBackground,
 });
 
-const HeaderCell = styled("div")({
-  backgroundColor: excelPalette.gridBackground,
-  border: `1px solid ${excelPalette.headerBorder}`,
-  color: excelPalette.gridText,
+const HeaderCell = styled("div", {
+  shouldForwardProp: (prop) => prop !== "isActive" && prop !== "isSelected",
+})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, isSelected }) => ({
+  backgroundColor: isActive 
+    ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
+    : (theme.palette.mode === 'dark' ? '#1e1e1e' : '#f0f0f0'),
+  border: `1px solid ${theme.palette.mode === 'dark' ? '#444' : '#d0d0d0'}`,
+  color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
   fontWeight: 600,
   fontSize: "12px",
   textAlign: "center",
@@ -32,12 +36,22 @@ const HeaderCell = styled("div")({
   alignItems: "center",
   justifyContent: "center",
   boxSizing: "border-box",
-}) as React.ComponentType<React.HTMLAttributes<HTMLDivElement> & { 'data-col-id'?: string; 'data-col-index'?: number; className?: string }>;
+  transition: 'background-color 0.15s ease',
+  '&:hover': {
+    backgroundColor: isActive
+      ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
+      : (theme.palette.mode === 'dark' ? '#2a2a2a' : '#e5e5e5'),
+  },
+})) as React.ComponentType<React.HTMLAttributes<HTMLDivElement> & { 'data-col-id'?: string; 'data-col-index'?: number; className?: string; isActive?: boolean; isSelected?: boolean }>;
 
-const RowHeaderCell = styled("div")({
-  backgroundColor: excelPalette.gridBackground,
-  border: `1px solid ${excelPalette.headerBorder}`,
-  color: excelPalette.gridText,
+const RowHeaderCell = styled("div", {
+  shouldForwardProp: (prop) => prop !== "isActive" && prop !== "isSelected",
+})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, isSelected }) => ({
+  backgroundColor: isActive
+    ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
+    : (theme.palette.mode === 'dark' ? '#1e1e1e' : '#f0f0f0'),
+  border: `1px solid ${theme.palette.mode === 'dark' ? '#444' : '#d0d0d0'}`,
+  color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
   fontWeight: 600,
   fontSize: "12px",
   textAlign: "center",
@@ -45,7 +59,13 @@ const RowHeaderCell = styled("div")({
   alignItems: "center",
   justifyContent: "center",
   boxSizing: "border-box",
-}) as React.ComponentType<React.HTMLAttributes<HTMLDivElement> & { 'data-row-num'?: number; 'data-row-index'?: number; className?: string }>;
+  transition: 'background-color 0.15s ease',
+  '&:hover': {
+    backgroundColor: isActive
+      ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
+      : (theme.palette.mode === 'dark' ? '#2a2a2a' : '#e5e5e5'),
+  },
+})) as React.ComponentType<React.HTMLAttributes<HTMLDivElement> & { 'data-row-num'?: number; 'data-row-index'?: number; className?: string; isActive?: boolean; isSelected?: boolean }>;
 
 interface ExcelGridProps {
   currentSheetName: string;
@@ -92,6 +112,8 @@ export const ExcelGrid: React.FC<ExcelGridProps> = ({
           data-col-index={columnIndex}
           data-selected={isColumnSelected ? "true" : undefined}
           data-active={isColumnActive ? "true" : undefined}
+          isActive={isColumnActive}
+          isSelected={isColumnSelected}
         >
             {getColumnLabel(columnIndex)}
         </HeaderCell>
@@ -110,6 +132,8 @@ export const ExcelGrid: React.FC<ExcelGridProps> = ({
           data-row-index={rowIndex}
           data-selected={isRowSelected ? "true" : undefined}
           data-active={isRowActive ? "true" : undefined}
+          isActive={isRowActive}
+          isSelected={isRowSelected}
         >
             {rowIndex + 1}
         </RowHeaderCell>
