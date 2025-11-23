@@ -301,12 +301,13 @@ export const Home: React.FC = () => {
   }, []);
 
   // Debug: Log dirty state
+  const dirtyCount = Object.keys(dirtyNodeIds).length;
   useEffect(() => {
     console.log('[Home] Dirty state changed:', { 
-      dirtyCount: dirtyNodeIds.size, 
-      dirtyIds: Array.from(dirtyNodeIds.keys()) 
+      dirtyCount, 
+      dirtyIds: Object.keys(dirtyNodeIds) 
     });
-  }, [dirtyNodeIds]);
+  }, [dirtyNodeIds, dirtyCount]);
 
   const layout = (
     <AppLayout
@@ -322,7 +323,7 @@ export const Home: React.FC = () => {
           onAutoSaveToggle={handleAutoSaveToggle}
           canUndo={false}
           canRedo={false}
-          hasUnsavedChanges={dirtyNodeIds.size > 0}
+          hasUnsavedChanges={dirtyCount > 0}
         />
       }
       sidebar={
