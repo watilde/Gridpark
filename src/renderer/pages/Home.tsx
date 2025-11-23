@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useCallback, useMemo, useEffect, useReducer } from "react";
 import { Box } from "@mui/joy";
 import { AppLayout } from "../components/layout/AppLayout";
-import { FileNode } from "../features/file-explorer/FileTree";
 import {
   SearchNavigationCommand,
   ReplaceCommand,
@@ -21,41 +20,51 @@ import { TabContentArea } from "../features/workspace/components/TabContentArea"
 import { FormulaBar } from "../features/formula-bar/FormulaBar";
 
 // Hooks
-import { useWorkspaceManager } from "../hooks/useWorkspaceManager";
-import { useTabManagement } from "../hooks/useTabManagement";
+import { useWorkspace } from "../hooks/useWorkspace";
 import { useSheetSessions, useManifestSessions, useCodeSessions } from "../hooks/useFileSessions";
-import { useFormulaBar } from "../hooks/useFormulaBar";
+import { useFormulaBarOptimized } from "../hooks/useFormulaBarOptimized";
 import { useSettings } from "../hooks/useSettings";
-import { useDirtyTracking } from "../hooks/useDirtyTracking";
-import { useStyleInjection } from "../hooks/useStyleInjection";
 import { useManifestHandlers } from "../hooks/useManifestHandlers";
 import { useSheetHandlers } from "../hooks/useSheetHandlers";
-import { useTabOperations } from "../hooks/useTabOperations";
 import { cloneManifest } from "../utils/sessionHelpers";
+
+/**
+ * Search state managed by reducer
+ */
+interface SearchState {
+  treeSearchQuery: string;
+  sheetSearchQuery: string;
+  searchNavigation: SearchNavigationCommand | undefined;
+  replaceCommand: ReplaceCommand | null;
+}
+
+type SearchAction =
+  | { type: "SET_TREE_SEARCH"; payload: string }
+  | { type: "SET_SHEET_SEARCH"; payload: string }
+  | { type: "SET_SEARCH_NAVIGATION"; payload: SearchNavigationCommand | undefined }
+  | { type: "SET_REPLACE_COMMAND"; payload: ReplaceCommand | null };
+
+const searchReducer = (state: SearchState, action: SearchAction): SearchState => {
+  switch (action.type) {
+    case "SET_TREE_SEARCH":
+      return { ...state, treeSearchQuery: action.payload };
+    case "SET_SHEET_SEARCH":
+      return { ...state, sheetSearchQuery: action.payload };
+    case "SET_SEARCH_NAVIGATION":
+      return { ...state, searchNavigation: action.payload };
+    case "SET_REPLACE_COMMAND":
+      return { ...state, replaceCommand: action.payload };
+    default:
+      return state;
+  }
+};
 
 export const Home: React.FC = () => {
   const settings = useSettings();
   const { presetId } = settings;
   const isGridparkTheme = presetId === "gridpark";
 
-  const {
-    openTabs,
-    setOpenTabs,
-    activeTabId,
-    setActiveTabId,
-    selectedNodeId,
-    setSelectedNodeId,
-    focusTab,
-    handleTabChange,
-    closeTab,
-  } = useTabManagement();
-
-  const {
-    workbookNodes,
-    findWorkbookNode,
-    updateWorkbookReferences,
-  } = useWorkspaceManager(setOpenTabs, setActiveTabId, setSelectedNodeId);
-
+  // File sessions
   const {
     sheetSessions,
     sheetDirtyMap,
@@ -79,47 +88,66 @@ export const Home: React.FC = () => {
     codeSessions,
     ensureCodeSession,
     handleCodeChange,
-    onSaveCode: handleSaveCode, // Rename for consistency if needed, or just use directly
-    getCodeSessionKey,
+    onSaveCode: handleSaveCode,
   } = useCodeSessions();
 
-  // Local state for search/navigation that didn't warrant a full hook yet
-  const [treeSearchQuery, setTreeSearchQuery] = useState<string>("");
-  const [sheetSearchQuery] = useState<string>("");
-  const [searchNavigation] = useState<SearchNavigationCommand | undefined>(undefined);
-  const [replaceCommand] = useState<ReplaceCommand | null>(null);
+  // Unified workspace hook (consolidates 4 previous hooks)
+  const workspace = useWorkspace(
+    {
+      sheetSessions,
+      sheetDirtyMap,
+      codeSessions,
+      manifestDirtyMap,
+      getManifestSessionKey,
+    },
+    {
+      ensureManifestSession,
+      ensureCodeSession,
+      setSheetSessions,
+      setSheetDirtyMap,
+    }
+  );
 
-  const activeTab = openTabs.find((tab) => tab.id === activeTabId) || null;
-  const formulaBarState = useFormulaBar(activeTab?.kind);
+  const {
+    workbookNodes,
+    openTabs,
+    activeTabId,
+    selectedNodeId,
+    findWorkbookNode,
+    updateWorkbookReferences,
+    handleTabChange,
+    tabIsDirty,
+    dirtyNodeIds,
+    handleNodeSelect,
+    handleCloseTab,
+  } = workspace;
+
+  // Search state using reducer
+  const [searchState, dispatchSearch] = useReducer(searchReducer, {
+    treeSearchQuery: "",
+    sheetSearchQuery: "",
+    searchNavigation: undefined,
+    replaceCommand: null,
+  });
+
+  const setTreeSearchQuery = useCallback(
+    (query: string) => dispatchSearch({ type: "SET_TREE_SEARCH", payload: query }),
+    []
+  );
+
+  const activeTab = useMemo(
+    () => openTabs.find((tab) => tab.id === activeTabId) || null,
+    [openTabs, activeTabId]
+  );
+
+  // Optimized formula bar with useReducer
+  const formulaBarState = useFormulaBarOptimized(activeTab?.kind);
   const { handleActiveCellDetails, formulaCommitCommand } = formulaBarState;
 
-  // -- Platform Capabilities --
+  // Platform Capabilities (memoized once)
   const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
 
-  // -- Tab Operations --
-  const { handleNodeSelect, handleCloseTab } = useTabOperations({
-    openTabs,
-    setOpenTabs,
-    focusTab,
-    closeTab,
-    findWorkbookNode,
-    ensureManifestSession,
-    ensureCodeSession,
-    setSheetSessions,
-    setSheetDirtyMap,
-  });
-
-  // -- Dirty Tracking --
-  const { tabIsDirty, dirtyNodeIds } = useDirtyTracking({
-    workbookNodes,
-    sheetSessions,
-    sheetDirtyMap,
-    codeSessions,
-    manifestDirtyMap,
-    getManifestSessionKey,
-  });
-
-  // -- Sheet Handlers --
+  // Sheet Handlers
   const { handleSaveSheetSession, handleSheetDirtyChange } = useSheetHandlers({
     openTabs,
     findWorkbookNode,
@@ -129,7 +157,7 @@ export const Home: React.FC = () => {
     setSheetDirtyMap,
   });
 
-  // -- Manifest Handlers --
+  // Manifest Handlers
   const { handleManifestChange, handleSaveManifest } = useManifestHandlers({
     manifestSessions,
     setManifestSessions,
@@ -139,59 +167,76 @@ export const Home: React.FC = () => {
     createDefaultManifest,
   });
 
-  const activeTitle = activeTab
-    ? activeTab.kind === "sheet"
-      ? `${activeTab.sheetName} - ${activeTab.fileName}`
-      : activeTab.kind === "manifest"
-        ? `${activeTab.fileName} (Manifest)`
-        : `${activeTab.codeFile.name} - ${activeTab.fileName}`
-    : "Gridpark";
+  // Update window title
+  const activeTitle = useMemo(() => {
+    if (!activeTab) return "Gridpark";
+    if (activeTab.kind === "sheet") {
+      return `${activeTab.sheetName} - ${activeTab.fileName}`;
+    }
+    if (activeTab.kind === "manifest") {
+      return `${activeTab.fileName} (Manifest)`;
+    }
+    return `${activeTab.codeFile.name} - ${activeTab.fileName}`;
+  }, [activeTab]);
 
   useEffect(() => {
     window.electronAPI?.setWindowTitle(activeTitle);
   }, [activeTitle]);
 
-  // -- CSS Injection --
-  useStyleInjection({
-    activeTab,
-    manifestSessions,
-    getManifestSessionKey,
-  });
+  // Derived state for EditorPanel (memoized)
+  const activeCodeSession = useMemo(
+    () => (activeTab?.kind === "code" ? codeSessions[activeTab.codeFile.absolutePath] : undefined),
+    [activeTab, codeSessions]
+  );
 
+  const activeManifestKey = useMemo(
+    () => (activeTab?.kind === "manifest" ? getManifestSessionKey(activeTab.file) : null),
+    [activeTab, getManifestSessionKey]
+  );
 
-  // Derived state for EditorPanel
-  const activeCodeSession =
-    activeTab?.kind === "code"
-      ? codeSessions[activeTab.codeFile.absolutePath]
-      : undefined;
-  const activeManifestKey =
-    activeTab?.kind === "manifest"
-      ? getManifestSessionKey(activeTab.file)
-      : null;
-  const activeManifestSession = activeManifestKey
-    ? manifestSessions[activeManifestKey]
-    : undefined;
-  const activeSheetSession =
-    activeTab?.kind === "sheet" ? sheetSessions[activeTab.id] : undefined;
-  
-  const manifestEditorData =
-    activeTab?.kind === "manifest"
-      ? (activeManifestSession?.data ??
-        (activeTab.file.manifest
-          ? cloneManifest(activeTab.file.manifest)
-          : createDefaultManifest(activeTab.file)))
-      : null;
-  const manifestIsDirty = activeManifestKey
-    ? Boolean(manifestDirtyMap[activeManifestKey])
-    : false;
-  const canEditManifest = Boolean(window.electronAPI?.gridpark);
+  const activeManifestSession = useMemo(
+    () => (activeManifestKey ? manifestSessions[activeManifestKey] : undefined),
+    [activeManifestKey, manifestSessions]
+  );
 
+  const activeSheetSession = useMemo(
+    () => (activeTab?.kind === "sheet" ? sheetSessions[activeTab.id] : undefined),
+    [activeTab, sheetSessions]
+  );
+
+  const manifestEditorData = useMemo(() => {
+    if (activeTab?.kind !== "manifest") return null;
+    return (
+      activeManifestSession?.data ??
+      (activeTab.file.manifest
+        ? cloneManifest(activeTab.file.manifest)
+        : createDefaultManifest(activeTab.file))
+    );
+  }, [activeTab, activeManifestSession, createDefaultManifest]);
+
+  const manifestIsDirty = useMemo(
+    () => (activeManifestKey ? Boolean(manifestDirtyMap[activeManifestKey]) : false),
+    [activeManifestKey, manifestDirtyMap]
+  );
+
+  const canEditManifest = useMemo(() => Boolean(window.electronAPI?.gridpark), []);
 
   // Placeholder handlers for future implementation
-  const handleBack = () => { console.log("Navigate back"); };
-  const handleProceed = () => { console.log("Proceed action"); };
-  const handleCellSelect = (pos: any) => { console.log("Cell selected:", pos); };
-  const handleRangeSelect = (range: any) => { console.log("Range selected:", range); };
+  const handleBack = useCallback(() => {
+    console.log("Navigate back");
+  }, []);
+
+  const handleProceed = useCallback(() => {
+    console.log("Proceed action");
+  }, []);
+
+  const handleCellSelect = useCallback((pos: any) => {
+    console.log("Cell selected:", pos);
+  }, []);
+
+  const handleRangeSelect = useCallback((range: any) => {
+    console.log("Range selected:", range);
+  }, []);
 
   const layout = (
     <AppLayout
@@ -200,7 +245,7 @@ export const Home: React.FC = () => {
           <WorkspaceHeader
             onBack={handleBack}
             onProceed={handleProceed}
-            searchQuery={treeSearchQuery}
+            searchQuery={searchState.treeSearchQuery}
             onSearchChange={setTreeSearchQuery}
             onOpenSettings={() => settings.setSettingsOpen(true)}
           />
@@ -209,11 +254,11 @@ export const Home: React.FC = () => {
       }
       sidebar={
         <SidebarExplorer
-            workbookNodes={workbookNodes}
-            searchQuery={treeSearchQuery}
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={handleNodeSelect}
-            dirtyNodeIds={dirtyNodeIds}
+          workbookNodes={workbookNodes}
+          searchQuery={searchState.treeSearchQuery}
+          selectedNodeId={selectedNodeId}
+          onNodeSelect={handleNodeSelect}
+          dirtyNodeIds={dirtyNodeIds}
         />
       }
     >
@@ -243,9 +288,9 @@ export const Home: React.FC = () => {
         onCodeChange={handleCodeChange}
         onSaveCode={handleSaveCode}
         onCloseCodeTab={handleCloseTab}
-        sheetSearchQuery={sheetSearchQuery}
-        searchNavigation={searchNavigation}
-        replaceCommand={replaceCommand}
+        sheetSearchQuery={searchState.sheetSearchQuery}
+        searchNavigation={searchState.searchNavigation}
+        replaceCommand={searchState.replaceCommand}
         formulaCommitCommand={formulaCommitCommand}
       />
     </AppLayout>
@@ -253,11 +298,7 @@ export const Home: React.FC = () => {
 
   return (
     <>
-      {isGridparkTheme ? (
-        <GridparkPlayground>{layout}</GridparkPlayground>
-      ) : (
-        layout
-      )}
+      {isGridparkTheme ? <GridparkPlayground>{layout}</GridparkPlayground> : layout}
       <SettingsDrawer settings={settings} />
     </>
   );
