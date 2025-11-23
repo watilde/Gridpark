@@ -9,7 +9,7 @@ import {
   SearchNavigationCommand,
   ReplaceCommand,
   FormulaCommitCommand,
-} from "../../features/ExcelViewer/ExcelViewer";
+} from "../../features/workbook/components/ExcelViewer";
 import { CodeSession, ManifestSession, SheetSession } from "../../hooks/useFileSessions";
 import { CellPosition, CellRange, ExcelFile, GridparkCodeFile, GridparkManifest } from "../../types/excel";
 

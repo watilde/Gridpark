@@ -7,9 +7,9 @@ import {
   ReplaceCommand,
   FormulaCommitCommand,
   ActiveCellDetails,
-} from "../../features/ExcelViewer/ExcelViewer";
-import { CodeEditorPanel } from "../../features/Monaco/CodeEditorPanel";
-import { ManifestEditorPanel } from "../../features/Manifest/ManifestEditorPanel";
+} from "../../features/workbook/components/ExcelViewer";
+import { CodeEditorPanel } from "../../features/code-editor/CodeEditorPanel";
+import { ManifestEditorPanel } from "../../features/manifest-editor/ManifestEditorPanel";
 import { WorkbookTab } from "../../types/tabs";
 import { ExcelFile, CellPosition, CellRange, GridparkManifest, GridparkCodeFile } from "../../types/excel";
 import { ManifestSession } from "../../hooks/useFileSessions";

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
-import { Card } from '../../base/Card/Card';
+import { Card } from '../../../components/ui/Card/Card';
 
 const meta: Meta<typeof SpreadsheetGrid> = {
   title: 'UI/Features/SpreadsheetGrid',

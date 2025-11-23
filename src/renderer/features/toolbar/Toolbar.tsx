@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, IconButton, Divider, Tooltip } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
-import { Icon } from '../../base/Icon/Icon';
+import { Icon } from '../../components/ui/Icon/Icon';
 
 const ToolbarContainer = styled(Box)(({ theme }) => ({
   display: 'flex',

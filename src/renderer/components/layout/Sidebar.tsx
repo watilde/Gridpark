@@ -1,7 +1,7 @@
 import React from 'react';
 import { styled } from '@mui/joy/styles';
 import { Typography, Divider } from '@mui/joy';
-import { Icon } from '../base/Icon/Icon';
+import { Icon } from '../ui/Icon/Icon';
 
 const SidebarContainer = styled('div')({
   display: 'flex',

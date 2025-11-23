@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { styled } from '@mui/joy/styles';
-import { Input } from '../../base/Input/Input';
-import { Button } from '../../base/Button/Button';
-import { Icon } from '../../base/Icon/Icon';
+import { Input } from '../../components/ui/Input/Input';
+import { Button } from '../../components/ui/Button/Button';
+import { Icon } from '../../components/ui/Icon/Icon';
 import { Functions, CheckCircle, Error, PlayArrow, Close } from '@mui/icons-material';
 import { Typography, Chip } from '@mui/joy';
 

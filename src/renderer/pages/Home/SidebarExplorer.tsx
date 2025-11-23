@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Box, Sheet, Typography } from "@mui/joy";
-import { FileTree, FileNode } from "../../features/FileTree/FileTree";
+import { FileTree, FileNode } from "../../features/file-explorer/FileTree";
 
 interface SidebarExplorerProps {
   workbookNodes: FileNode[];

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { FormulaBar } from './FormulaBar';
-import { Card } from '../../base/Card/Card';
+import { Card } from '../../components/ui/Card/Card';
 import { useState } from 'react';
 
 const meta: Meta<typeof FormulaBar> = {

@@ -1,4 +1,4 @@
-import { FileNode } from "../features/FileTree/FileTree";
+import { FileNode } from "../features/file-explorer/FileTree";
 import { ExcelFile, GridparkCodeFile } from "../types/excel";
 import { WorkbookTab } from "../types/tabs";
 

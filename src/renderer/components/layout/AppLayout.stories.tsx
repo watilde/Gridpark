@@ -2,10 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { AppLayout } from './AppLayout';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
-import { Button } from '../base/Button/Button';
-import { Card } from '../base/Card/Card';
-import { SpreadsheetGrid } from '../features/Spreadsheet/SpreadsheetGrid';
-import { FormulaBar } from '../features/FormulaBar/FormulaBar';
+import { Button } from '../ui/Button/Button';
+import { Card } from '../ui/Card/Card';
+import { SpreadsheetGrid } from '../../features/workbook/components/SpreadsheetGrid';
+import { FormulaBar } from '../../features/formula-bar/FormulaBar';
 import { 
   TableChart, Functions, Code, Settings, Save, PlayArrow, 
   FolderOpen, Description, Speed 
