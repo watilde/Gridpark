@@ -1,71 +1,95 @@
 import React, { useState, useCallback } from 'react';
 import { styled } from '@mui/joy/styles';
-import { Close, Check } from '@mui/icons-material';
+import { Close, Check, ArrowDropDown } from '@mui/icons-material';
 
-// Excel-style formula bar container with dark theme
+// Excel-style formula bar container
 const FormulaBarContainer = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'stretch',
-  height: '32px',
-  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f0f0f0',
-  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
+  height: '28px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
+  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? '#3a3a3a' : '#d0d0d0'}`,
   fontFamily: theme.fontFamily.body,
 }));
 
-// Cell reference box (e.g., "A1")
-const CellReference = styled('div')(({ theme }) => ({
+// Cell reference box with dropdown (e.g., "A1")
+const CellReferenceContainer = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  minWidth: '80px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
+  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#3a3a3a' : '#d0d0d0'}`,
+  position: 'relative',
+}));
+
+const CellReferenceText = styled('div')(({ theme }) => ({
+  flex: 1,
+  padding: '0 8px',
+  fontSize: '12px',
+  fontFamily: '"Segoe UI", sans-serif',
+  fontWeight: 400,
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+  textAlign: 'center',
+}));
+
+const CellReferenceDropdown = styled('button')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  minWidth: '64px',
-  padding: '0 12px',
-  backgroundColor: theme.palette.mode === 'dark' ? '#252525' : '#ffffff',
-  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
-  fontSize: '13px',
-  fontFamily: '"Segoe UI", sans-serif',
-  fontWeight: 400,
-  color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
+  width: '20px',
+  height: '100%',
+  padding: 0,
+  border: 'none',
+  backgroundColor: 'transparent',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#555555',
+  cursor: 'pointer',
+  '&:hover': {
+    backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a' : '#f0f0f0',
+  },
+  '& svg': {
+    fontSize: '16px',
+  },
 }));
 
 // Button group container for cancel/confirm/function buttons
 const ButtonGroup = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  backgroundColor: theme.palette.mode === 'dark' ? '#252525' : '#ffffff',
-  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
+  backgroundColor: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
+  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#3a3a3a' : '#d0d0d0'}`,
 }));
 
 // Individual action button (X, checkmark, fx)
-const ActionButton = styled('button')<{ variant?: 'cancel' | 'confirm' | 'function' }>(({ theme, variant }) => ({
-  display: 'flex',
+const ActionButton = styled('button')<{ variant?: 'cancel' | 'confirm' | 'function'; visible?: boolean }>(({ theme, variant, visible = true }) => ({
+  display: visible ? 'flex' : 'none',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '28px',
+  width: '24px',
   height: '100%',
   padding: 0,
   border: 'none',
   backgroundColor: 'transparent',
-  color: theme.palette.mode === 'dark' ? '#cccccc' : '#555555',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#555555',
   cursor: 'pointer',
-  transition: 'background-color 0.15s ease',
-  fontSize: '16px',
+  transition: 'background-color 0.1s ease',
+  fontSize: '14px',
   
   '&:hover': {
-    backgroundColor: theme.palette.mode === 'dark' ? '#333333' : '#e5e5e5',
+    backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a' : '#e5e5e5',
   },
   
   '&:active': {
-    backgroundColor: theme.palette.mode === 'dark' ? '#3a3a3a' : '#d0d0d0',
+    backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#d0d0d0',
   },
   
   '&:disabled': {
-    color: theme.palette.mode === 'dark' ? '#555555' : '#aaaaaa',
+    color: theme.palette.mode === 'dark' ? '#666666' : '#aaaaaa',
     cursor: 'not-allowed',
-    opacity: 0.5,
+    opacity: 0.4,
   },
   
   '& svg': {
-    fontSize: '18px',
+    fontSize: '16px',
   },
 }));
 
@@ -84,14 +108,14 @@ const FormulaInput = styled('input')<{ hasError?: boolean }>(({ theme, hasError 
   padding: '0 8px',
   border: 'none',
   outline: 'none',
-  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
-  color: theme.palette.mode === 'dark' ? '#d4d4d4' : '#000000',
-  fontSize: '13px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+  fontSize: '12px',
   fontFamily: '"Consolas", "Courier New", monospace',
-  lineHeight: '32px',
+  lineHeight: '28px',
   
   ...(hasError && {
-    color: theme.palette.mode === 'dark' ? '#f48771' : '#d32f2f',
+    color: theme.palette.mode === 'dark' ? '#ff6b6b' : '#d32f2f',
   }),
   
   '&::placeholder': {
@@ -99,7 +123,7 @@ const FormulaInput = styled('input')<{ hasError?: boolean }>(({ theme, hasError 
   },
   
   '&:disabled': {
-    color: theme.palette.mode === 'dark' ? '#555555' : '#aaaaaa',
+    color: theme.palette.mode === 'dark' ? '#666666' : '#aaaaaa',
     cursor: 'not-allowed',
   },
 }));
@@ -238,33 +262,40 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
 
   return (
     <FormulaBarContainer>
-      <CellReference>
-        {cellReference}
-      </CellReference>
+      <CellReferenceContainer>
+        <CellReferenceText>
+          {cellReference}
+        </CellReferenceText>
+        <CellReferenceDropdown
+          type="button"
+          title="Name Box"
+          onClick={() => console.log('Name box dropdown')}
+        >
+          <ArrowDropDown />
+        </CellReferenceDropdown>
+      </CellReferenceContainer>
       
       <ButtonGroup>
-        {showActionButtons && (
-          <>
-            <ActionButton
-              variant="cancel"
-              onClick={handleCancel}
-              title="Cancel (Esc)"
-              type="button"
-            >
-              <Close />
-            </ActionButton>
-            
-            <ActionButton
-              variant="confirm"
-              onClick={handleConfirm}
-              disabled={!validation.isValid}
-              title="Confirm (Enter)"
-              type="button"
-            >
-              <Check />
-            </ActionButton>
-          </>
-        )}
+        <ActionButton
+          variant="cancel"
+          onClick={handleCancel}
+          title="Cancel (Esc)"
+          type="button"
+          visible={showActionButtons}
+        >
+          <Close />
+        </ActionButton>
+        
+        <ActionButton
+          variant="confirm"
+          onClick={handleConfirm}
+          disabled={!validation.isValid}
+          title="Confirm (Enter)"
+          type="button"
+          visible={showActionButtons}
+        >
+          <Check />
+        </ActionButton>
         
         <ActionButton
           variant="function"
@@ -272,7 +303,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
           title="Insert Function"
           type="button"
         >
-          <span style={{ fontWeight: 'bold', fontSize: '12px' }}>fx</span>
+          <span style={{ fontWeight: 'bold', fontSize: '11px' }}>fx</span>
         </ActionButton>
       </ButtonGroup>
       
