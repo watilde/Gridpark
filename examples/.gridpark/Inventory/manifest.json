@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Inventory Workbook manifest",
   "apiVersion": 1,
-  "script": "index.js",
+  "script": "script.js",
   "style": "style.css",
   "sheets": {
     "sheet-1": {
