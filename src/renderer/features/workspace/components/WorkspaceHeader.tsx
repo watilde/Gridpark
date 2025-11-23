@@ -13,7 +13,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const WorkspaceHeader: React.FC<HeaderProps> = ({
   onBack,
   onProceed,
   searchQuery,

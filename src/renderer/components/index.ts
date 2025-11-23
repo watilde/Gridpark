@@ -10,6 +10,8 @@ export { Icon } from './ui/Icon/Icon';
 export { AppLayout } from './layout/AppLayout';
 export { Sidebar } from './layout/Sidebar';
 export { Header } from './layout/Header';
+export { SidebarExplorer } from './layout/SidebarExplorer';
+export { SettingsDrawer } from './layout/SettingsDrawer';
 
 // Feature Components (re-exported for convenience)
 export { SpreadsheetGrid } from '../features/workbook/components/SpreadsheetGrid';

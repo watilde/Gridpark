@@ -1,6 +1,7 @@
 import React from "react";
 import { Sheet, Typography, Drawer, Divider, Box, Select, Option } from "@mui/joy";
-import { ThemePresetId, themeOptions } from "../../theme/ThemeProvider";
+import { themeOptions } from "../../theme/ThemeProvider";
+import type { ThemePresetId } from "../../theme/theme";
 import { useSettings } from "../../hooks/useSettings";
 
 interface SettingsDrawerProps {

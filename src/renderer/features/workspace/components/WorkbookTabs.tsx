@@ -7,8 +7,8 @@ import {
   IconButton,
 } from "@mui/joy";
 import CloseIcon from "@mui/icons-material/Close";
-import { WorkbookTab } from "../../types/tabs";
-import { colors } from "../../theme/tokens";
+import { WorkbookTab } from "../../../types/tabs";
+import { colors } from "../../../theme/tokens";
 
 interface WorkbookTabsProps {
   openTabs: WorkbookTab[];

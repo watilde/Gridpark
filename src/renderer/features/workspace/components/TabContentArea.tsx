@@ -2,16 +2,16 @@ import React from 'react';
 import { Box } from "@mui/joy";
 import { WorkbookTabs } from "./WorkbookTabs";
 import { EditorPanel } from "./EditorPanel";
-import { WorkbookTab } from "../../types/tabs";
+import { WorkbookTab } from "../../../types/tabs";
 import {
   ActiveCellDetails,
   SheetSessionState,
   SearchNavigationCommand,
   ReplaceCommand,
   FormulaCommitCommand,
-} from "../../features/workbook/components/ExcelViewer";
-import { CodeSession, ManifestSession, SheetSession } from "../../hooks/useFileSessions";
-import { CellPosition, CellRange, ExcelFile, GridparkCodeFile, GridparkManifest } from "../../types/excel";
+} from "../../workbook/components/ExcelViewer";
+import { ManifestSession } from "../../../hooks/useFileSessions";
+import { CellPosition, CellRange, ExcelFile, GridparkCodeFile, GridparkManifest } from "../../../types/excel";
 
 export interface TabContentAreaProps {
   openTabs: WorkbookTab[];
@@ -21,8 +21,14 @@ export interface TabContentAreaProps {
   tabIsDirty: (tab: WorkbookTab) => boolean;
 
   activeTab: WorkbookTab | null;
-  activeSheetSession: SheetSession | undefined;
-  activeCodeSession: CodeSession | undefined;
+  activeSheetSession: SheetSessionState | undefined;
+  activeCodeSession: {
+    content: string;
+    originalContent: string;
+    loading: boolean;
+    saving: boolean;
+    error?: string;
+  } | undefined;
   activeManifestSession: ManifestSession | undefined;
   manifestEditorData: GridparkManifest | null;
   manifestIsDirty: boolean;

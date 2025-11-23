@@ -8,13 +8,17 @@ import {
 } from "../features/workbook/components/ExcelViewer";
 import { getPlatformCapabilities } from "../utils/platform";
 
-// New Imports
-import { Header } from "./Home/Header";
-import { FormulaBar } from "./Home/FormulaBar";
-import { SettingsDrawer } from "./Home/SettingsDrawer";
-import { SidebarExplorer } from "./Home/SidebarExplorer";
-import { TabContentArea } from "./Home/TabContentArea";
+// Layout Components
 import { GridparkPlayground } from "../components/layout/GridparkPlayground";
+import { SidebarExplorer } from "../components/layout/SidebarExplorer";
+import { SettingsDrawer } from "../components/layout/SettingsDrawer";
+
+// Workspace Components
+import { WorkspaceHeader } from "../features/workspace/components/WorkspaceHeader";
+import { TabContentArea } from "../features/workspace/components/TabContentArea";
+
+// Feature Components
+import { FormulaBar } from "../features/formula-bar/FormulaBar";
 
 // Hooks
 import { useWorkspaceManager } from "../hooks/useWorkspaceManager";
@@ -193,7 +197,7 @@ export const Home: React.FC = () => {
     <AppLayout
       header={
         <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
-          <Header
+          <WorkspaceHeader
             onBack={handleBack}
             onProceed={handleProceed}
             searchQuery={treeSearchQuery}
