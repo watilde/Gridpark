@@ -900,23 +900,70 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
 
   // -- Dynamic Expansion on Scroll --
   const handleScroll = useCallback(({ scrollLeft, scrollTop }: { scrollLeft: number; scrollTop: number }) => {
-    // Simple heuristic: if we scroll past 80% of the current dimension, expand
-    // But exact pixel math depends on sizes.
-    // For virtual grid, we know rowHeight and columnWidth.
-    // Let's use index math.
-    
+    // Calculate total scrollable dimensions
     const currentMaxRowHeight = renderRowCount * ROW_HEIGHT;
-    const currentMaxColWidth = renderColCount * 96; // Approx average
+    const currentMaxColWidth = renderColCount * 96; // Approx average column width
 
-    // If we are close to the bottom
-    if (scrollTop + 1000 > currentMaxRowHeight) { // 1000px buffer
-        setRenderRowCount(prev => prev + EXPANSION_BATCH_ROWS);
+    // Infinite expansion: expand when within threshold pixels of edge
+    const SCROLL_THRESHOLD = 500; // pixels from edge to trigger expansion
+    
+    // Expand rows if scrolled near bottom
+    if (scrollTop + SCROLL_THRESHOLD > currentMaxRowHeight) {
+      setRenderRowCount(prev => prev + EXPANSION_BATCH_ROWS);
     }
-    // If we are close to the right
-    if (scrollLeft + 1000 > currentMaxColWidth) {
-        setRenderColCount(prev => prev + EXPANSION_BATCH_COLS);
+    
+    // Expand columns if scrolled near right
+    if (scrollLeft + SCROLL_THRESHOLD > currentMaxColWidth) {
+      setRenderColCount(prev => prev + EXPANSION_BATCH_COLS);
     }
-  }, [renderRowCount, renderColCount]);
+    
+    // Dynamic pruning: check if we should remove empty trailing rows/columns
+    // Only prune when scrolled back and user hasn't been near the edges recently
+    const isScrolledAwayFromBottom = scrollTop < currentMaxRowHeight * 0.7;
+    const isScrolledAwayFromRight = scrollLeft < currentMaxColWidth * 0.7;
+    
+    if (isScrolledAwayFromBottom && renderRowCount > DEFAULT_RENDERED_ROWS) {
+      // Check if trailing rows are empty
+      const checkStartRow = Math.max(DEFAULT_RENDERED_ROWS, Math.floor(renderRowCount * 0.8));
+      let hasDataInTrailingRows = false;
+      
+      for (let row = checkStartRow; row < Math.min(sheetData.length, renderRowCount); row++) {
+        for (let col = 0; col < Math.min(sheetData[row]?.length || 0, renderColCount); col++) {
+          const cell = sheetData[row]?.[col];
+          if (cell && cell.value !== null && cell.value !== undefined && cell.value !== '') {
+            hasDataInTrailingRows = true;
+            break;
+          }
+        }
+        if (hasDataInTrailingRows) break;
+      }
+      
+      if (!hasDataInTrailingRows) {
+        setRenderRowCount(prev => Math.max(DEFAULT_RENDERED_ROWS, Math.floor(prev * 0.8)));
+      }
+    }
+    
+    if (isScrolledAwayFromRight && renderColCount > DEFAULT_RENDERED_COLUMNS) {
+      // Check if trailing columns are empty
+      const checkStartCol = Math.max(DEFAULT_RENDERED_COLUMNS, Math.floor(renderColCount * 0.8));
+      let hasDataInTrailingCols = false;
+      
+      for (let col = checkStartCol; col < renderColCount; col++) {
+        for (let row = 0; row < Math.min(sheetData.length, renderRowCount); row++) {
+          const cell = sheetData[row]?.[col];
+          if (cell && cell.value !== null && cell.value !== undefined && cell.value !== '') {
+            hasDataInTrailingCols = true;
+            break;
+          }
+        }
+        if (hasDataInTrailingCols) break;
+      }
+      
+      if (!hasDataInTrailingCols) {
+        setRenderColCount(prev => Math.max(DEFAULT_RENDERED_COLUMNS, Math.floor(prev * 0.8)));
+      }
+    }
+  }, [renderRowCount, renderColCount, sheetData]);
 
 
   // -- Render Helpers --

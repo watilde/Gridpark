@@ -1,5 +1,4 @@
-import React, { forwardRef, useEffect, useRef, useImperativeHandle, useState } from "react";
-import { Grid } from "react-window";
+import React, { forwardRef, useEffect, useRef, useImperativeHandle, useState, useCallback } from "react";
 import { styled } from "@mui/joy/styles";
 import { Box } from "@mui/joy";
 
@@ -39,31 +38,12 @@ const GridWrapper = styled(Box)({
   flex: 1,
   height: "100%",
   width: "100%",
-  overflow: "hidden",
+  overflow: "auto",
   position: "relative",
 });
 
-// Separate header containers to sync scroll
-const TopHeaderWrapper = styled(Box)({
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  overflow: "hidden",
-  zIndex: 2,
-  // Background color to cover scrolling grid
-  backgroundColor: "#fff", 
-  display: "flex",
-});
-
-const LeftHeaderWrapper = styled(Box)({
-  position: "absolute",
-  top: 0,
-  bottom: 0,
-  left: 0,
-  overflow: "hidden",
-  zIndex: 2,
-  backgroundColor: "#fff",
+const GridContent = styled(Box)({
+  position: "relative",
 });
 
 const SelectAllIcon = styled('div')(({ theme }) => ({
@@ -81,16 +61,36 @@ const CornerHeader = styled(Box)(({ theme }) => ({
   top: 0,
   left: 0,
   zIndex: 3,
-  backgroundColor: theme.palette.primary.softBg, // Use a soft primary background
+  backgroundColor: theme.palette.primary.softBg,
   borderRight: `1px solid ${theme.palette.divider}`,
   borderBottom: `1px solid ${theme.palette.divider}`,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  "&:hover": { // Add a hover effect for interactivity
+  cursor: "pointer",
+  "&:hover": {
     backgroundColor: theme.palette.primary.softHoverBg,
   },
 }));
+
+const HeaderRow = styled(Box)({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  display: "flex",
+  zIndex: 2,
+});
+
+const HeaderColumn = styled(Box)({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  zIndex: 2,
+});
+
+const CellsContainer = styled(Box)({
+  position: "absolute",
+});
 
 interface VirtualizedGridProps {
   columnCount: number;
@@ -111,12 +111,6 @@ export interface VirtualizedGridRef {
   scrollToItem: (params: { align?: "start" | "center" | "end" | "smart"; columnIndex?: number; rowIndex?: number }) => void;
 }
 
-interface ReactWindowGridRef {
-  scrollToItem: (params: { align?: "start" | "center" | "end" | "smart"; columnIndex?: number; rowIndex?: number }) => void;
-  scrollTo: (params: { scrollLeft: number; scrollTop: number }) => void;
-  element?: HTMLElement; // Custom property for this build
-}
-
 export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridProps>( ({
   columnCount,
   rowCount,
@@ -131,109 +125,230 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
   itemData,
   onCornerHeaderClick,
 }, ref) => {
-  const gridRef = useRef<ReactWindowGridRef>(null);
-  const topHeaderRef = useRef<ReactWindowGridRef>(null);
-  const leftHeaderRef = useRef<ReactWindowGridRef>(null);
-  const topHeaderOuterRef = useRef<HTMLDivElement>(null);
-  const leftHeaderOuterRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollState, setScrollState] = useState({ scrollLeft: 0, scrollTop: 0 });
+  const [visibleRange, setVisibleRange] = useState({ 
+    startCol: 0, 
+    endCol: Math.min(20, columnCount), 
+    startRow: 0, 
+    endRow: Math.min(50, rowCount) 
+  });
+
+  // Calculate total dimensions
+  let totalWidth = rowHeaderWidth;
+  for (let i = 0; i < columnCount; i++) {
+    totalWidth += columnWidth(i);
+  }
+  
+  let totalHeight = headerHeight;
+  for (let i = 0; i < rowCount; i++) {
+    totalHeight += rowHeight(i);
+  }
 
   useImperativeHandle(ref, () => ({
-    scrollToItem: (params) => gridRef.current?.scrollToItem(params),
+    scrollToItem: (params) => {
+      if (!containerRef.current) return;
+      
+      let scrollLeft = 0;
+      let scrollTop = 0;
+      
+      if (params.columnIndex !== undefined) {
+        for (let i = 0; i < params.columnIndex; i++) {
+          scrollLeft += columnWidth(i);
+        }
+        scrollLeft += rowHeaderWidth;
+      }
+      
+      if (params.rowIndex !== undefined) {
+        for (let i = 0; i < params.rowIndex; i++) {
+          scrollTop += rowHeight(i);
+        }
+        scrollTop += headerHeight;
+      }
+      
+      containerRef.current.scrollLeft = scrollLeft;
+      containerRef.current.scrollTop = scrollTop;
+    },
   }));
 
-  const handleScroll = ({ scrollLeft, scrollTop }: { scrollLeft: number; scrollTop: number }) => {
-    // Sync headers - robust check
-    if (topHeaderOuterRef.current) {
-        topHeaderOuterRef.current.scrollLeft = scrollLeft;
-    } else {
-        // Fallback for custom react-window if outerRef fails
-        const topGrid = topHeaderRef.current as any;
-        if (topGrid?.element) {
-            topGrid.element.scrollLeft = scrollLeft;
-        }
-    }
-
-    if (leftHeaderOuterRef.current) {
-        leftHeaderOuterRef.current.scrollTop = scrollTop;
-    } else {
-        const leftGrid = leftHeaderRef.current as any;
-        if (leftGrid?.element) {
-            leftGrid.element.scrollTop = scrollTop;
-        }
+  const handleScroll = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const { scrollLeft, scrollTop, clientWidth, clientHeight } = containerRef.current;
+    setScrollState({ scrollLeft, scrollTop });
+    
+    // Calculate visible range with overscan
+    const overscanCount = 5;
+    
+    // Calculate visible columns
+    let currentX = rowHeaderWidth;
+    let startCol = 0;
+    let endCol = columnCount;
+    
+    for (let i = 0; i < columnCount; i++) {
+      const width = columnWidth(i);
+      if (currentX + width < scrollLeft) {
+        startCol = i + 1;
+      }
+      if (currentX > scrollLeft + clientWidth) {
+        endCol = Math.min(i, columnCount);
+        break;
+      }
+      currentX += width;
     }
     
+    // Calculate visible rows
+    let currentY = headerHeight;
+    let startRow = 0;
+    let endRow = rowCount;
+    
+    for (let i = 0; i < rowCount; i++) {
+      const height = rowHeight(i);
+      if (currentY + height < scrollTop) {
+        startRow = i + 1;
+      }
+      if (currentY > scrollTop + clientHeight) {
+        endRow = Math.min(i, rowCount);
+        break;
+      }
+      currentY += height;
+    }
+    
+    setVisibleRange({
+      startCol: Math.max(0, startCol - overscanCount),
+      endCol: Math.min(columnCount, endCol + overscanCount),
+      startRow: Math.max(0, startRow - overscanCount),
+      endRow: Math.min(rowCount, endRow + overscanCount),
+    });
+    
     onScroll?.({ scrollLeft, scrollTop });
-  };
+  }, [columnCount, rowCount, columnWidth, rowHeight, headerHeight, rowHeaderWidth, onScroll]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    
+    container.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial calculation
+    
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Render cells
+  const cells: React.ReactNode[] = [];
+  for (let rowIndex = visibleRange.startRow; rowIndex < visibleRange.endRow; rowIndex++) {
+    let left = rowHeaderWidth;
+    for (let i = 0; i < visibleRange.startCol; i++) {
+      left += columnWidth(i);
+    }
+    
+    let top = headerHeight;
+    for (let i = 0; i < rowIndex; i++) {
+      top += rowHeight(i);
+    }
+    
+    for (let columnIndex = visibleRange.startCol; columnIndex < visibleRange.endCol; columnIndex++) {
+      const width = columnWidth(columnIndex);
+      const height = rowHeight(rowIndex);
+      
+      cells.push(
+        <div key={`cell-${rowIndex}-${columnIndex}`}>
+          {renderCell({ 
+            columnIndex, 
+            rowIndex, 
+            style: { 
+              position: 'absolute', 
+              left, 
+              top, 
+              width, 
+              height 
+            } 
+          })}
+        </div>
+      );
+      
+      left += width;
+    }
+  }
+
+  // Render column headers
+  const columnHeaders: React.ReactNode[] = [];
+  let headerLeft = rowHeaderWidth;
+  for (let i = 0; i < visibleRange.startCol; i++) {
+    headerLeft += columnWidth(i);
+  }
+  
+  for (let columnIndex = visibleRange.startCol; columnIndex < visibleRange.endCol; columnIndex++) {
+    const width = columnWidth(columnIndex);
+    columnHeaders.push(
+      <div key={`col-header-${columnIndex}`}>
+        {renderColumnHeader({ 
+          columnIndex, 
+          style: { 
+            position: 'absolute', 
+            left: headerLeft, 
+            top: 0, 
+            width, 
+            height: headerHeight 
+          } 
+        })}
+      </div>
+    );
+    headerLeft += width;
+  }
+
+  // Render row headers
+  const rowHeaders: React.ReactNode[] = [];
+  let headerTop = headerHeight;
+  for (let i = 0; i < visibleRange.startRow; i++) {
+    headerTop += rowHeight(i);
+  }
+  
+  for (let rowIndex = visibleRange.startRow; rowIndex < visibleRange.endRow; rowIndex++) {
+    const height = rowHeight(rowIndex);
+    rowHeaders.push(
+      <div key={`row-header-${rowIndex}`}>
+        {renderRowHeader({ 
+          rowIndex, 
+          style: { 
+            position: 'absolute', 
+            left: 0, 
+            top: headerTop, 
+            width: rowHeaderWidth, 
+            height 
+          } 
+        })}
+      </div>
+    );
+    headerTop += height;
+  }
 
   return (
-    <GridWrapper>
-      {/* Corner Header (Fixed) */}
-      <CornerHeader
-        style={{ width: rowHeaderWidth, height: headerHeight, cursor: onCornerHeaderClick ? "pointer" : "default" }}
-        onClick={onCornerHeaderClick}
-      >
-        <SelectAllIcon />
-      </CornerHeader>
+    <GridWrapper ref={containerRef}>
+      <GridContent style={{ width: totalWidth, height: totalHeight }}>
+        {/* Corner Header */}
+        <CornerHeader
+          style={{ width: rowHeaderWidth, height: headerHeight }}
+          onClick={onCornerHeaderClick}
+        >
+          <SelectAllIcon />
+        </CornerHeader>
 
-      {/* Top Header (Syncs Horizontal Scroll) */}
-      <TopHeaderWrapper style={{ height: headerHeight, left: rowHeaderWidth }}>
-        <AutoSizer disableHeight>
-          {({ width }) => (
-            <Grid
-              ref={topHeaderRef}
-              columnCount={columnCount}
-              columnWidth={columnWidth}
-              height={headerHeight}
-              rowCount={1}
-              rowHeight={() => headerHeight}
-              width={width}
-              style={{ overflow: "hidden" }}
-              cellComponent={({ columnIndex, style }: any) => renderColumnHeader({ columnIndex, style })}
-              cellProps={{}}
-            />
-          )}
-        </AutoSizer>
-      </TopHeaderWrapper>
+        {/* Column Headers */}
+        <HeaderRow>
+          {columnHeaders}
+        </HeaderRow>
 
-      {/* Left Header (Syncs Vertical Scroll) */}
-      <LeftHeaderWrapper style={{ width: rowHeaderWidth, top: headerHeight }}>
-        <AutoSizer disableWidth>
-          {({ height }) => (
-            <Grid
-              ref={leftHeaderRef}
-              columnCount={1}
-              columnWidth={() => rowHeaderWidth}
-              height={height}
-              rowCount={rowCount}
-              rowHeight={rowHeight}
-              width={rowHeaderWidth}
-              style={{ overflow: "hidden" }}
-              cellComponent={({ rowIndex, style }: any) => renderRowHeader({ rowIndex, style })}
-              cellProps={{}}
-            />
-          )}
-        </AutoSizer>
-      </LeftHeaderWrapper>
+        {/* Row Headers */}
+        <HeaderColumn>
+          {rowHeaders}
+        </HeaderColumn>
 
-      {/* Main Grid (Scrollable) */}
-      <Box style={{ position: "absolute", top: headerHeight, left: rowHeaderWidth, right: 0, bottom: 0 }}>
-        <AutoSizer>
-          {({ height, width }) => (
-            <Grid
-              ref={gridRef}
-              columnCount={columnCount}
-              columnWidth={columnWidth}
-              height={height}
-              rowCount={rowCount}
-              rowHeight={rowHeight}
-              width={width}
-              onScroll={handleScroll}
-              cellComponent={renderCell as any}
-              cellProps={itemData || {}}
-            />
-          )}
-        </AutoSizer>
-      </Box>
+        {/* Cells */}
+        <CellsContainer>
+          {cells}
+        </CellsContainer>
+      </GridContent>
     </GridWrapper>
   );
 });
