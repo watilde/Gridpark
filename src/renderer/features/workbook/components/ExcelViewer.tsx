@@ -15,7 +15,7 @@ import {
   CellStyle,
   GridparkCodeFile,
 } from "../../../types/excel";
-import { parseGridSelector, ParsedGridSelector } from "../utils/selectorUtils"; // New import
+import { parseGridSelector, ParsedGridSelector } from "../../../utils/selectorUtils"; // New import
 
 import { excelTheme } from "./theme";
 import { ExcelGrid } from "./ExcelGrid";
