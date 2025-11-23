@@ -15,7 +15,7 @@ export const createDefaultManifest = (fileName: string): GridparkManifest => ({
   version: "1.0.0",
   description: "",
   apiVersion: 1,
-  script: "index.js",
+  script: "script.js",
   style: "style.css",
   permissions: {
     filesystem: "workbook",

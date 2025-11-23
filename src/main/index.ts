@@ -368,7 +368,7 @@ const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
       version: "1.0.0",
       description: "",
       apiVersion: 1,
-      script: "index.js",
+      script: "script.js",
       style: "style.css",
       sheets,
       permissions: {
