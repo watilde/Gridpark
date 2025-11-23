@@ -432,6 +432,8 @@ const recalculateSheetData = (data: CellData[][]): CellData[][] => {
 };
 
 function getColumnLabel(index: number): string {
+  // Excel column labels: A, B, ..., Z, AA, AB, ..., AZ, BA, BB, ...
+  // This is a base-26 system where A=0, Z=25, AA=26, etc.
   let label = "";
   let num = index;
   while (num >= 0) {
