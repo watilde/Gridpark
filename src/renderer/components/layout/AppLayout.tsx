@@ -6,11 +6,20 @@ const LayoutContainer = styled('div', {
   shouldForwardProp: (prop) => prop !== 'fullHeight',
 })<{ fullHeight: boolean }>(({ theme, fullHeight }) => ({
   display: 'flex',
+  flexDirection: 'column',
   flex: 1,
   height: fullHeight ? '100vh' : 'auto',
   backgroundColor: theme.palette.background.body,
   fontFamily: theme.fontFamily.body,
 }));
+
+// Container for sidebar and main content (below header)
+const BodyContainer = styled('div')({
+  display: 'flex',
+  flex: 1,
+  minHeight: 0,
+  overflow: 'hidden',
+});
 
 const Sidebar = styled(Sheet)(({ theme }) => ({
   width: '280px',
@@ -29,16 +38,14 @@ const MainContent = styled('div')({
   minHeight: 0,
 });
 
-const HeaderBar = styled(Sheet)(({ theme }) => ({
+// Full-width header bar (spans entire width)
+const HeaderBar = styled('div')(({ theme }) => ({
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '12px 20px',
+  flexDirection: 'column',
+  width: '100%',
   backgroundColor: theme.palette.background.surface,
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  minHeight: '60px',
-  zIndex: 1,
-  overflow: 'visible',
+  zIndex: 100,
+  flexShrink: 0,
 }));
 
 const Content = styled('main')(({ theme }) => ({
@@ -85,14 +92,31 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   return (
     <LayoutContainer className={className} fullHeight={fullHeight}>
-      {!hideSidebar && sidebar && <Sidebar variant="outlined">{sidebar}</Sidebar>}
-      <MainContent>
-        {header && <HeaderBar variant="outlined">{header}</HeaderBar>}
-        <Content>{children}</Content>
-        {!hideFooter && footer && <Footer variant="outlined">{footer}</Footer>}
-      </MainContent>
+      {/* Header spans full width at the top */}
+      {header && <HeaderBar>{header}</HeaderBar>}
+      
+      {/* Body contains sidebar and main content side by side */}
+      <BodyContainer>
+        {!hideSidebar && sidebar && <Sidebar variant="outlined">{sidebar}</Sidebar>}
+        <MainContent>
+          <Content>{children}</Content>
+          {!hideFooter && footer && <Footer variant="outlined">{footer}</Footer>}
+        </MainContent>
+      </BodyContainer>
     </LayoutContainer>
   );
 };
 
 AppLayout.displayName = 'GridparkAppLayout';
+
+/**
+ * Excel-style layout with full-width header:
+ * 
+ * ┌─────────────────────────────────────────┐
+ * │          Full Width Header              │
+ * ├──────────┬──────────────────────────────┤
+ * │          │                              │
+ * │ Sidebar  │      Main Content            │
+ * │          │                              │
+ * └──────────┴──────────────────────────────┘
+ */

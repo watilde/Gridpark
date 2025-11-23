@@ -6,8 +6,8 @@ import {
   Save as SaveIcon,
   Search as SearchIcon,
   Settings as SettingsIcon,
-  GridOn as GridIcon,
 } from "@mui/icons-material";
+import iconImage from '../../../assets/icon.png';
 
 interface HeaderProps {
   onUndo?: () => void;
@@ -65,10 +65,9 @@ const AppIconButton = styled('button')(({ theme }) => ({
   justifyContent: 'center',
   width: '32px',
   height: '32px',
-  padding: 0,
+  padding: '4px',
   border: 'none',
   backgroundColor: 'transparent',
-  color: '#107c41', // Excel green
   cursor: 'pointer',
   borderRadius: '4px',
   transition: 'background-color 0.15s ease',
@@ -77,8 +76,10 @@ const AppIconButton = styled('button')(({ theme }) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
   },
   
-  '& svg': {
-    fontSize: '24px',
+  '& img': {
+    width: '24px',
+    height: '24px',
+    objectFit: 'contain',
   },
 }));
 
@@ -203,7 +204,7 @@ const SearchIconOverlay = styled('div')(({ theme }) => ({
   },
 }));
 
-// Settings button (user icon styled)
+// Settings button (gear icon)
 const SettingsButton = styled('button')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -212,17 +213,18 @@ const SettingsButton = styled('button')(({ theme }) => ({
   height: '32px',
   padding: 0,
   border: 'none',
-  backgroundColor: '#d32f2f',
-  color: '#ffffff',
-  fontSize: '12px',
-  fontWeight: 600,
-  fontFamily: theme.fontFamily.body,
+  backgroundColor: 'transparent',
+  color: theme.palette.mode === 'dark' ? '#cccccc' : '#555555',
   cursor: 'pointer',
-  borderRadius: '50%',
+  borderRadius: '4px',
   transition: 'background-color 0.15s ease',
   
   '&:hover': {
-    backgroundColor: '#b71c1c',
+    backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
+  },
+  
+  '& svg': {
+    fontSize: '20px',
   },
 }));
 
@@ -263,7 +265,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           onClick={() => console.log('Gridpark icon clicked')}
           title="Gridpark"
         >
-          <GridIcon />
+          <img src={iconImage} alt="Gridpark" />
         </AppIconButton>
         
         <AutoSaveToggle
@@ -320,7 +322,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           onClick={onOpenSettings}
           title="Settings"
         >
-          GP
+          <SettingsIcon />
         </SettingsButton>
       </RightSection>
     </HeaderContainer>
