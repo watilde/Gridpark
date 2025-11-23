@@ -483,10 +483,6 @@ const _gridQuerySelectorAll = (
   return foundElements.map(el => createGridElement(el, currentSheetName, onCellChange, setCellStyle, setRangeStyle, getColumnLabel, parseCellRef)).filter(Boolean) as GridElement[];
 };
 
-function getCellKey(row: number, col: number): string {
-  return `${row}-${col}`;
-}
-
 const isColumnLabel = (str: string) => /^[A-Z]+$/.test(str);
 const isRowNumber = (str: string) => /^\d+$/.test(str);
 
