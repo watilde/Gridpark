@@ -164,7 +164,6 @@ export const Home: React.FC = () => {
     handlePersistSheetSession,
     saveWorkbookFile,
     setSheetDirtyMap,
-    setSheetSessions,
   });
 
   // Manifest Handlers
