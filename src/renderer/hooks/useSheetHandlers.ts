@@ -29,7 +29,6 @@ export const useSheetHandlers = ({
    */
   const handleSaveSheetSession = useCallback(
     (tabId: string, state: SheetSessionState) => {
-      handlePersistSheetSession(tabId, state);
       const tab = openTabs.find(
         (candidate): candidate is WorkbookTab & { kind: "sheet" } =>
           candidate.id === tabId && candidate.kind === "sheet",
@@ -54,7 +53,11 @@ export const useSheetHandlers = ({
       updateWorkbookReferences(tab.workbookId, updatedFile);
       saveWorkbookFile(updatedFile);
       
-      // Clear dirty state after successful save
+      // Update session with dirty=false and clear dirty map
+      const cleanState = { ...state, dirty: false };
+      handlePersistSheetSession(tabId, cleanState);
+      
+      // Also explicitly clear dirty state
       setSheetDirtyMap((prev) => {
         if (!prev[tabId]) return prev;
         const next = { ...prev };
