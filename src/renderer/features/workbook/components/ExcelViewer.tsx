@@ -57,7 +57,7 @@ const cloneSheetData = (data: CellData[][]): CellData[][] =>
   data.map((row) => row.map((cell) => ({ ...cell })));
 
 const DEFAULT_RENDERED_ROWS = 100; // Increased default for better UX with virtualization
-const DEFAULT_RENDERED_COLUMNS = 52; // Start with more columns to ensure horizontal scrollbar (A-Z, AA-AZ)
+const DEFAULT_RENDERED_COLUMNS = 100; // Start with many columns to ensure horizontal scrollbar and show beyond AZ (A-Z, AA-AZ, BA-CV)
 
 const createEmptyCell = (): CellData => ({
   value: null,
