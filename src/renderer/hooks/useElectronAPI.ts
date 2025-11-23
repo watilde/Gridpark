@@ -10,17 +10,26 @@ interface ElectronAPISnapshot {
   platform: string;
 }
 
+// Cache the snapshot to avoid infinite loops
+let cachedElectronSnapshot: ElectronAPISnapshot | null = null;
+
 /**
- * Get current Electron API snapshot
+ * Get current Electron API snapshot (cached)
  */
 const getElectronSnapshot = (): ElectronAPISnapshot => {
+  if (cachedElectronSnapshot) {
+    return cachedElectronSnapshot;
+  }
+
   const electronAPI = window.electronAPI;
-  return {
+  cachedElectronSnapshot = {
     isAvailable: Boolean(electronAPI),
     hasGridpark: Boolean(electronAPI?.gridpark),
     hasFileSystem: Boolean(electronAPI?.fs),
     platform: typeof navigator !== "undefined" ? navigator.platform : "unknown",
   };
+  
+  return cachedElectronSnapshot;
 };
 
 /**
