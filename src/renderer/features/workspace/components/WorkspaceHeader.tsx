@@ -123,7 +123,7 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
     backgroundColor: '#ffffff',
     borderRadius: '50%',
     position: 'absolute',
-    left: enabled ? '18px' : '10px',
+    left: enabled ? '28px' : '10px',
     top: '50%',
     transform: 'translateY(-50%)',
     transition: 'left 0.2s ease',
