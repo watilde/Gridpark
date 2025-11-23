@@ -671,53 +671,6 @@ const findElements = (
   return domElements.filter(el => matchesParsedSelector(el, parsed, currentSheetName));
 };
 
-const _gridQuerySelector = (
-  root: HTMLElement,
-  selector: string,
-  currentSheetName: string,
-  onCellChange: (row: number, col: number, value: any) => void,
-  setCellStyle: (row: number, col: number, style: CellStyle) => void,
-  setRangeStyle: (range: CellRange, style: CellStyle) => void,
-  getColumnLabel: (colIndex: number) => string,
-  parseCellRef: (ref: string) => { row: number; col: number } | null,
-): GridElement | null => {
-  const parsed = parseGridSelector(selector);
-  if (!parsed.elementType) {
-    console.warn("Invalid or unparseable selector for grid.querySelector:", selector);
-    return null;
-  }
-  // For _gridQuerySelector, we also need to pass the full selector string to matchesParsedSelector
-  // which is not currently available in ParsedGridSelector. Let's update ParsedGridSelector.
-  // For now, this is a placeholder.
-  const parsedWithSelectorString = { ...parsed, selectorString: selector };
-  const foundElement = findElements(root, parsedWithSelectorString, currentSheetName)[0];
-  if (!foundElement) return null;
-  return createGridElement(foundElement, currentSheetName, onCellChange, setCellStyle, setRangeStyle, getColumnLabel, parseCellRef);
-};
-
-const _gridQuerySelectorAll = (
-  root: HTMLElement,
-  selector: string,
-  currentSheetName: string,
-  onCellChange: (row: number, col: number, value: any) => void,
-  setCellStyle: (row: number, col: number, style: CellStyle) => void,
-  setRangeStyle: (range: CellRange, style: CellStyle) => void,
-  getColumnLabel: (colIndex: number) => string,
-): GridElement[] => {
-  const parsed = parseGridSelector(selector);
-  if (!parsed.elementType) {
-    console.warn("Invalid or unparseable selector for grid.querySelectorAll:", selector);
-    return [];
-  }
-  // For _gridQuerySelectorAll, we also need to pass the full selector string to matchesParsedSelector
-  // which is not currently available in ParsedGridSelector. Let's update ParsedGridSelector.
-  // For now, this is a placeholder.
-  const parsedWithSelectorString = { ...parsed, selectorString: selector };
-  const foundElements = findElements(root, parsedWithSelectorString, currentSheetName);
-  return foundElements.map(el => createGridElement(el, currentSheetName, onCellChange, setCellStyle, setRangeStyle, getColumnLabel, parseCellRef)).filter(Boolean) as GridElement[];
-};
-
-
 export interface ExcelViewerProps {
   file: ExcelFile | null;
   sheetIndex?: number;
