@@ -358,7 +358,7 @@ const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
       const key = `sheet-${index + 1}`;
       sheets[key] = {
         name: sheet.name,
-        main: `sheets/${slug}/main.js`,
+        main: `sheets/${slug}/script.js`,
         style: `sheets/${slug}/style.css`,
       };
     });

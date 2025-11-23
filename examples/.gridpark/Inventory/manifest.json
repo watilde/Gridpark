@@ -8,12 +8,12 @@
   "sheets": {
     "sheet-1": {
       "name": "Warehouse A",
-      "main": "sheets/warehouse-a/main.js",
+      "main": "sheets/warehouse-a/script.js",
       "style": "sheets/warehouse-a/style.css"
     },
     "sheet-2": {
       "name": "Warehouse B",
-      "main": "sheets/warehouse-b/main.js",
+      "main": "sheets/warehouse-b/script.js",
       "style": "sheets/warehouse-b/style.css"
     }
   },

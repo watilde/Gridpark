@@ -10,7 +10,7 @@ declare global {
 }
 
 const contentMap: Record<string, string> = {
-  "/demo/workbook/main.js": `document.addEventListener("change", (event) => {
+  "/demo/workbook/script.js": `document.addEventListener("change", (event) => {
   if (!event.target.matches('col[index="2"] cell')) return;
   const sum = [...document.querySelectorAll('col[index="2"] cell')]
     .reduce((acc, cell) => acc + Number(cell.value || 0), 0);

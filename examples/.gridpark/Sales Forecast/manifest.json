@@ -8,12 +8,12 @@
   "sheets": {
     "sheet-1": {
       "name": "Q1",
-      "main": "sheets/q1/main.js",
+      "main": "sheets/q1/script.js",
       "style": "sheets/q1/style.css"
     },
     "sheet-2": {
       "name": "Q2",
-      "main": "sheets/q2/main.js",
+      "main": "sheets/q2/script.js",
       "style": "sheets/q2/style.css"
     }
   },

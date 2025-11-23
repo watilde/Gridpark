@@ -8,12 +8,12 @@
   "sheets": {
     "sheet-1": {
       "name": "Employees",
-      "main": "sheets/employees/main.js",
+      "main": "sheets/employees/script.js",
       "style": "sheets/employees/style.css"
     },
     "sheet-2": {
       "name": "Products",
-      "main": "sheets/products/main.js",
+      "main": "sheets/products/script.js",
       "style": "sheets/products/style.css"
     }
   },

@@ -81,7 +81,7 @@ Gridpark is built upon a foundation of Excel compatibility, augmented with moder
 
 ### 3.4 File Management & Workspace (Gridpark Package)
 
-*   **Gridpark Project Structure**: Manages a `.gridpark` directory alongside `.xlsx` files, which contains `manifest.json` and associated code files (e.g., `main.js`, `style.css`) for workbooks and individual sheets.
+*   **Gridpark Project Structure**: Manages a `.gridpark` directory alongside `.xlsx` files, which contains `manifest.json` and associated code files (e.g., `script.js`, `style.css`) for workbooks and individual sheets.
 *   **Manifest Management**: Automatically generates a `manifest.json` for new or imported Excel files, allowing developers to define custom logic and styles.
 *   **File Tree Navigation**: A hierarchical file tree (`FileTree`) for navigating workbooks, sheets, manifests, and code files, providing visual cues for file types, selection, and dirty state.
 *   **Tab Management**: Supports multiple open tabs for different file types (sheets, manifests, code files) with active tab tracking and dirty state indicators.

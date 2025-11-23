@@ -68,9 +68,9 @@ const sheetCodeFiles = demoSheets.flatMap((sheet) => {
   return [
     {
       id: `sheet-${slug}-main`,
-      name: "main.js",
-      relativePath: `sheets/${slug}/main.js`,
-      absolutePath: `${basePath}/main.js`,
+      name: "script.js",
+      relativePath: `sheets/${slug}/script.js`,
+      absolutePath: `${basePath}/script.js`,
       rootDir: "/demo",
       scope: "sheet",
       role: "main",
@@ -96,9 +96,9 @@ const sheetCodeFiles = demoSheets.flatMap((sheet) => {
 const demoCodeFiles: GridparkCodeFile[] = [
   {
     id: "workbook-main",
-    name: "main.js",
-    relativePath: "workbook/main.js",
-    absolutePath: "/demo/workbook/main.js",
+    name: "script.js",
+    relativePath: "workbook/script.js",
+    absolutePath: "/demo/workbook/script.js",
     rootDir: "/demo",
     scope: "workbook",
     role: "main",
@@ -134,7 +134,7 @@ export const demoWorkbook: ExcelFile = {
     name: "Dog Walking Route Optimizer",
     version: "1.0.0",
     description: "Route planner for happy pups",
-    main: "workbook/main.js",
+    main: "workbook/script.js",
     style: "workbook/style.css",
   },
   gridparkPackage: demoPackage,
@@ -207,7 +207,7 @@ export const demoFileNodes: FileNode[] = [
 ];
 
 export const codeContents: Record<string,string> = {
-  "/demo/workbook/main.js": "",
+  "/demo/workbook/script.js": "",
   "/demo/workbook/style.css": "",
 };
 
