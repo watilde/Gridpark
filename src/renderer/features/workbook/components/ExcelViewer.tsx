@@ -433,14 +433,18 @@ const recalculateSheetData = (data: CellData[][]): CellData[][] => {
 
 function getColumnLabel(index: number): string {
   // Excel column labels: A, B, ..., Z, AA, AB, ..., AZ, BA, BB, ...
-  // This is a base-26 system where A=0, Z=25, AA=26, etc.
-  let label = "";
-  let num = index;
-  while (num >= 0) {
-    label = String.fromCharCode(65 + (num % 26)) + label;
-    num = Math.floor(num / 26) - 1;
+  // Excel uses 1-indexed columns internally (A=1, Z=26, AA=27, AZ=52, BA=53, ZZ=702, AAA=703)
+  // We convert from 0-indexed (A=0, Z=25, AA=26, etc.)
+  let result = "";
+  let num = index + 1; // Convert to 1-indexed
+  
+  while (num > 0) {
+    const remainder = (num - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    num = Math.floor((num - 1) / 26);
   }
-  return label;
+  
+  return result;
 }
 
 function getCellKey(row: number, col: number): string {
