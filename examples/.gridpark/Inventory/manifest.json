@@ -3,17 +3,17 @@
   "version": "1.0.0",
   "description": "Inventory Workbook manifest",
   "apiVersion": 1,
-  "main": "index.js",
+  "script": "index.js",
   "style": "style.css",
   "sheets": {
     "sheet-1": {
       "name": "Warehouse A",
-      "main": "sheets/warehouse-a/script.js",
+      "script": "sheets/warehouse-a/script.js",
       "style": "sheets/warehouse-a/style.css"
     },
     "sheet-2": {
       "name": "Warehouse B",
-      "main": "sheets/warehouse-b/script.js",
+      "script": "sheets/warehouse-b/script.js",
       "style": "sheets/warehouse-b/style.css"
     }
   },

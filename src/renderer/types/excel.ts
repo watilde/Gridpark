@@ -7,7 +7,7 @@ export interface GridparkManifest {
   version: string;
   description?: string;
   apiVersion?: number;
-  main?: string;
+  script?: string;
   style?: string;
   permissions?: {
     filesystem?: 'none' | 'workbook';
@@ -18,7 +18,7 @@ export interface GridparkManifest {
     string,
     {
       name: string;
-      main: string;
+      script: string;
       style?: string;
     }
   >;

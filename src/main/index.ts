@@ -156,15 +156,15 @@ const createGridparkPackage = (
     });
   };
 
-  if (manifest.main) {
-    pushFile("workbook", "main", manifest.main);
+  if (manifest.script) {
+    pushFile("workbook", "main", manifest.script);
   }
   if (manifest.style) {
     pushFile("workbook", "style", manifest.style);
   }
 
   Object.values(manifest.sheets ?? {}).forEach((sheet) => {
-    if (sheet.main) pushFile("sheet", "main", sheet.main, sheet.name);
+    if (sheet.script) pushFile("sheet", "main", sheet.script, sheet.name);
     if (sheet.style) pushFile("sheet", "style", sheet.style, sheet.name);
   });
 
@@ -358,7 +358,7 @@ const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
       const key = `sheet-${index + 1}`;
       sheets[key] = {
         name: sheet.name,
-        main: `sheets/${slug}/script.js`,
+        script: `sheets/${slug}/script.js`,
         style: `sheets/${slug}/style.css`,
       };
     });
@@ -368,7 +368,7 @@ const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
       version: "1.0.0",
       description: "",
       apiVersion: 1,
-      main: "index.js",
+      script: "index.js",
       style: "style.css",
       sheets,
       permissions: {

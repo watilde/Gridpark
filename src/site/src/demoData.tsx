@@ -134,7 +134,7 @@ export const demoWorkbook: ExcelFile = {
     name: "Dog Walking Route Optimizer",
     version: "1.0.0",
     description: "Route planner for happy pups",
-    main: "workbook/script.js",
+    script: "workbook/script.js",
     style: "workbook/style.css",
   },
   gridparkPackage: demoPackage,

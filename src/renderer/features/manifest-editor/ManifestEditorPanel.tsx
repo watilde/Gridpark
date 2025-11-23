@@ -258,8 +258,8 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
             <FormControl size="sm">
               <FormLabel>Script</FormLabel>
               <Input
-                value={manifest.main ?? ''}
-                onChange={(event) => updateManifest({ main: event.target.value })}
+                value={manifest.script ?? ''}
+                onChange={(event) => updateManifest({ script: event.target.value })}
                 disabled={disableInputs}
               />
             </FormControl>
