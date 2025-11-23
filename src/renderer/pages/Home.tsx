@@ -227,12 +227,24 @@ export const Home: React.FC = () => {
   const canEditManifest = useMemo(() => Boolean(window.electronAPI?.gridpark), []);
 
   // Placeholder handlers for future implementation
-  const handleBack = useCallback(() => {
-    console.log("Navigate back");
+  const handleUndo = useCallback(() => {
+    console.log("Undo action");
+    // TODO: Implement undo functionality
   }, []);
 
-  const handleProceed = useCallback(() => {
-    console.log("Proceed action");
+  const handleRedo = useCallback(() => {
+    console.log("Redo action");
+    // TODO: Implement redo functionality
+  }, []);
+
+  const handleSave = useCallback(() => {
+    console.log("Save action");
+    // TODO: Implement save functionality
+  }, []);
+
+  const handleAutoSaveToggle = useCallback((enabled: boolean) => {
+    console.log("AutoSave toggled:", enabled);
+    // TODO: Implement auto-save toggle
   }, []);
 
   const handleCellSelect = useCallback((pos: any) => {
@@ -248,11 +260,17 @@ export const Home: React.FC = () => {
       header={
         <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
           <WorkspaceHeader
-            onBack={handleBack}
-            onProceed={handleProceed}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onSave={handleSave}
             searchQuery={searchState.treeSearchQuery}
             onSearchChange={setTreeSearchQuery}
             onOpenSettings={() => settings.setSettingsOpen(true)}
+            autoSaveEnabled={false}
+            onAutoSaveToggle={handleAutoSaveToggle}
+            canUndo={false}
+            canRedo={false}
+            hasUnsavedChanges={dirtyNodeIds.size > 0}
           />
           <FormulaBar formulaBarState={formulaBarState} />
         </Box>

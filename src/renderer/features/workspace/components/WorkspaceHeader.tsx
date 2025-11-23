@@ -1,68 +1,328 @@
-import React from "react";
-import { Box, IconButton, Input, Stack } from "@mui/joy";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import SearchIcon from "@mui/icons-material/Search";
-import SettingsIcon from "@mui/icons-material/SettingsOutlined";
+import React, { useState } from "react";
+import { styled } from "@mui/joy/styles";
+import {
+  Undo as UndoIcon,
+  Redo as RedoIcon,
+  Save as SaveIcon,
+  Search as SearchIcon,
+  Settings as SettingsIcon,
+  GridOn as GridIcon,
+} from "@mui/icons-material";
 
 interface HeaderProps {
-  onBack: () => void;
-  onProceed: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onSave?: () => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onOpenSettings: () => void;
+  autoSaveEnabled?: boolean;
+  onAutoSaveToggle?: (enabled: boolean) => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  hasUnsavedChanges?: boolean;
 }
 
+// Excel-style header container
+const HeaderContainer = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  height: '48px',
+  padding: '0 16px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f3f3f3',
+  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
+  gap: '16px',
+}));
+
+// Left section with app icon and controls
+const LeftSection = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+});
+
+// Center section with search bar
+const CenterSection = styled('div')({
+  flex: 1,
+  display: 'flex',
+  justifyContent: 'center',
+  maxWidth: '600px',
+  margin: '0 auto',
+});
+
+// Right section with settings
+const RightSection = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+});
+
+// App icon button
+const AppIconButton = styled('button')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '32px',
+  height: '32px',
+  padding: 0,
+  border: 'none',
+  backgroundColor: 'transparent',
+  color: '#107c41', // Excel green
+  cursor: 'pointer',
+  borderRadius: '4px',
+  transition: 'background-color 0.15s ease',
+  
+  '&:hover': {
+    backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
+  },
+  
+  '& svg': {
+    fontSize: '24px',
+  },
+}));
+
+// AutoSave toggle button
+const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '4px 8px',
+  border: 'none',
+  backgroundColor: 'transparent',
+  color: theme.palette.mode === 'dark' ? '#cccccc' : '#555555',
+  fontSize: '13px',
+  fontFamily: theme.fontFamily.body,
+  cursor: 'pointer',
+  borderRadius: '4px',
+  transition: 'background-color 0.15s ease',
+  whiteSpace: 'nowrap',
+  
+  '&:hover': {
+    backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
+  },
+  
+  '&::before': {
+    content: '""',
+    display: 'block',
+    width: '32px',
+    height: '16px',
+    backgroundColor: enabled ? '#107c41' : theme.palette.mode === 'dark' ? '#555' : '#999',
+    borderRadius: '8px',
+    position: 'relative',
+    transition: 'background-color 0.2s ease',
+  },
+  
+  '&::after': {
+    content: '""',
+    display: 'block',
+    width: '12px',
+    height: '12px',
+    backgroundColor: '#ffffff',
+    borderRadius: '50%',
+    position: 'absolute',
+    left: enabled ? '18px' : '2px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    transition: 'left 0.2s ease',
+  },
+  
+  position: 'relative',
+}));
+
+// Action button (Save, Undo, Redo)
+const ActionButton = styled('button')<{ disabled?: boolean }>(({ theme, disabled }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '32px',
+  height: '32px',
+  padding: 0,
+  border: 'none',
+  backgroundColor: 'transparent',
+  color: disabled 
+    ? (theme.palette.mode === 'dark' ? '#555' : '#aaa')
+    : (theme.palette.mode === 'dark' ? '#cccccc' : '#555555'),
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  borderRadius: '4px',
+  transition: 'background-color 0.15s ease',
+  opacity: disabled ? 0.4 : 1,
+  
+  '&:hover': {
+    backgroundColor: disabled ? 'transparent' : (theme.palette.mode === 'dark' ? '#333' : '#e5e5e5'),
+  },
+  
+  '& svg': {
+    fontSize: '18px',
+  },
+}));
+
+// Search input container
+const SearchContainer = styled('div')({
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+});
+
+// Search input field
+const SearchInput = styled('input')(({ theme }) => ({
+  width: '100%',
+  height: '32px',
+  padding: '0 12px 0 36px',
+  border: `1px solid ${theme.palette.mode === 'dark' ? '#555' : '#d0d0d0'}`,
+  borderRadius: '4px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#252525' : '#ffffff',
+  color: theme.palette.mode === 'dark' ? '#d4d4d4' : '#000000',
+  fontSize: '13px',
+  fontFamily: theme.fontFamily.body,
+  outline: 'none',
+  transition: 'border-color 0.15s ease',
+  
+  '&::placeholder': {
+    color: theme.palette.mode === 'dark' ? '#666' : '#999',
+  },
+  
+  '&:focus': {
+    borderColor: theme.palette.mode === 'dark' ? '#107c41' : '#107c41',
+  },
+}));
+
+// Search icon overlay
+const SearchIconOverlay = styled('div')(({ theme }) => ({
+  position: 'absolute',
+  left: '12px',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: theme.palette.mode === 'dark' ? '#999' : '#666',
+  pointerEvents: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  
+  '& svg': {
+    fontSize: '16px',
+  },
+}));
+
+// Settings button (user icon styled)
+const SettingsButton = styled('button')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '32px',
+  height: '32px',
+  padding: 0,
+  border: 'none',
+  backgroundColor: '#d32f2f',
+  color: '#ffffff',
+  fontSize: '12px',
+  fontWeight: 600,
+  fontFamily: theme.fontFamily.body,
+  cursor: 'pointer',
+  borderRadius: '50%',
+  transition: 'background-color 0.15s ease',
+  
+  '&:hover': {
+    backgroundColor: '#b71c1c',
+  },
+}));
+
+/**
+ * Excel-Style WorkspaceHeader Component
+ * 
+ * Minimalist header bar matching Excel's design:
+ * - Left: Gridpark icon, AutoSave toggle, Save button, Undo, Redo
+ * - Center: Search bar spanning across columns
+ * - Right: Settings/user icon
+ * - Dark theme optimized with icon-based interface
+ */
 export const WorkspaceHeader: React.FC<HeaderProps> = ({
-  onBack,
-  onProceed,
+  onUndo,
+  onRedo,
+  onSave,
   searchQuery,
   onSearchChange,
   onOpenSettings,
+  autoSaveEnabled = false,
+  onAutoSaveToggle,
+  canUndo = false,
+  canRedo = false,
+  hasUnsavedChanges = false,
 }) => {
+  const [localAutoSave, setLocalAutoSave] = useState(autoSaveEnabled);
+
+  const handleAutoSaveToggle = () => {
+    const newValue = !localAutoSave;
+    setLocalAutoSave(newValue);
+    onAutoSaveToggle?.(newValue);
+  };
+
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
-      <Box sx={{ display: "flex", alignItems: "center", width: "100%", gap: 2 }}>
-        <Stack direction="row" spacing={0.5}>
-          <IconButton
-            size="sm"
-            variant="plain"
-            color="neutral"
-            onClick={onBack}
-            aria-label="Go back"
-          >
-            <ArrowBackIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="sm"
-            variant="plain"
-            color="neutral"
-            onClick={onProceed}
-            aria-label="Go forward"
-          >
-            <ArrowForwardIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-        <Input
-          placeholder="Search files or sheets"
-          size="sm"
-          startDecorator={<SearchIcon fontSize="small" />}
-          variant="soft"
-          color="neutral"
-          sx={{ flex: 1, minWidth: 200 }}
-          value={searchQuery}
-          onChange={(event) => onSearchChange(event.target.value)}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={onOpenSettings}
-          aria-label="Open settings"
+    <HeaderContainer>
+      <LeftSection>
+        <AppIconButton
+          onClick={() => console.log('Gridpark icon clicked')}
+          title="Gridpark"
         >
-          <SettingsIcon fontSize="small" />
-        </IconButton>
-      </Box>
-    </Box>
+          <GridIcon />
+        </AppIconButton>
+        
+        <AutoSaveToggle
+          enabled={localAutoSave}
+          onClick={handleAutoSaveToggle}
+          title={`AutoSave: ${localAutoSave ? 'On' : 'Off'}`}
+        >
+          AutoSave
+        </AutoSaveToggle>
+        
+        <ActionButton
+          onClick={onSave}
+          disabled={!hasUnsavedChanges}
+          title="Save"
+        >
+          <SaveIcon />
+        </ActionButton>
+        
+        <ActionButton
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Undo"
+        >
+          <UndoIcon />
+        </ActionButton>
+        
+        <ActionButton
+          onClick={onRedo}
+          disabled={!canRedo}
+          title="Redo"
+        >
+          <RedoIcon />
+        </ActionButton>
+      </LeftSection>
+      
+      <CenterSection>
+        <SearchContainer style={{ position: 'relative' }}>
+          <SearchIconOverlay>
+            <SearchIcon />
+          </SearchIconOverlay>
+          <SearchInput
+            type="text"
+            placeholder="検索"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            spellCheck={false}
+            autoComplete="off"
+          />
+        </SearchContainer>
+      </CenterSection>
+      
+      <RightSection>
+        <SettingsButton
+          onClick={onOpenSettings}
+          title="Settings"
+        >
+          GP
+        </SettingsButton>
+      </RightSection>
+    </HeaderContainer>
   );
 };
