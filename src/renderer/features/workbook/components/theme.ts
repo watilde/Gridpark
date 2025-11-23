@@ -1,5 +1,5 @@
 import { extendTheme } from '@mui/joy/styles';
-import { colors } from '../../theme/tokens';
+import { colors } from '../../../theme/tokens';
 
 export const excelTheme = extendTheme({
   colorSchemes: {
