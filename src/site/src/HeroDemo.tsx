@@ -21,16 +21,13 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/SettingsOutlined";
-import { AppLayout } from "@renderer/components/ui/layout/AppLayout";
-import {
-  FileTree,
-  type FileNode,
-} from "@renderer/components/ui/features/FileTree/FileTree";
+import { AppLayout } from "@renderer/components/layout/AppLayout";
+import { FileTree, type FileNode } from "@renderer/features/FileTree/FileTree";
 import {
   ExcelViewer,
   type SheetSessionState,
-} from "@renderer/components/ui/features/ExcelViewer/ExcelViewer";
-import { CodeEditorPanel } from "@renderer/components/ui/features/Monaco/CodeEditorPanel";
+} from "@renderer/features/ExcelViewer/ExcelViewer";
+import { CodeEditorPanel } from "@renderer/features/Monaco/CodeEditorPanel";
 import type { GridparkCodeFile } from "@renderer/types/excel";
 import {
   demoWorkbook,

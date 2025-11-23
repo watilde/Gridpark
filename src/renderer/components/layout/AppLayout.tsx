@@ -38,6 +38,7 @@ const HeaderBar = styled(Sheet)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
   minHeight: '60px',
   zIndex: 1,
+  overflow: 'visible',
 }));
 
 const Content = styled('main')(({ theme }) => ({

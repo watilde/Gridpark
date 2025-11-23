@@ -49,6 +49,8 @@
     "@types/jest": "^30.0.0",
     "@types/react": "^19.1.14",
     "@types/react-dom": "^19.1.9",
+    "@types/react-virtualized-auto-sizer": "^1.0.4",
+    "@types/react-window": "^1.8.8",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^5.0.4",
@@ -79,6 +81,8 @@
     "monaco-editor": "^0.54.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-virtualized-auto-sizer": "^1.0.26",
+    "react-window": "^2.2.3",
     "xlsx": "^0.18.5"
   }
 }

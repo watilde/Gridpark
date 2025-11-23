@@ -46,13 +46,13 @@ const MenuItem = styled('li')<{ active?: boolean }>(({ theme, active }) => ({
     cursor: 'pointer',
     transition: 'all 0.15s ease',
     fontSize: '14px',
-    color: active ? theme.palette.primary[600] : theme.palette.text.primary,
-    backgroundColor: active ? theme.palette.primary[100] : 'transparent',
+    color: active ? theme.palette.primary.plainColor : theme.palette.text.primary,
+    backgroundColor: active ? theme.palette.background.level2 : 'transparent',
     
     '&:hover': {
       backgroundColor: active 
-        ? theme.palette.primary[200] 
-        : theme.palette.neutral[100],
+        ? theme.palette.background.level1 
+        : theme.palette.neutral.plainHoverBg || theme.palette.neutral[100],
     },
     
     '& .menu-icon': {

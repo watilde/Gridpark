@@ -4,7 +4,7 @@ import type {
   GridparkCodeFile,
   GridparkPackage,
 } from "@renderer/types/excel";
-import type { FileNode } from "@renderer/components/ui/features/FileTree/FileTree";
+import type { FileNode } from "@renderer/features/FileTree/FileTree";
 
 const createSheet = (name: string, rows: Array<Array<string | number>>) => {
   const data = rows.map((row) =>

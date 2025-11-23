@@ -176,7 +176,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
 export const FileTree: React.FC<FileTreeProps> = ({ files, selectedNodeId, onNodeSelect, title, fullHeight = true, dirtyNodeIds }) => {
   return (
     <Sheet
-      variant="outlined"
+      variant="plain"
       sx={{
         height: fullHeight ? '100%' : 'auto',
         borderRadius: 0,
