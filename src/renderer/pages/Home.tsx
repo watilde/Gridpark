@@ -92,7 +92,7 @@ export const Home: React.FC = () => {
     codeSessions,
     ensureCodeSession,
     handleCodeChange,
-    onSaveCode: handleSaveCode,
+    onSaveCode,
   } = useCodeSessions();
 
   // Unified workspace hook (consolidates 4 previous hooks)
@@ -236,8 +236,39 @@ export const Home: React.FC = () => {
   }, []);
 
   const handleSave = useCallback(() => {
-    // TODO: Implement save functionality
-  }, []);
+    if (!activeTab) return;
+    
+    if (activeTab.kind === "sheet") {
+      // Save sheet data
+      const session = sheetSessions[activeTab.id];
+      if (session) {
+        handleSaveSheetSession(activeTab.id, session);
+      }
+    } else if (activeTab.kind === "manifest") {
+      // Save manifest
+      handleSaveManifest(activeTab.workbookId, activeTab.file);
+    } else if (activeTab.kind === "code") {
+      // Save code file
+      onSaveCode(activeTab.codeFile).catch((error) => {
+        console.error("Failed to save code file:", error);
+      });
+    }
+  }, [activeTab, sheetSessions, handleSaveSheetSession, handleSaveManifest, onSaveCode]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Cmd+S (Mac) or Ctrl+S (Windows/Linux) for save
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        handleSave();
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
 
   const handleAutoSaveToggle = useCallback((enabled: boolean) => {
     // TODO: Implement auto-save toggle
