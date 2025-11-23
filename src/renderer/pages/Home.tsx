@@ -236,19 +236,33 @@ export const Home: React.FC = () => {
   }, []);
 
   const handleSave = useCallback(() => {
-    if (!activeTab) return;
+    console.log('[Home] handleSave called', { 
+      hasActiveTab: !!activeTab, 
+      tabKind: activeTab?.kind,
+      hasSession: activeTab?.kind === 'sheet' ? !!sheetSessions[activeTab.id] : true
+    });
+    
+    if (!activeTab) {
+      console.warn('[Home] No active tab to save');
+      return;
+    }
     
     if (activeTab.kind === "sheet") {
       // Save sheet data
       const session = sheetSessions[activeTab.id];
       if (session) {
+        console.log('[Home] Saving sheet session', activeTab.id);
         handleSaveSheetSession(activeTab.id, session);
+      } else {
+        console.warn('[Home] No sheet session found for', activeTab.id);
       }
     } else if (activeTab.kind === "manifest") {
       // Save manifest
+      console.log('[Home] Saving manifest', activeTab.workbookId);
       handleSaveManifest(activeTab.workbookId, activeTab.file);
     } else if (activeTab.kind === "code") {
       // Save code file
+      console.log('[Home] Saving code file', activeTab.codeFile.absolutePath);
       onSaveCode(activeTab.codeFile).catch((error) => {
         console.error("Failed to save code file:", error);
       });
@@ -260,6 +274,10 @@ export const Home: React.FC = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Cmd+S (Mac) or Ctrl+S (Windows/Linux) for save
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        console.log('[Home] Ctrl+S / Cmd+S pressed', { 
+          metaKey: event.metaKey, 
+          ctrlKey: event.ctrlKey 
+        });
         event.preventDefault();
         handleSave();
         return;

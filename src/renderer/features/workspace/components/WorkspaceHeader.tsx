@@ -277,7 +277,10 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
         </AutoSaveToggle>
         
         <ActionButton
-          onClick={onSave}
+          onClick={() => {
+            console.log('[WorkspaceHeader] Save button clicked', { hasUnsavedChanges });
+            onSave?.();
+          }}
           disabled={!hasUnsavedChanges}
           title="Save"
         >
