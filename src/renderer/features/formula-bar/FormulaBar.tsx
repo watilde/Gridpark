@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { styled } from '@mui/joy/styles';
 import { Close, Check, ArrowDropDown } from '@mui/icons-material';
 
@@ -128,48 +128,19 @@ const FormulaInput = styled('input')<{ hasError?: boolean }>(({ theme, hasError 
   },
 }));
 
-interface FormulaValidation {
-  isValid: boolean;
-  error?: string;
-}
-
 export interface FormulaBarProps {
   /**
-   * Current cell reference (e.g., "A1", "B5")
+   * Formula bar state from useFormulaBarOptimized hook
    */
-  cellReference?: string;
-  /**
-   * Formula or value in the selected cell
-   */
-  value?: string;
-  /**
-   * Placeholder text for empty formula bar
-   */
-  placeholder?: string;
-  /**
-   * Formula change handler
-   */
-  onFormulaChange?: (formula: string) => void;
-  /**
-   * Formula execution handler (triggered by Enter or confirm button)
-   */
-  onFormulaExecute?: (formula: string) => void;
-  /**
-   * Cancel handler (triggered by Escape or cancel button)
-   */
-  onFormulaCancel?: () => void;
-  /**
-   * Function button click handler
-   */
-  onFunctionButtonClick?: () => void;
-  /**
-   * Real-time formula validation
-   */
-  onValidateFormula?: (formula: string) => FormulaValidation;
-  /**
-   * Read-only mode
-   */
-  readOnly?: boolean;
+  formulaBarState: {
+    activeCellAddress: string;
+    formulaBarValue: string;
+    formulaBarDisabled: boolean;
+    handleFormulaInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    handleFormulaKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+    handleFormulaFxToggle: () => void;
+    formulaInputRef: React.RefObject<HTMLInputElement>;
+  };
 }
 
 /**
@@ -181,95 +152,38 @@ export interface FormulaBarProps {
  * - Formula input with monospace font
  * - Flat design with subtle hover effects
  * - Dark mode optimized with light gray text on dark background
+ * 
+ * Integrated with useFormulaBarOptimized hook for state management:
+ * - Displays selected cell reference (activeCellAddress)
+ * - Shows/edits formula bar value
+ * - Grays out buttons when no cell selected (formulaBarDisabled)
+ * - Keyboard shortcuts: Enter (confirm), Escape (cancel)
  */
-export const FormulaBar: React.FC<FormulaBarProps> = ({
-  cellReference = 'A1',
-  value = '',
-  placeholder = '',
-  onFormulaChange,
-  onFormulaExecute,
-  onFormulaCancel,
-  onFunctionButtonClick,
-  onValidateFormula,
-  readOnly = false,
-}) => {
-  const [currentValue, setCurrentValue] = useState(value);
-  const [validation, setValidation] = useState<FormulaValidation>({ isValid: true });
-  const [isEditing, setIsEditing] = useState(false);
-  const [originalValue, setOriginalValue] = useState(value);
+export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
+  const {
+    activeCellAddress,
+    formulaBarValue,
+    formulaBarDisabled,
+    handleFormulaInputChange,
+    handleFormulaKeyDown,
+    handleFormulaFxToggle,
+    formulaInputRef,
+  } = formulaBarState;
 
-  // Update internal state when external value changes
-  React.useEffect(() => {
-    setCurrentValue(value);
-    setOriginalValue(value);
-  }, [value]);
-
-  const handleValueChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setCurrentValue(newValue);
-    onFormulaChange?.(newValue);
-    
-    // Real-time validation for formulas
-    if (onValidateFormula && newValue.trim().startsWith('=')) {
-      const validationResult = onValidateFormula(newValue);
-      setValidation(validationResult);
-    } else {
-      setValidation({ isValid: true });
-    }
-  }, [onFormulaChange, onValidateFormula]);
-
-  const handleConfirm = useCallback(() => {
-    if (validation.isValid) {
-      onFormulaExecute?.(currentValue);
-      setOriginalValue(currentValue);
-      setIsEditing(false);
-    }
-  }, [currentValue, validation.isValid, onFormulaExecute]);
-
-  const handleCancel = useCallback(() => {
-    setCurrentValue(originalValue);
-    onFormulaChange?.(originalValue);
-    onFormulaCancel?.();
-    setIsEditing(false);
-    setValidation({ isValid: true });
-  }, [originalValue, onFormulaChange, onFormulaCancel]);
-
-  const handleFunctionClick = useCallback(() => {
-    onFunctionButtonClick?.();
-  }, [onFunctionButtonClick]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleConfirm();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleCancel();
-    }
-  }, [handleConfirm, handleCancel]);
-
-  const handleFocus = useCallback(() => {
-    setIsEditing(true);
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    // Don't immediately reset on blur - let user click buttons
-    // setIsEditing(false);
-  }, []);
-
-  const hasError = !validation.isValid && validation.error;
-  const showActionButtons = isEditing && !readOnly;
+  // Show action buttons only when editing (when value is being modified)
+  const isEditing = formulaBarValue.length > 0 && !formulaBarDisabled;
 
   return (
     <FormulaBarContainer>
       <CellReferenceContainer>
         <CellReferenceText>
-          {cellReference}
+          {activeCellAddress || 'A1'}
         </CellReferenceText>
         <CellReferenceDropdown
           type="button"
           title="Name Box"
           onClick={() => console.log('Name box dropdown')}
+          disabled={formulaBarDisabled}
         >
           <ArrowDropDown />
         </CellReferenceDropdown>
@@ -278,30 +192,40 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
       <ButtonGroup>
         <ActionButton
           variant="cancel"
-          onClick={handleCancel}
+          onClick={() => {
+            // Trigger Escape key event to cancel
+            const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+            formulaInputRef.current?.dispatchEvent(event);
+          }}
           title="Cancel (Esc)"
           type="button"
-          visible={showActionButtons}
+          visible={isEditing}
+          disabled={formulaBarDisabled}
         >
           <Close />
         </ActionButton>
         
         <ActionButton
           variant="confirm"
-          onClick={handleConfirm}
-          disabled={!validation.isValid}
+          onClick={() => {
+            // Trigger Enter key event to confirm
+            const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+            formulaInputRef.current?.dispatchEvent(event);
+          }}
           title="Confirm (Enter)"
           type="button"
-          visible={showActionButtons}
+          visible={isEditing}
+          disabled={formulaBarDisabled}
         >
           <Check />
         </ActionButton>
         
         <ActionButton
           variant="function"
-          onClick={handleFunctionClick}
+          onClick={handleFormulaFxToggle}
           title="Insert Function"
           type="button"
+          disabled={formulaBarDisabled}
         >
           <span style={{ fontWeight: 'bold', fontSize: '11px' }}>fx</span>
         </ActionButton>
@@ -309,15 +233,13 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
       
       <FormulaInputContainer>
         <FormulaInput
+          ref={formulaInputRef}
           type="text"
-          value={currentValue}
-          placeholder={placeholder}
-          hasError={hasError}
-          disabled={readOnly}
-          onChange={handleValueChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
+          value={formulaBarValue}
+          placeholder={formulaBarDisabled ? '' : 'Enter formula or value'}
+          disabled={formulaBarDisabled}
+          onChange={handleFormulaInputChange}
+          onKeyDown={handleFormulaKeyDown}
           spellCheck={false}
           autoComplete="off"
         />
