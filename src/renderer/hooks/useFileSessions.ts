@@ -264,6 +264,7 @@ export const useCodeSessions = () => {
 
   const readCodeFile = useCallback(async (codeFile: GridparkCodeFile) => {
     const key = getCodeSessionKey(codeFile);
+    console.log('[useFileSessions] readCodeFile called', { codeFile, key });
     setCodeSessions((prev) => ({
       ...prev,
       [key]: {
@@ -276,19 +277,23 @@ export const useCodeSessions = () => {
     }));
     try {
       const gridparkApi = window.electronAPI?.gridpark;
+      console.log('[useFileSessions] gridparkApi available:', !!gridparkApi, 'readFile:', !!gridparkApi?.readFile);
       if (!gridparkApi?.readFile) {
         throw new Error(
           "Gridpark files can only be edited in the desktop application.",
         );
       }
+      console.log('[useFileSessions] Calling gridparkApi.readFile with:', { path: codeFile.absolutePath, rootDir: codeFile.rootDir });
       const response = await gridparkApi.readFile({
         path: codeFile.absolutePath,
         rootDir: codeFile.rootDir,
       });
+      console.log('[useFileSessions] gridparkApi.readFile response:', response);
       if (!response?.success) {
         throw new Error(response?.error ?? "Failed to load file.");
       }
       const content = response.content ?? "";
+      console.log('[useFileSessions] Successfully loaded file, content length:', content.length);
       setCodeSessions((prev) => ({
         ...prev,
         [key]: {
@@ -301,6 +306,7 @@ export const useCodeSessions = () => {
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error('[useFileSessions] Error reading code file:', message, error);
       setCodeSessions((prev) => ({
         ...prev,
         [key]: {
@@ -317,8 +323,13 @@ export const useCodeSessions = () => {
   const ensureCodeSession = useCallback(
     (codeFile: GridparkCodeFile) => {
       const key = getCodeSessionKey(codeFile);
+      console.log('[useFileSessions] ensureCodeSession called', { codeFile, key });
       setCodeSessions((prev) => {
-        if (prev[key]) return prev;
+        if (prev[key]) {
+          console.log('[useFileSessions] Session already exists for key:', key);
+          return prev;
+        }
+        console.log('[useFileSessions] Creating new session for key:', key);
         return {
           ...prev,
           [key]: {

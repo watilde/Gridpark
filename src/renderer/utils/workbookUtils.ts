@@ -16,23 +16,30 @@ const createCodeNode = (
   workbookId: string,
   codeFile: GridparkCodeFile,
   displayName?: string,
-): FileNode => ({
-  id: `${parentId}-${codeFile.id}`,
-  name: displayName ?? codeFile.name,
-  type: "code",
-  parentId,
-  workbookId,
-  codeFile,
-});
+): FileNode => {
+  const node: FileNode = {
+    id: `${parentId}-${codeFile.id}`,
+    name: displayName ?? codeFile.name,
+    type: "code",
+    parentId,
+    workbookId,
+    codeFile,
+  };
+  console.log('[workbookUtils] createCodeNode:', { parentId, workbookId, codeFile, displayName, node });
+  return node;
+};
 
 export const createWorkbookNode = (excelFile: ExcelFile, id: string): FileNode => {
+  console.log('[workbookUtils] createWorkbookNode called', { excelFile: excelFile.name, id, hasGridparkPackage: !!excelFile.gridparkPackage });
   const codeFiles = excelFile.gridparkPackage?.files ?? [];
+  console.log('[workbookUtils] Code files found:', codeFiles.length, codeFiles.map(f => ({ name: f.name, scope: f.scope, role: f.role, language: f.language })));
   const workbookJs = codeFiles.find(
     (file) => file.scope === "workbook" && file.role === "main",
   );
   const workbookCss = codeFiles.find(
     (file) => file.scope === "workbook" && file.role === "style",
   );
+  console.log('[workbookUtils] Workbook-level files', { workbookJs: !!workbookJs, workbookCss: !!workbookCss });
 
   const sheetNodes: FileNode[] = excelFile.sheets.map((sheet, index) => {
     const sheetId = `${id}-sheet-${index}`;
