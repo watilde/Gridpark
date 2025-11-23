@@ -128,10 +128,82 @@ const FormulaInput = styled('input')<{ hasError?: boolean }>(({ theme, hasError 
   },
 }));
 
+// Formula menu dropdown container
+const FormulaMenuContainer = styled('div')<{ position: { top: number; left: number; width: number } }>(({ theme, position }) => ({
+  position: 'fixed',
+  top: position.top,
+  left: position.left,
+  width: Math.max(position.width, 300),
+  maxHeight: '400px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
+  border: `1px solid ${theme.palette.mode === 'dark' ? '#3a3a3a' : '#d0d0d0'}`,
+  borderRadius: '4px',
+  boxShadow: theme.palette.mode === 'dark' 
+    ? '0 4px 12px rgba(0, 0, 0, 0.5)' 
+    : '0 4px 12px rgba(0, 0, 0, 0.15)',
+  zIndex: 1000,
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+}));
+
+const FormulaSearchInput = styled('input')(({ theme }) => ({
+  width: '100%',
+  padding: '8px 12px',
+  border: 'none',
+  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? '#3a3a3a' : '#d0d0d0'}`,
+  outline: 'none',
+  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+  fontSize: '13px',
+  fontFamily: theme.fontFamily.body,
+  
+  '&::placeholder': {
+    color: theme.palette.mode === 'dark' ? '#666666' : '#999999',
+  },
+}));
+
+const FormulaOptionsContainer = styled('div')({
+  flex: 1,
+  overflowY: 'auto',
+  overflowX: 'hidden',
+});
+
+const FormulaCategoryHeader = styled('div')(({ theme }) => ({
+  padding: '8px 12px',
+  fontSize: '11px',
+  fontWeight: 600,
+  color: theme.palette.mode === 'dark' ? '#888888' : '#666666',
+  backgroundColor: theme.palette.mode === 'dark' ? '#252525' : '#f5f5f5',
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
+}));
+
+const FormulaOptionItem = styled('div')(({ theme }) => ({
+  padding: '8px 12px',
+  cursor: 'pointer',
+  fontSize: '13px',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+  
+  '&:hover': {
+    backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#f0f0f0',
+  },
+  
+  '& .formula-label': {
+    fontWeight: 500,
+    fontFamily: '"Consolas", "Courier New", monospace',
+  },
+  
+  '& .formula-description': {
+    fontSize: '11px',
+    color: theme.palette.mode === 'dark' ? '#888888' : '#666666',
+    marginTop: '2px',
+  },
+}));
+
 export interface FormulaBarProps {
   /**
    * Formula bar state from useFormulaBarOptimized hook
-   * Only the properties needed by FormulaBar component
    */
   formulaBarState: {
     activeCellAddress: string;
@@ -141,8 +213,17 @@ export interface FormulaBarProps {
     handleFormulaKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
     handleFormulaFxToggle: () => void;
     formulaInputRef: React.RefObject<HTMLInputElement>;
-    // Note: The full useFormulaBarOptimized return type includes many more properties,
-    // but FormulaBar only needs these specific ones
+    // Formula menu properties
+    formulaMenuOpen: boolean;
+    setFormulaMenuOpen: (open: boolean) => void;
+    formulaSearchQuery: string;
+    setFormulaSearchQuery: (query: string) => void;
+    formulaMenuPosition: { top: number; left: number; width: number } | null;
+    setFormulaMenuPosition: (position: { top: number; left: number; width: number } | null) => void;
+    formulaBarContainerRef: React.RefObject<HTMLDivElement>;
+    formulaSearchInputRef: React.RefObject<HTMLInputElement>;
+    filteredFormulaOptions: Array<{ category: string; items: Array<{ label: string; description: string; template: string; category: string }> }>;
+    handleFormulaOptionSelect: (option: { label: string; description: string; template: string; category: string }) => void;
   };
 }
 
@@ -171,13 +252,36 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
     handleFormulaKeyDown,
     handleFormulaFxToggle,
     formulaInputRef,
+    formulaMenuOpen,
+    setFormulaMenuOpen,
+    formulaSearchQuery,
+    setFormulaSearchQuery,
+    formulaMenuPosition,
+    setFormulaMenuPosition,
+    formulaBarContainerRef,
+    formulaSearchInputRef,
+    filteredFormulaOptions,
+    handleFormulaOptionSelect,
   } = formulaBarState;
 
   // Show action buttons only when editing (when value is being modified)
   const isEditing = formulaBarValue.length > 0 && !formulaBarDisabled;
 
+  // Update menu position when fx button is clicked
+  React.useEffect(() => {
+    if (formulaMenuOpen && formulaBarContainerRef.current && !formulaMenuPosition) {
+      const rect = formulaBarContainerRef.current.getBoundingClientRect();
+      setFormulaMenuPosition({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [formulaMenuOpen, formulaMenuPosition, formulaBarContainerRef, setFormulaMenuPosition]);
+
   return (
-    <FormulaBarContainer>
+    <>
+      <FormulaBarContainer ref={formulaBarContainerRef}>
       <CellReferenceContainer>
         <CellReferenceText>
           {activeCellAddress}
@@ -248,6 +352,59 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
         />
       </FormulaInputContainer>
     </FormulaBarContainer>
+
+    {/* Formula options menu */}
+    {formulaMenuOpen && formulaMenuPosition && (
+      <>
+        {/* Backdrop to close menu on outside click */}
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+          }}
+          onClick={() => setFormulaMenuOpen(false)}
+        />
+        
+        <FormulaMenuContainer position={formulaMenuPosition}>
+          <FormulaSearchInput
+            ref={formulaSearchInputRef}
+            type="text"
+            placeholder="Search formulas..."
+            value={formulaSearchQuery}
+            onChange={(e) => setFormulaSearchQuery(e.target.value)}
+            autoFocus
+          />
+          
+          <FormulaOptionsContainer>
+            {filteredFormulaOptions.length === 0 ? (
+              <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+                No formulas found
+              </div>
+            ) : (
+              filteredFormulaOptions.map(({ category, items }) => (
+                <div key={category}>
+                  <FormulaCategoryHeader>{category}</FormulaCategoryHeader>
+                  {items.map((option) => (
+                    <FormulaOptionItem
+                      key={option.label}
+                      onClick={() => handleFormulaOptionSelect(option)}
+                    >
+                      <div className="formula-label">{option.label}</div>
+                      <div className="formula-description">{option.description}</div>
+                    </FormulaOptionItem>
+                  ))}
+                </div>
+              ))
+            )}
+          </FormulaOptionsContainer>
+        </FormulaMenuContainer>
+      </>
+    )}
+    </>
   );
 };
 
