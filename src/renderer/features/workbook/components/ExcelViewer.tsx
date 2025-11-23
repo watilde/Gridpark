@@ -1062,7 +1062,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
 
   const handleCellChange = useCallback(
     (row: number, col: number, value: string) => {
-      console.log("handleCellChange", row, col, value);
       setGridData((prev) => {
         const updated = cloneSheetData(prev);
         const targetRows = Math.max(updated.length, row + 1);

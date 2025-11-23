@@ -228,31 +228,27 @@ export const Home: React.FC = () => {
 
   // Placeholder handlers for future implementation
   const handleUndo = useCallback(() => {
-    console.log("Undo action");
     // TODO: Implement undo functionality
   }, []);
 
   const handleRedo = useCallback(() => {
-    console.log("Redo action");
     // TODO: Implement redo functionality
   }, []);
 
   const handleSave = useCallback(() => {
-    console.log("Save action");
     // TODO: Implement save functionality
   }, []);
 
   const handleAutoSaveToggle = useCallback((enabled: boolean) => {
-    console.log("AutoSave toggled:", enabled);
     // TODO: Implement auto-save toggle
   }, []);
 
   const handleCellSelect = useCallback((pos: any) => {
-    console.log("Cell selected:", pos);
+    // TODO: Implement cell selection handling
   }, []);
 
   const handleRangeSelect = useCallback((range: any) => {
-    console.log("Range selected:", range);
+    // TODO: Implement range selection handling
   }, []);
 
   const layout = (

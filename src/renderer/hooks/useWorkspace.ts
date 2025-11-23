@@ -364,15 +364,11 @@ export const useWorkspace = (
 
   const openTabForCodeNode = useCallback(
     (codeNode: FileNode) => {
-      console.log('[useWorkspace] openTabForCodeNode called', { codeNode });
       if (codeNode.type !== "code" || !codeNode.codeFile) {
-        console.warn('[useWorkspace] Invalid code node, missing type or codeFile', { type: codeNode.type, hasCodeFile: !!codeNode.codeFile });
         return;
       }
       const workbook = findWorkbookNode(codeNode.workbookId ?? codeNode.parentId ?? "");
-      console.log('[useWorkspace] Found workbook:', { workbookId: codeNode.workbookId, parentId: codeNode.parentId, workbook: !!workbook });
       if (!workbook || !workbook.file) {
-        console.warn('[useWorkspace] No workbook or file found for code node');
         return;
       }
       const tab: WorkbookTab = {
@@ -384,7 +380,6 @@ export const useWorkspace = (
         file: workbook.file,
         codeFile: codeNode.codeFile,
       };
-      console.log('[useWorkspace] Created code tab:', tab);
       dispatch({ type: "OPEN_TAB", payload: tab });
       ensureCodeSession(codeNode.codeFile);
     },
@@ -393,7 +388,6 @@ export const useWorkspace = (
 
   const handleNodeSelect = useCallback(
     (node: FileNode) => {
-      console.log('[useWorkspace] handleNodeSelect called', { node });
       if (node.type === "sheet") {
         openTabForSheetNode(node);
         return;
@@ -410,7 +404,6 @@ export const useWorkspace = (
         return;
       }
       if (node.type === "code") {
-        console.log('[useWorkspace] Node is code type, calling openTabForCodeNode');
         openTabForCodeNode(node);
       }
     },
