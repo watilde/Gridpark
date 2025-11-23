@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Input as JoyInput, FormControl, FormLabel, FormHelperText } from '@mui/joy';
 import type { InputProps as JoyInputProps } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
@@ -87,8 +87,14 @@ export const Input: React.FC<InputProps> = ({
   code = false,
   color = 'neutral',
   variant = 'outlined',
+  id: propsId,
   ...props
 }) => {
+  // Use useId for unique, SSR-safe IDs
+  const generatedId = useId();
+  const inputId = propsId ?? generatedId;
+  const helperTextId = `${inputId}-helper-text`;
+
   // Determine color based on validation state
   const inputColor = error ? 'danger' : success ? 'success' : color;
   const displayHelperText = error || success || helperText;
@@ -96,19 +102,21 @@ export const Input: React.FC<InputProps> = ({
   return (
     <FormControl error={!!error}>
       {label && (
-        <FormLabel>
+        <FormLabel htmlFor={inputId}>
           {label}
         </FormLabel>
       )}
       <GridparkInput
+        id={inputId}
         variant={variant}
         color={inputColor}
         error={!!error}
         data-code={code}
+        aria-describedby={displayHelperText ? helperTextId : undefined}
         {...props}
       />
       {displayHelperText && (
-        <FormHelperText>
+        <FormHelperText id={helperTextId}>
           {error || success || helperText}
         </FormHelperText>
       )}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useTransition } from "react";
 import { ExcelFile, GridparkCodeFile } from "../types/excel";
 import { FileNode } from "../features/file-explorer/FileTree";
 import { WorkbookTab } from "../types/tabs";
@@ -189,6 +189,9 @@ export const useWorkspace = (
 
   const { workbookNodes, currentDirectoryName, openTabs, activeTabId, selectedNodeId } = state;
 
+  // useTransition for non-blocking file operations
+  const [isLoadingFiles, startFileTransition] = useTransition();
+
   // ==========================================
   // Workspace Manager Functions
   // ==========================================
@@ -205,21 +208,27 @@ export const useWorkspace = (
     []
   );
 
-  const resetWorkbooks = useCallback((files: ExcelFile[], directoryName?: string) => {
-    const timestamp = Date.now();
-    const nodes = files.map((file, index) =>
-      createWorkbookNode(file, `workbook-${timestamp}-${index}`)
-    );
+  const resetWorkbooks = useCallback(
+    (files: ExcelFile[], directoryName?: string) => {
+      // Use startTransition to keep UI responsive during heavy file processing
+      startFileTransition(() => {
+        const timestamp = Date.now();
+        const nodes = files.map((file, index) =>
+          createWorkbookNode(file, `workbook-${timestamp}-${index}`)
+        );
 
-    // Open first sheet by default
-    const firstSheetNode = nodes[0]?.children?.find((child) => child.type === "sheet");
-    const firstTab = firstSheetNode ? createSheetTab(firstSheetNode) : null;
+        // Open first sheet by default
+        const firstSheetNode = nodes[0]?.children?.find((child) => child.type === "sheet");
+        const firstTab = firstSheetNode ? createSheetTab(firstSheetNode) : null;
 
-    dispatch({
-      type: "RESET_WORKSPACE",
-      payload: { nodes, directoryName: directoryName ?? "", firstTab },
-    });
-  }, []);
+        dispatch({
+          type: "RESET_WORKSPACE",
+          payload: { nodes, directoryName: directoryName ?? "", firstTab },
+        });
+      });
+    },
+    [startFileTransition]
+  );
 
   // Listen for file opening events
   useEffect(() => {
@@ -426,6 +435,9 @@ export const useWorkspace = (
     openTabs,
     activeTabId,
     selectedNodeId,
+
+    // Loading State (from useTransition)
+    isLoadingFiles,
 
     // Workspace Manager
     findWorkbookNode,

@@ -26,6 +26,7 @@ import { useFormulaBarOptimized } from "../hooks/useFormulaBarOptimized";
 import { useSettings } from "../hooks/useSettings";
 import { useManifestHandlers } from "../hooks/useManifestHandlers";
 import { useSheetHandlers } from "../hooks/useSheetHandlers";
+import { useElectronIntegration } from "../hooks/useElectronAPI";
 import { cloneManifest } from "../utils/sessionHelpers";
 
 /**
@@ -63,6 +64,9 @@ export const Home: React.FC = () => {
   const settings = useSettings();
   const { presetId } = settings;
   const isGridparkTheme = presetId === "gridpark";
+
+  // Electron API integration with useSyncExternalStore
+  const electron = useElectronIntegration();
 
   // File sessions
   const {
@@ -113,6 +117,7 @@ export const Home: React.FC = () => {
     openTabs,
     activeTabId,
     selectedNodeId,
+    isLoadingFiles, // from useTransition
     findWorkbookNode,
     updateWorkbookReferences,
     handleTabChange,
@@ -180,8 +185,8 @@ export const Home: React.FC = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    window.electronAPI?.setWindowTitle(activeTitle);
-  }, [activeTitle]);
+    electron.setWindowTitle(activeTitle);
+  }, [activeTitle, electron]);
 
   // Derived state for EditorPanel (memoized)
   const activeCodeSession = useMemo(
