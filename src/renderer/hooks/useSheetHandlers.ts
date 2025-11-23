@@ -11,6 +11,7 @@ export interface SheetHandlersParams {
   handlePersistSheetSession: (tabId: string, state: SheetSessionState) => void;
   saveWorkbookFile: (file: ExcelFile) => Promise<void>;
   setSheetDirtyMap: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  setSheetSessions: React.Dispatch<React.SetStateAction<Record<string, SheetSessionState>>>;
 }
 
 /**
@@ -23,6 +24,7 @@ export const useSheetHandlers = ({
   handlePersistSheetSession,
   saveWorkbookFile,
   setSheetDirtyMap,
+  setSheetSessions,
 }: SheetHandlersParams) => {
   /**
    * Save sheet session state and update workbook
@@ -53,25 +55,31 @@ export const useSheetHandlers = ({
       updateWorkbookReferences(tab.workbookId, updatedFile);
       saveWorkbookFile(updatedFile);
       
-      // Update session with dirty=false and clear dirty map
-      const cleanState = { ...state, dirty: false };
-      handlePersistSheetSession(tabId, cleanState);
-      
-      // Also explicitly clear dirty state
+      // Clear dirty state after successful save (simple approach)
       setSheetDirtyMap((prev) => {
         if (!prev[tabId]) return prev;
         const next = { ...prev };
         delete next[tabId];
         return next;
       });
+      
+      // Update session to mark as clean
+      setSheetSessions((prev) => {
+        const session = prev[tabId];
+        if (!session || !session.dirty) return prev;
+        return {
+          ...prev,
+          [tabId]: { ...session, dirty: false }
+        };
+      });
     },
     [
       findWorkbookNode,
-      handlePersistSheetSession,
       openTabs,
       saveWorkbookFile,
       updateWorkbookReferences,
       setSheetDirtyMap,
+      setSheetSessions,
     ],
   );
 
