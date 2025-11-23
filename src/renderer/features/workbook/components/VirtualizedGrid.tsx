@@ -264,7 +264,7 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
             width, 
             height 
           }}
-          data={itemData}
+          {...itemData}
         />
       );
       
