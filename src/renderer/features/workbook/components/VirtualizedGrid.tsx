@@ -181,7 +181,6 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
           {({ width }) => (
             <Grid
               ref={topHeaderRef}
-              outerRef={topHeaderOuterRef}
               columnCount={columnCount}
               columnWidth={columnWidth}
               height={headerHeight}
@@ -202,7 +201,6 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
           {({ height }) => (
             <Grid
               ref={leftHeaderRef}
-              outerRef={leftHeaderOuterRef}
               columnCount={1}
               columnWidth={() => rowHeaderWidth}
               height={height}

@@ -70,6 +70,7 @@ export const CellItem = React.memo((props: any) => {
         cellStyles,
         searchMatchMap,
         currentSearchMatch,
+        currentSheetName,
         onCellMouseDown,
         onCellMouseEnter,
         onCellChange,
@@ -112,7 +113,7 @@ export const CellItem = React.memo((props: any) => {
           key={cellKey}
           style={style}
           className="cell" // Generalized class name
-          data-sheet-name={itemData.currentSheetName} // Now available from itemData
+          data-sheet-name={currentSheetName}
           data-row-num={rowIndex + 1}
           data-col-id={getColumnLabel(columnIndex)}
           data-cell-address={cellAddress}
