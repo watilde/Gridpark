@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useReducer } from "react";
+import React, { useCallback, useMemo, useEffect, useReducer, useState, useRef } from "react";
 import { Box } from "@mui/joy";
 import { AppLayout } from "../components/layout/AppLayout";
 import {
@@ -64,6 +64,10 @@ export const Home: React.FC = () => {
   const settings = useSettings();
   const { presetId } = settings;
   const isGridparkTheme = presetId === "gridpark";
+
+  // AutoSave state
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Electron API integration with useSyncExternalStore
   const electron = useElectronIntegration();
@@ -288,8 +292,57 @@ export const Home: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSave]);
 
+  // Compute dirty count for auto-save
+  const dirtyCount = Object.keys(dirtyNodeIds).length;
+
+  // Auto-save logic: debounce and save after 2 seconds of inactivity
+  useEffect(() => {
+    if (!autoSaveEnabled) {
+      return;
+    }
+
+    const hasDirtyChanges = dirtyCount > 0;
+    
+    if (!hasDirtyChanges) {
+      // No changes to save, clear any pending timer
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Clear previous timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set new timer for 2 seconds
+    console.log('[Home] AutoSave: scheduling save in 2 seconds');
+    autoSaveTimerRef.current = setTimeout(() => {
+      console.log('[Home] AutoSave: executing save');
+      handleSave();
+      autoSaveTimerRef.current = null;
+    }, 2000);
+
+    // Cleanup on unmount or dependency change
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [autoSaveEnabled, dirtyCount, handleSave]);
+
   const handleAutoSaveToggle = useCallback((enabled: boolean) => {
-    // TODO: Implement auto-save toggle
+    console.log('[Home] AutoSave toggled:', enabled);
+    setAutoSaveEnabled(enabled);
+    
+    // Clear any pending auto-save timer when toggling off
+    if (!enabled && autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
   }, []);
 
   const handleCellSelect = useCallback((pos: any) => {
@@ -299,15 +352,6 @@ export const Home: React.FC = () => {
   const handleRangeSelect = useCallback((range: any) => {
     // TODO: Implement range selection handling
   }, []);
-
-  // Debug: Log dirty state
-  const dirtyCount = Object.keys(dirtyNodeIds).length;
-  useEffect(() => {
-    console.log('[Home] Dirty state changed:', { 
-      dirtyCount, 
-      dirtyIds: Object.keys(dirtyNodeIds) 
-    });
-  }, [dirtyNodeIds, dirtyCount]);
 
   const layout = (
     <AppLayout
@@ -319,7 +363,7 @@ export const Home: React.FC = () => {
           searchQuery={searchState.treeSearchQuery}
           onSearchChange={setTreeSearchQuery}
           onOpenSettings={() => settings.setSettingsOpen(true)}
-          autoSaveEnabled={false}
+          autoSaveEnabled={autoSaveEnabled}
           onAutoSaveToggle={handleAutoSaveToggle}
           canUndo={false}
           canRedo={false}
