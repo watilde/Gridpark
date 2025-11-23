@@ -132,7 +132,7 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
 }));
 
 // Action button (Save, Undo, Redo)
-const ActionButton = styled('button')<{ disabled?: boolean }>(({ theme, disabled }) => ({
+const ActionButton = styled('button')<{ disabled?: boolean; active?: boolean }>(({ theme, disabled, active }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -140,17 +140,23 @@ const ActionButton = styled('button')<{ disabled?: boolean }>(({ theme, disabled
   height: '32px',
   padding: 0,
   border: 'none',
-  backgroundColor: 'transparent',
+  backgroundColor: active ? (theme.palette.mode === 'dark' ? '#107c4122' : '#107c4111') : 'transparent',
   color: disabled 
     ? (theme.palette.mode === 'dark' ? '#555' : '#aaa')
+    : active 
+    ? '#107c41'
     : (theme.palette.mode === 'dark' ? '#cccccc' : '#555555'),
   cursor: disabled ? 'not-allowed' : 'pointer',
   borderRadius: '4px',
-  transition: 'background-color 0.15s ease',
+  transition: 'all 0.15s ease',
   opacity: disabled ? 0.4 : 1,
   
   '&:hover': {
-    backgroundColor: disabled ? 'transparent' : (theme.palette.mode === 'dark' ? '#333' : '#e5e5e5'),
+    backgroundColor: disabled 
+      ? 'transparent' 
+      : active
+      ? (theme.palette.mode === 'dark' ? '#107c4133' : '#107c4122')
+      : (theme.palette.mode === 'dark' ? '#333' : '#e5e5e5'),
   },
   
   '& svg': {
@@ -282,7 +288,8 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
             onSave?.();
           }}
           disabled={!hasUnsavedChanges}
-          title="Save"
+          active={hasUnsavedChanges}
+          title={hasUnsavedChanges ? "Save (Ctrl+S)" : "No changes to save"}
         >
           <SaveIcon />
         </ActionButton>

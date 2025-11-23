@@ -300,6 +300,14 @@ export const Home: React.FC = () => {
     // TODO: Implement range selection handling
   }, []);
 
+  // Debug: Log dirty state
+  useEffect(() => {
+    console.log('[Home] Dirty state changed:', { 
+      dirtyCount: dirtyNodeIds.size, 
+      dirtyIds: Array.from(dirtyNodeIds.keys()) 
+    });
+  }, [dirtyNodeIds]);
+
   const layout = (
     <AppLayout
       header={
