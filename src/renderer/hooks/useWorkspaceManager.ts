@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { ExcelFile } from "../types/excel";
-import { FileNode } from "../features/FileTree/FileTree";
+import { FileNode } from "../features/file-explorer/FileTree";
 import { createWorkbookNode, createSheetTab } from "../utils/workbookUtils";
 import { WorkbookTab } from "../types/tabs";
 

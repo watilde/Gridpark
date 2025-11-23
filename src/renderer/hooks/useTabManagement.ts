@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { WorkbookTab } from "../types/tabs";
-import { FileNode } from "../features/FileTree/FileTree";
+import { FileNode } from "../features/file-explorer/FileTree";
 import { createSheetTab, createManifestTabInstance, createWorkbookNode } from "../utils/workbookUtils";
 
 // Need to define or import WorkbookTab type properly first.

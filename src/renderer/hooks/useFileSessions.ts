@@ -1,7 +1,12 @@
 import { useState, useCallback, useMemo } from "react";
-import { ExcelFile, CellData, GridparkManifest, GridparkCodeFile } from "../types/excel";
-import { SheetSessionState } from "../features/ExcelViewer/ExcelViewer";
+import { ExcelFile, GridparkManifest, GridparkCodeFile } from "../types/excel";
+import { SheetSessionState } from "../features/workbook/components/ExcelViewer";
 import { serializeExcelFile } from "../utils/excelUtils";
+import {
+  cloneManifest,
+  createDefaultManifest as createDefaultManifestHelper,
+  sheetSessionEqual,
+} from "../utils/sessionHelpers";
 
 export type ManifestSession = {
   data: GridparkManifest;
@@ -14,61 +19,11 @@ export type ManifestSession = {
 };
 
 // Helper functions
-const cloneManifest = (manifest: GridparkManifest): GridparkManifest =>
-  JSON.parse(JSON.stringify(manifest));
-
-const createDefaultManifest = (file: ExcelFile): GridparkManifest => ({
-  name: file.name.replace(/\.[^.]+$/, ""),
-  version: "1.0.0",
-  description: "",
-  apiVersion: 1,
-  main: "index.js",
-  style: "style.css",
-  permissions: {
-    filesystem: "workbook",
-    network: false,
-    runtime: [],
-  },
-  sheets: {},
-});
-
 const isManifestSessionDirty = (session?: ManifestSession) => {
   if (!session) return false;
   return (
     JSON.stringify(session.data) !== JSON.stringify(session.originalData)
   );
-};
-
-const cellDataEqual = (a?: CellData, b?: CellData) => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  return (
-    a.value === b.value &&
-    a.type === b.type &&
-    a.formula === b.formula &&
-    JSON.stringify(a.style ?? null) === JSON.stringify(b.style ?? null)
-  );
-};
-
-const sheetSessionEqual = (
-  a?: SheetSessionState,
-  b?: SheetSessionState,
-): boolean => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.dirty !== b.dirty) return false;
-  if (a.data.length !== b.data.length) return false;
-  for (let row = 0; row < a.data.length; row++) {
-    const rowA = a.data[row];
-    const rowB = b.data[row];
-    if (rowA.length !== rowB.length) return false;
-    for (let col = 0; col < rowA.length; col++) {
-      if (!cellDataEqual(rowA[col], rowB[col])) {
-        return false;
-      }
-    }
-  }
-  return true;
 };
 
 
@@ -148,6 +103,9 @@ export const useManifestSessions = () => {
     });
     return map;
   }, [manifestSessions]);
+
+  const createDefaultManifest = useCallback((file: ExcelFile): GridparkManifest => 
+    createDefaultManifestHelper(file.name), []);
 
   const readManifestFile = useCallback(async (file: ExcelFile) => {
     const key = getManifestSessionKey(file);
@@ -399,12 +357,62 @@ export const useCodeSessions = () => {
     [],
   );
 
+  const onSaveCode = useCallback(async (codeFile: GridparkCodeFile) => {
+    const key = getCodeSessionKey(codeFile);
+    const session = codeSessions[key];
+    if (!session) {
+      throw new Error("No code session found for file");
+    }
+
+    setCodeSessions((prev) => ({
+      ...prev,
+      [key]: { ...prev[key]!, saving: true, error: undefined },
+    }));
+
+    try {
+      const gridparkApi = window.electronAPI?.gridpark;
+      if (!gridparkApi?.writeFile) {
+        throw new Error(
+          "Code file editing is only available in the desktop application.",
+        );
+      }
+
+      const response = await gridparkApi.writeFile({
+        path: codeFile.absolutePath,
+        rootDir: codeFile.rootDir,
+        content: session.content,
+      });
+
+      if (!response?.success) {
+        throw new Error(response?.error ?? "Failed to save code file.");
+      }
+
+      setCodeSessions((prev) => ({
+        ...prev,
+        [key]: {
+          ...prev[key]!,
+          originalContent: session.content,
+          saving: false,
+          error: undefined,
+        },
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setCodeSessions((prev) => ({
+        ...prev,
+        [key]: { ...prev[key]!, saving: false, error: message },
+      }));
+      throw error;
+    }
+  }, [codeSessions]);
+
   return {
     codeSessions,
     setCodeSessions,
     readCodeFile,
     ensureCodeSession,
     handleCodeChange,
+    onSaveCode,
     getCodeSessionKey,
   };
 };

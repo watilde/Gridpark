@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { FormulaCommitCommand, ActiveCellDetails } from "../features/ExcelViewer/ExcelViewer";
+import { FormulaCommitCommand, ActiveCellDetails } from "../features/workbook/components/ExcelViewer";
 import { defaultFormulaOptions, FormulaOption } from "../utils/formulaUtils";
 
 export const useFormulaBar = (activeTabKind?: string) => {
