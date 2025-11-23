@@ -256,7 +256,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
           >
             <Typography level="title-md">Entry Points & Permissions</Typography>
             <FormControl size="sm">
-              <FormLabel>Main Script</FormLabel>
+              <FormLabel>Script</FormLabel>
               <Input
                 value={manifest.main ?? ''}
                 onChange={(event) => updateManifest({ main: event.target.value })}
@@ -264,7 +264,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
               />
             </FormControl>
             <FormControl size="sm">
-              <FormLabel>Root Stylesheet</FormLabel>
+              <FormLabel>Stylesheet</FormLabel>
               <Input
                 value={manifest.style ?? ''}
                 onChange={(event) => updateManifest({ style: event.target.value })}
