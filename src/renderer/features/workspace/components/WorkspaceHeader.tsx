@@ -98,6 +98,7 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
   borderRadius: '4px',
   transition: 'background-color 0.15s ease',
   whiteSpace: 'nowrap',
+  position: 'relative',
   
   '&:hover': {
     backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
@@ -110,8 +111,8 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
     height: '16px',
     backgroundColor: enabled ? '#107c41' : theme.palette.mode === 'dark' ? '#555' : '#999',
     borderRadius: '8px',
-    position: 'relative',
     transition: 'background-color 0.2s ease',
+    flexShrink: 0,
   },
   
   '&::after': {
@@ -122,13 +123,12 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
     backgroundColor: '#ffffff',
     borderRadius: '50%',
     position: 'absolute',
-    left: enabled ? '18px' : '2px',
+    left: enabled ? '18px' : '10px',
     top: '50%',
     transform: 'translateY(-50%)',
     transition: 'left 0.2s ease',
+    pointerEvents: 'none',
   },
-  
-  position: 'relative',
 }));
 
 // Action button (Save, Undo, Redo)
