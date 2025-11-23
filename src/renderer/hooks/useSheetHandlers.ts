@@ -53,6 +53,14 @@ export const useSheetHandlers = ({
       const updatedFile = { ...workbookFile, sheets: updatedSheets };
       updateWorkbookReferences(tab.workbookId, updatedFile);
       saveWorkbookFile(updatedFile);
+      
+      // Clear dirty state after successful save
+      setSheetDirtyMap((prev) => {
+        if (!prev[tabId]) return prev;
+        const next = { ...prev };
+        delete next[tabId];
+        return next;
+      });
     },
     [
       findWorkbookNode,
@@ -60,6 +68,7 @@ export const useSheetHandlers = ({
       openTabs,
       saveWorkbookFile,
       updateWorkbookReferences,
+      setSheetDirtyMap,
     ],
   );
 
