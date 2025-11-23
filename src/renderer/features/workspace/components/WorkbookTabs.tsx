@@ -55,10 +55,11 @@ export const WorkbookTabs: React.FC<WorkbookTabsProps> = ({
       <TabList
         variant="soft"
         sx={{
-          gap: 0.5,
+          gap: 0.25,
           flexWrap: "nowrap",
           overflowX: "auto",
           scrollbarWidth: "thin",
+          minHeight: "24px",
           "&::-webkit-scrollbar": { height: 4 },
         }}
       >
@@ -70,14 +71,16 @@ export const WorkbookTabs: React.FC<WorkbookTabsProps> = ({
               value={tab.id}
               sx={{
                 textTransform: "none",
-                minHeight: "28px",
+                minHeight: "24px",
+                height: "24px",
                 fontWeight: 500,
-                fontSize: "0.85rem",
-                px: 1,
+                fontSize: "0.75rem",
+                px: 0.75,
+                py: 0,
                 flexShrink: 0,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
                 <span>
                   {tab.kind === "sheet"
                     ? tab.sheetName
@@ -89,7 +92,7 @@ export const WorkbookTabs: React.FC<WorkbookTabsProps> = ({
                   <Box
                     component="span"
                     aria-hidden="true"
-                    sx={{ ...unsavedDotSx, ml: 0.5 }}
+                    sx={{ ...unsavedDotSx, ml: 0.25 }}
                   />
                 )}
                 <IconButton
@@ -103,6 +106,13 @@ export const WorkbookTabs: React.FC<WorkbookTabsProps> = ({
                   }}
                   role="button"
                   aria-label="Close tab"
+                  sx={{
+                    minWidth: "16px",
+                    minHeight: "16px",
+                    width: "16px",
+                    height: "16px",
+                    fontSize: "0.75rem",
+                  }}
                 >
                   <CloseIcon fontSize="inherit" />
                 </IconButton>
