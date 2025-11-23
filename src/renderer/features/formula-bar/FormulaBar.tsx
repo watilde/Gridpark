@@ -1,67 +1,112 @@
 import React, { useState, useCallback } from 'react';
 import { styled } from '@mui/joy/styles';
-import { Input } from '../../components/ui/Input/Input';
-import { Button } from '../../components/ui/Button/Button';
-import { Icon } from '../../components/ui/Icon/Icon';
-import { Functions, CheckCircle, Error, PlayArrow, Close } from '@mui/icons-material';
-import { Typography, Chip } from '@mui/joy';
+import { Close, Check } from '@mui/icons-material';
 
+// Excel-style formula bar container with dark theme
 const FormulaBarContainer = styled('div')(({ theme }) => ({
   display: 'flex',
-  flexDirection: 'column',
-  gap: '8px',
-  padding: '12px',
-  backgroundColor: theme.palette.background.surface,
-  border: `1px solid ${theme.palette.divider}`,
-  borderRadius: theme.radius.sm,
+  alignItems: 'stretch',
+  height: '32px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f0f0f0',
+  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
   fontFamily: theme.fontFamily.body,
 }));
 
-const FormulaRow = styled('div')({
+// Cell reference box (e.g., "A1")
+const CellReference = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
+  justifyContent: 'center',
+  minWidth: '64px',
+  padding: '0 12px',
+  backgroundColor: theme.palette.mode === 'dark' ? '#252525' : '#ffffff',
+  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
+  fontSize: '13px',
+  fontFamily: '"Segoe UI", sans-serif',
+  fontWeight: 400,
+  color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
+}));
+
+// Button group container for cancel/confirm/function buttons
+const ButtonGroup = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  backgroundColor: theme.palette.mode === 'dark' ? '#252525' : '#ffffff',
+  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
+}));
+
+// Individual action button (X, checkmark, fx)
+const ActionButton = styled('button')<{ variant?: 'cancel' | 'confirm' | 'function' }>(({ theme, variant }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '28px',
+  height: '100%',
+  padding: 0,
+  border: 'none',
+  backgroundColor: 'transparent',
+  color: theme.palette.mode === 'dark' ? '#cccccc' : '#555555',
+  cursor: 'pointer',
+  transition: 'background-color 0.15s ease',
+  fontSize: '16px',
+  
+  '&:hover': {
+    backgroundColor: theme.palette.mode === 'dark' ? '#333333' : '#e5e5e5',
+  },
+  
+  '&:active': {
+    backgroundColor: theme.palette.mode === 'dark' ? '#3a3a3a' : '#d0d0d0',
+  },
+  
+  '&:disabled': {
+    color: theme.palette.mode === 'dark' ? '#555555' : '#aaaaaa',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  
+  '& svg': {
+    fontSize: '18px',
+  },
+}));
+
+// Formula input field container
+const FormulaInputContainer = styled('div')({
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  position: 'relative',
 });
 
-const CellReference = styled('div')(({ theme }) => ({
-  minWidth: '80px',
-  padding: '6px 12px',
-  backgroundColor: theme.palette.neutral[100],
-  borderRadius: theme.radius.sm,
-  fontSize: '14px',
-  fontFamily: '"JetBrains Mono", monospace',
-  fontWeight: 600,
-  color: theme.palette.text.primary,
-  textAlign: 'center',
-  border: `1px solid ${theme.palette.divider}`,
-}));
-
-const StatusBar = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  fontSize: '12px',
-  color: theme.palette.text.secondary,
-  minHeight: '24px',
-}));
-
-const SuggestionsList = styled('div')(({ theme }) => ({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '4px',
-  marginTop: '4px',
+// Actual input element styled like Excel
+const FormulaInput = styled('input')<{ hasError?: boolean }>(({ theme, hasError }) => ({
+  width: '100%',
+  height: '100%',
+  padding: '0 8px',
+  border: 'none',
+  outline: 'none',
+  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
+  color: theme.palette.mode === 'dark' ? '#d4d4d4' : '#000000',
+  fontSize: '13px',
+  fontFamily: '"Consolas", "Courier New", monospace',
+  lineHeight: '32px',
   
-  '& .suggestion-chip': {
-    fontSize: '11px',
-    height: '20px',
-    cursor: 'pointer',
+  ...(hasError && {
+    color: theme.palette.mode === 'dark' ? '#f48771' : '#d32f2f',
+  }),
+  
+  '&::placeholder': {
+    color: theme.palette.mode === 'dark' ? '#666666' : '#999999',
+  },
+  
+  '&:disabled': {
+    color: theme.palette.mode === 'dark' ? '#555555' : '#aaaaaa',
+    cursor: 'not-allowed',
   },
 }));
 
 interface FormulaValidation {
   isValid: boolean;
   error?: string;
-  suggestions?: string[];
 }
 
 export interface FormulaBarProps {
@@ -82,9 +127,17 @@ export interface FormulaBarProps {
    */
   onFormulaChange?: (formula: string) => void;
   /**
-   * Formula execution handler
+   * Formula execution handler (triggered by Enter or confirm button)
    */
   onFormulaExecute?: (formula: string) => void;
+  /**
+   * Cancel handler (triggered by Escape or cancel button)
+   */
+  onFormulaCancel?: () => void;
+  /**
+   * Function button click handler
+   */
+  onFunctionButtonClick?: () => void;
   /**
    * Real-time formula validation
    */
@@ -93,41 +146,47 @@ export interface FormulaBarProps {
    * Read-only mode
    */
   readOnly?: boolean;
-  /**
-   * Show function suggestions
-   */
-  showSuggestions?: boolean;
 }
 
 /**
- * Gridpark FormulaBar Component
+ * Excel-Style FormulaBar Component
  * 
- * Excel-style formula bar with real-time validation and suggestions:
- * - Code-first: Monospace font, syntax highlighting concepts
- * - Excel compatibility: Familiar formula editing experience  
- * - Immediate feedback: Real-time validation and error display
- * - Developer-friendly: Function suggestions and autocomplete
+ * Minimalist dark-themed formula bar matching Excel's design:
+ * - Cell reference box on the left (e.g., "A1")
+ * - Cancel (X), Confirm (✓), and Function (fx) buttons
+ * - Formula input with monospace font
+ * - Flat design with subtle hover effects
+ * - Dark mode optimized with light gray text on dark background
  */
 export const FormulaBar: React.FC<FormulaBarProps> = ({
   cellReference = 'A1',
   value = '',
-  placeholder = 'Enter formula or value...',
+  placeholder = '',
   onFormulaChange,
   onFormulaExecute,
+  onFormulaCancel,
+  onFunctionButtonClick,
   onValidateFormula,
   readOnly = false,
-  showSuggestions = true,
 }) => {
   const [currentValue, setCurrentValue] = useState(value);
   const [validation, setValidation] = useState<FormulaValidation>({ isValid: true });
   const [isEditing, setIsEditing] = useState(false);
+  const [originalValue, setOriginalValue] = useState(value);
 
-  const handleValueChange = useCallback((newValue: string) => {
+  // Update internal state when external value changes
+  React.useEffect(() => {
+    setCurrentValue(value);
+    setOriginalValue(value);
+  }, [value]);
+
+  const handleValueChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
     setCurrentValue(newValue);
     onFormulaChange?.(newValue);
     
-    // Real-time validation
-    if (onValidateFormula && newValue.trim()) {
+    // Real-time validation for formulas
+    if (onValidateFormula && newValue.trim().startsWith('=')) {
       const validationResult = onValidateFormula(newValue);
       setValidation(validationResult);
     } else {
@@ -135,128 +194,105 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
     }
   }, [onFormulaChange, onValidateFormula]);
 
-  const handleExecute = useCallback(() => {
-    if (currentValue.trim()) {
+  const handleConfirm = useCallback(() => {
+    if (validation.isValid) {
       onFormulaExecute?.(currentValue);
-    }
-  }, [currentValue, onFormulaExecute]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleExecute();
-    }
-    if (e.key === 'Escape') {
-      setCurrentValue(value);
+      setOriginalValue(currentValue);
       setIsEditing(false);
     }
-  }, [handleExecute, value]);
+  }, [currentValue, validation.isValid, onFormulaExecute]);
 
-  const isFormula = currentValue.trim().startsWith('=');
+  const handleCancel = useCallback(() => {
+    setCurrentValue(originalValue);
+    onFormulaChange?.(originalValue);
+    onFormulaCancel?.();
+    setIsEditing(false);
+    setValidation({ isValid: true });
+  }, [originalValue, onFormulaChange, onFormulaCancel]);
+
+  const handleFunctionClick = useCallback(() => {
+    onFunctionButtonClick?.();
+  }, [onFunctionButtonClick]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleConfirm();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancel();
+    }
+  }, [handleConfirm, handleCancel]);
+
+  const handleFocus = useCallback(() => {
+    setIsEditing(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    // Don't immediately reset on blur - let user click buttons
+    // setIsEditing(false);
+  }, []);
+
   const hasError = !validation.isValid && validation.error;
-  const hasSuggestions = showSuggestions && validation.suggestions && validation.suggestions.length > 0;
-
-  const getInputColor = () => {
-    if (hasError) return 'danger';
-    if (validation.isValid && isFormula) return 'success';
-    return 'neutral';
-  };
+  const showActionButtons = isEditing && !readOnly;
 
   return (
     <FormulaBarContainer>
-      <FormulaRow>
-        <CellReference>
-          {cellReference}
-        </CellReference>
-        
-        <Icon size="sm" color="neutral">
-          <Functions />
-        </Icon>
-        
-        <div style={{ flex: 1 }}>
-          <Input
-            value={currentValue}
-            placeholder={placeholder}
-            code={true}
-            color={getInputColor()}
-            error={hasError ? validation.error : undefined}
-            success={validation.isValid && isFormula ? 'Formula syntax valid' : undefined}
-            disabled={readOnly}
-            onChange={(e) => handleValueChange(e.target.value)}
-            onFocus={() => setIsEditing(true)}
-            onBlur={() => setIsEditing(false)}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-        
-        {!readOnly && (
+      <CellReference>
+        {cellReference}
+      </CellReference>
+      
+      <ButtonGroup>
+        {showActionButtons && (
           <>
-            <Button
-              size="sm"
-              variant="soft"
-              color={validation.isValid ? 'success' : 'neutral'}
-              disabled={!currentValue.trim() || !validation.isValid}
-              onClick={handleExecute}
-              startIcon={<PlayArrow />}
-            >
-              Execute
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="plain"
-              color="neutral"
-              onClick={() => {
-                setCurrentValue('');
-                onFormulaChange?.('');
-              }}
+            <ActionButton
+              variant="cancel"
+              onClick={handleCancel}
+              title="Cancel (Esc)"
+              type="button"
             >
               <Close />
-            </Button>
+            </ActionButton>
+            
+            <ActionButton
+              variant="confirm"
+              onClick={handleConfirm}
+              disabled={!validation.isValid}
+              title="Confirm (Enter)"
+              type="button"
+            >
+              <Check />
+            </ActionButton>
           </>
         )}
-      </FormulaRow>
-
-      {hasSuggestions && (
-        <SuggestionsList>
-          <Typography level="body-xs" sx={{ mr: 1 }}>Suggestions:</Typography>
-          {validation.suggestions!.map((suggestion, index) => (
-            <Chip
-              key={index}
-              variant="soft"
-              size="sm"
-              className="suggestion-chip"
-              onClick={() => handleValueChange(suggestion)}
-            >
-              {suggestion}
-            </Chip>
-          ))}
-        </SuggestionsList>
-      )}
-
-      <StatusBar>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {isFormula && (
-            <Icon size="xs" color={validation.isValid ? 'success' : 'danger'}>
-              {validation.isValid ? <CheckCircle /> : <Error />}
-            </Icon>
-          )}
-          <span>
-            {isFormula ? 
-              `Formula: ${validation.isValid ? 'Valid' : 'Invalid'}` :
-              'Value entry'
-            }
-          </span>
-        </div>
         
-        <div>
-          {currentValue.length > 0 && (
-            <span>{currentValue.length} characters</span>
-          )}
-        </div>
-      </StatusBar>
+        <ActionButton
+          variant="function"
+          onClick={handleFunctionClick}
+          title="Insert Function"
+          type="button"
+        >
+          <span style={{ fontWeight: 'bold', fontSize: '12px' }}>fx</span>
+        </ActionButton>
+      </ButtonGroup>
+      
+      <FormulaInputContainer>
+        <FormulaInput
+          type="text"
+          value={currentValue}
+          placeholder={placeholder}
+          hasError={hasError}
+          disabled={readOnly}
+          onChange={handleValueChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          spellCheck={false}
+          autoComplete="off"
+        />
+      </FormulaInputContainer>
     </FormulaBarContainer>
   );
 };
 
-FormulaBar.displayName = 'GridparkFormulaBar';
+FormulaBar.displayName = 'ExcelStyleFormulaBar';
