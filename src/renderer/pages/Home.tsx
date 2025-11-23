@@ -258,22 +258,19 @@ export const Home: React.FC = () => {
   const layout = (
     <AppLayout
       header={
-        <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
-          <WorkspaceHeader
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            onSave={handleSave}
-            searchQuery={searchState.treeSearchQuery}
-            onSearchChange={setTreeSearchQuery}
-            onOpenSettings={() => settings.setSettingsOpen(true)}
-            autoSaveEnabled={false}
-            onAutoSaveToggle={handleAutoSaveToggle}
-            canUndo={false}
-            canRedo={false}
-            hasUnsavedChanges={dirtyNodeIds.size > 0}
-          />
-          <FormulaBar formulaBarState={formulaBarState} />
-        </Box>
+        <WorkspaceHeader
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onSave={handleSave}
+          searchQuery={searchState.treeSearchQuery}
+          onSearchChange={setTreeSearchQuery}
+          onOpenSettings={() => settings.setSettingsOpen(true)}
+          autoSaveEnabled={false}
+          onAutoSaveToggle={handleAutoSaveToggle}
+          canUndo={false}
+          canRedo={false}
+          hasUnsavedChanges={dirtyNodeIds.size > 0}
+        />
       }
       sidebar={
         <SidebarExplorer
@@ -315,6 +312,7 @@ export const Home: React.FC = () => {
         searchNavigation={searchState.searchNavigation}
         replaceCommand={searchState.replaceCommand}
         formulaCommitCommand={formulaCommitCommand}
+        formulaBarState={formulaBarState}
       />
     </AppLayout>
   );

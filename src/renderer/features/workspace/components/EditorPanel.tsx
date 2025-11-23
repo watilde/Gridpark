@@ -10,6 +10,7 @@ import {
 } from "../../workbook/components/ExcelViewer";
 import { CodeEditorPanel } from "../../code-editor/CodeEditorPanel";
 import { ManifestEditorPanel } from "../../manifest-editor/ManifestEditorPanel";
+import { FormulaBar } from "../../formula-bar/FormulaBar";
 import { WorkbookTab } from "../../../types/tabs";
 import { ExcelFile, CellPosition, CellRange, GridparkManifest, GridparkCodeFile } from "../../../types/excel";
 import { ManifestSession } from "../../../hooks/useFileSessions";
@@ -49,6 +50,7 @@ interface EditorPanelProps {
   searchNavigation?: SearchNavigationCommand;
   replaceCommand: ReplaceCommand | null;
   formulaCommitCommand: FormulaCommitCommand | null;
+  formulaBarState: any; // FormulaBar state from useFormulaBarOptimized
 }
 
 export const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -76,6 +78,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   searchNavigation,
   replaceCommand,
   formulaCommitCommand,
+  formulaBarState,
 }) => {
   if (!activeTab) {
     return (
@@ -98,21 +101,26 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
 
   if (activeTab.kind === "sheet") {
     return (
-      <ExcelViewer
-        file={activeTab.file}
-        sheetIndex={activeTab.sheetIndex}
-        sessionState={activeSheetSession}
-        onSessionChange={onSessionChange}
-        onSaveSession={onSaveSession}
-        onDirtyChange={onDirtyChange}
-        onCellSelect={onCellSelect}
-        onRangeSelect={onRangeSelect}
-        searchQuery={sheetSearchQuery}
-        searchNavigation={searchNavigation}
-        replaceCommand={replaceCommand}
-        formulaCommit={formulaCommitCommand}
-        onActiveCellDetails={onActiveCellDetails}
-      />
+      <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <FormulaBar formulaBarState={formulaBarState} />
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          <ExcelViewer
+            file={activeTab.file}
+            sheetIndex={activeTab.sheetIndex}
+            sessionState={activeSheetSession}
+            onSessionChange={onSessionChange}
+            onSaveSession={onSaveSession}
+            onDirtyChange={onDirtyChange}
+            onCellSelect={onCellSelect}
+            onRangeSelect={onRangeSelect}
+            searchQuery={sheetSearchQuery}
+            searchNavigation={searchNavigation}
+            replaceCommand={replaceCommand}
+            formulaCommit={formulaCommitCommand}
+            onActiveCellDetails={onActiveCellDetails}
+          />
+        </Box>
+      </Box>
     );
   }
 

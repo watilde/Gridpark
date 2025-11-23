@@ -57,6 +57,7 @@ export interface TabContentAreaProps {
   searchNavigation: SearchNavigationCommand | undefined;
   replaceCommand: ReplaceCommand | null;
   formulaCommitCommand: FormulaCommitCommand | null;
+  formulaBarState: any; // FormulaBar state from useFormulaBarOptimized
 }
 
 export const TabContentArea: React.FC<TabContentAreaProps> = ({
@@ -90,6 +91,7 @@ export const TabContentArea: React.FC<TabContentAreaProps> = ({
   searchNavigation,
   replaceCommand,
   formulaCommitCommand,
+  formulaBarState,
 }) => {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -126,6 +128,7 @@ export const TabContentArea: React.FC<TabContentAreaProps> = ({
           searchNavigation={searchNavigation}
           replaceCommand={replaceCommand}
           formulaCommitCommand={formulaCommitCommand}
+          formulaBarState={formulaBarState}
         />
       </Box>
     </Box>
