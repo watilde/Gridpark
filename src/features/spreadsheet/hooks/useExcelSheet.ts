@@ -278,56 +278,70 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   /**
    * Save entire 2D array (for compatibility with existing code)
    * Converts 2D array to sparse matrix and saves to DB
+   * 
+   * @param data - 2D array to save
+   * @param options - Save options
+   * @param options.recordHistory - Whether to record changes in undo/redo history (default: true)
+   * @param options.markDirty - Whether to mark the sheet as dirty (default: true)
    */
-  const save2DArray = useCallback(async (data: any[][]) => {
-    // Calculate changes for history
-    const changes: CellChange[] = [];
+  const save2DArray = useCallback(async (
+    data: any[][], 
+    options: { recordHistory?: boolean; markDirty?: boolean } = {}
+  ) => {
+    const { recordHistory = true, markDirty: shouldMarkDirty = true } = options;
     
-    for (let row = 0; row < data.length; row++) {
-      for (let col = 0; col < data[row].length; col++) {
-        const newCell = data[row][col];
-        const oldCell = getCell(row, col);
-        
-        const oldData = oldCell ? {
-          value: oldCell.value,
-          type: oldCell.type,
-          formula: oldCell.formula,
-          style: oldCell.style,
-        } : { value: null, type: 'empty' };
-        
-        const newData = {
-          value: newCell?.value ?? null,
-          type: newCell?.type ?? 'empty',
-          formula: newCell?.formula,
-          style: newCell?.style,
-        };
-        
-        // Only record if cell actually changed
-        if (JSON.stringify(oldData) !== JSON.stringify(newData)) {
-          changes.push({
-            row,
-            col,
-            before: oldData,
-            after: newData,
-          });
+    // Calculate changes for history (only if recordHistory is true)
+    if (recordHistory) {
+      const changes: CellChange[] = [];
+      
+      for (let row = 0; row < data.length; row++) {
+        for (let col = 0; col < data[row].length; col++) {
+          const newCell = data[row][col];
+          const oldCell = getCell(row, col);
+          
+          const oldData = oldCell ? {
+            value: oldCell.value,
+            type: oldCell.type,
+            formula: oldCell.formula,
+            style: oldCell.style,
+          } : { value: null, type: 'empty' };
+          
+          const newData = {
+            value: newCell?.value ?? null,
+            type: newCell?.type ?? 'empty',
+            formula: newCell?.formula,
+            style: newCell?.style,
+          };
+          
+          // Only record if cell actually changed
+          if (JSON.stringify(oldData) !== JSON.stringify(newData)) {
+            changes.push({
+              row,
+              col,
+              before: oldData,
+              after: newData,
+            });
+          }
         }
       }
-    }
-    
-    // Record history if there are changes
-    if (changes.length > 0) {
-      console.log('[useExcelSheet] Recording history for save2DArray', {
-        tabId,
-        changeCount: changes.length,
-      });
-      undoRedo.pushHistory(changes);
+      
+      // Record history if there are changes
+      if (changes.length > 0) {
+        console.log('[useExcelSheet] Recording history for save2DArray', {
+          tabId,
+          changeCount: changes.length,
+        });
+        undoRedo.pushHistory(changes);
+      }
     }
     
     await db.save2DArrayAsCells(tabId, data);
     
-    // Mark as dirty after initial save (user hasn't persisted to file yet)
-    await db.markSheetDirty(tabId, true);
-    dispatch(markDirty(tabId));
+    // Mark as dirty only if requested (skip for initial load)
+    if (shouldMarkDirty) {
+      await db.markSheetDirty(tabId, true);
+      dispatch(markDirty(tabId));
+    }
   }, [tabId, dispatch, getCell, undoRedo]);
   
   /**

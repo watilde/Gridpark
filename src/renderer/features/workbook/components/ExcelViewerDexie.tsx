@@ -181,9 +181,15 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
   // Initial Data Load
   // ============================================================================
   
+  // Track if initial data has been loaded to prevent re-loading
+  const initialDataLoadedRef = useRef(false);
+  
   // Load initial data from file into Dexie (if not already loaded)
   useEffect(() => {
     if (!file || !sheet || isLoading) return;
+    
+    // Prevent re-running if already loaded
+    if (initialDataLoadedRef.current) return;
     
     // Check if we need to load initial data
     const loadInitialData = async () => {
@@ -196,7 +202,14 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           cols: sheet.data[0]?.length || 0,
         });
         
-        await save2DArray(sheet.data);
+        // Mark as loaded BEFORE calling save2DArray to prevent re-entry
+        initialDataLoadedRef.current = true;
+        
+        // Initial load should NOT record history or mark dirty (it's not a user edit)
+        await save2DArray(sheet.data, { recordHistory: false, markDirty: false });
+      } else if (excelSheet.cellCount > 0) {
+        // Data already exists in Dexie, mark as loaded
+        initialDataLoadedRef.current = true;
       }
     };
     
