@@ -9,7 +9,7 @@
  * This component replaces the old session-based ExcelViewer.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useImperativeHandle, forwardRef, useState } from 'react';
 import { ExcelFile, CellData, CellPosition, CellRange } from '../../../types/excel';
 import { useExcelSheet } from '../../../../features/spreadsheet/hooks/useExcelSheet';
 import { ExcelViewer } from './ExcelViewer';
@@ -184,6 +184,9 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
   // Track if initial data has been loaded PER TAB to prevent re-loading
   const initialDataLoadedRef = useRef<Record<string, boolean>>({});
   
+  // Track loading state for UI
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
+  
   // Load initial data from file into Dexie (if not already loaded)
   useEffect(() => {
     if (!file || !sheet || isLoading) return;
@@ -209,6 +212,9 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           cols: sheet.data[0]?.length || 0,
         });
         
+        // Set loading state
+        setIsLoadingInitialData(true);
+        
         // Mark as loaded BEFORE calling save2DArray to prevent re-entry
         initialDataLoadedRef.current[tabId] = true;
         
@@ -220,9 +226,15 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
             tabId,
             cellsLoaded: sheet.data.length * (sheet.data[0]?.length || 0),
           });
+          
+          // Wait a bit for useLiveQuery to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          setIsLoadingInitialData(false);
         } catch (error) {
           console.error('[ExcelViewerDexie] Failed to save initial data:', error);
-          initialDataLoadedRef.current[tabId] = false; // Reset flag so it can retry
+          initialDataLoadedRef.current[tabId] = false;
+          setIsLoadingInitialData(false);
         }
       } else if (hasCellsInDexie) {
         // Data already exists in Dexie, mark as loaded
@@ -309,12 +321,8 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     );
   }
   
-  // Wait for initial data to load if this is a new sheet
-  const hasData = data2D && data2D.length > 0 && data2D.some(row => 
-    row.some(cell => cell && cell.value !== null && cell.value !== undefined && cell.value !== '')
-  );
-  
-  if (!hasData && !initialDataLoadedRef.current[tabId]) {
+  // Show loading state while initial data is being saved
+  if (isLoadingInitialData) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
         Loading initial data...
