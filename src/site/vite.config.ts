@@ -16,13 +16,34 @@ export default defineConfig({
     emptyOutDir: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'monaco-editor': ['monaco-editor'],
+        manualChunks(id) {
+          // Bundle Monaco Editor separately
+          if (id.includes('monaco-editor')) {
+            // Exclude language support files except essential ones
+            if (id.includes('/basic-languages/')) {
+              const lang = id.match(/\/basic-languages\/(\w+)\//)?.[1];
+              // Only include JavaScript, TypeScript, CSS, HTML
+              if (!['javascript', 'typescript', 'css', 'html'].includes(lang || '')) {
+                return; // Exclude this language
+              }
+            }
+            return 'monaco-editor';
+          }
+          // Bundle workers  
+          if (id.includes('.worker')) {
+            return 'monaco-workers';
+          }
         },
       },
     },
   },
   optimizeDeps: {
-    include: ['monaco-editor'],
+    include: [
+      'monaco-editor/esm/vs/editor/editor.api',
+    ],
+    exclude: [
+      // Exclude all language contributions except essential ones
+      'monaco-editor/esm/vs/basic-languages/!(javascript|typescript|css|html)/**',
+    ],
   },
 });

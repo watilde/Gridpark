@@ -1,9 +1,8 @@
-import React, { useMemo, useRef, useCallback } from "react";
+import React, { useMemo, useRef, useCallback, useEffect } from "react";
 import { Box } from "@mui/joy";
 import { styled } from "@mui/joy/styles";
 import Editor, { OnMount, loader } from "@monaco-editor/react";
 import type { editor as MonacoEditor } from "monaco-editor";
-import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
@@ -11,7 +10,12 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
 // Configure Monaco Editor to use local workers instead of CDN
-if (typeof window !== 'undefined') {
+// Only load essential languages: JavaScript, TypeScript, JSON, CSS, HTML
+let monacoConfigured = false;
+
+const configureMonaco = () => {
+  if (monacoConfigured || typeof window === 'undefined') return;
+  
   // @ts-expect-error - Monaco worker environment
   self.MonacoEnvironment = {
     getWorker(_: unknown, label: string) {
@@ -30,8 +34,9 @@ if (typeof window !== 'undefined') {
       return new editorWorker();
     },
   };
-  loader.config({ monaco });
-}
+  
+  monacoConfigured = true;
+};
 
 const EditorContainer = styled(Box)(({ theme }) => ({
   width: "100%",
@@ -119,6 +124,11 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
   onSaveRef.current = onSave;
   readOnlyRef.current = readOnly;
+
+  // Configure Monaco workers on mount
+  useEffect(() => {
+    configureMonaco();
+  }, []);
 
   const editorOptions =
     useMemo<MonacoEditor.IStandaloneEditorConstructionOptions>(
