@@ -355,9 +355,14 @@ export class AppDatabase extends Dexie {
         maxCol = Math.max(maxCol, col);
       });
       
-      const metadata = await this.getSheetMetadata(tabId);
-      if (metadata) {
-        await this.sheetMetadata.update(metadata.id!, {
+      // Use put to ensure useLiveQuery picks up the change
+      const metadata = await this.sheetMetadata
+        .where('tabId')
+        .equals(tabId)
+        .first();
+        
+      if (metadata?.id) {
+        await this.sheetMetadata.update(metadata.id, {
           maxRow,
           maxCol,
           cellCount: cellUpdates.length,
@@ -365,6 +370,7 @@ export class AppDatabase extends Dexie {
         });
         console.log('[db] bulkUpsertCells: metadata updated', {
           tabId,
+          metadataId: metadata.id,
           maxRow,
           maxCol,
           cellCount: cellUpdates.length,

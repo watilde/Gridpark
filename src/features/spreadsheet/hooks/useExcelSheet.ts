@@ -152,16 +152,27 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       return [];
     }
     
-    const rows = Math.max(minRows, (metadata?.maxRow ?? 0) + 1);
-    const cols = Math.max(minCols, (metadata?.maxCol ?? 0) + 1);
+    // Calculate actual dimensions from cell data (more reliable than metadata)
+    let actualMaxRow = 0;
+    let actualMaxCol = 0;
+    cells.forEach(cell => {
+      actualMaxRow = Math.max(actualMaxRow, cell.row);
+      actualMaxCol = Math.max(actualMaxCol, cell.col);
+    });
+    
+    // Ensure minimum dimensions
+    const rows = Math.max(minRows, actualMaxRow + 1);
+    const cols = Math.max(minCols, actualMaxCol + 1);
     
     console.log('[useExcelSheet] data2D: building array', {
       tabId,
       cellsLength: cells.length,
+      actualMaxRow,
+      actualMaxCol,
       rows,
       cols,
-      maxRow: metadata?.maxRow,
-      maxCol: metadata?.maxCol,
+      metadataMaxRow: metadata?.maxRow,
+      metadataMaxCol: metadata?.maxCol,
     });
     
     // Create empty 2D array
