@@ -27,6 +27,7 @@ import { useSettings } from "../hooks/useSettings";
 import { useManifestHandlers } from "../hooks/useManifestHandlers";
 import { useSheetHandlers } from "../hooks/useSheetHandlers";
 import { useElectronIntegration } from "../hooks/useElectronAPI";
+import { useSaveManager } from "../hooks/useSaveManager";
 import { cloneManifest } from "../utils/sessionHelpers";
 
 /**
@@ -156,18 +157,8 @@ export const Home: React.FC = () => {
   // Platform Capabilities (memoized once)
   const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
 
-  // Sheet Handlers
-  const { handleSaveSheetSession, handleSheetDirtyChange } = useSheetHandlers({
-    openTabs,
-    findWorkbookNode,
-    updateWorkbookReferences,
-    handlePersistSheetSession,
-    saveWorkbookFile,
-    setSheetDirtyMap,
-  });
-
-  // Manifest Handlers
-  const { handleManifestChange, handleSaveManifest } = useManifestHandlers({
+  // Manifest Handlers (still needed for editing)
+  const { handleManifestChange, handleSaveManifest: manifestSaveHandler } = useManifestHandlers({
     manifestSessions,
     setManifestSessions,
     getManifestSessionKey,
@@ -175,6 +166,27 @@ export const Home: React.FC = () => {
     updateWorkbookReferences,
     createDefaultManifest,
   });
+
+  // Unified Save Manager
+  const saveManager = useSaveManager(
+    {
+      sheetSessions,
+      findWorkbookNode,
+      updateWorkbookReferences,
+      saveWorkbookFile,
+      manifestSessions,
+      getManifestSessionKey,
+      codeSessions,
+      openTabs,
+    },
+    {
+      handleSaveSheetSession: async () => {}, // Dummy, useSaveManager handles internally
+      handleSaveManifest: manifestSaveHandler,
+      onSaveCode,
+    }
+  );
+
+  const { dirtyMap, dirtyIds, isDirty, markDirty, markClean, save, saveAll } = saveManager;
 
   // Update window title
   const activeTitle = useMemo(() => {
@@ -239,11 +251,10 @@ export const Home: React.FC = () => {
     // TODO: Implement redo functionality
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     console.log('[Home] handleSave called', { 
       hasActiveTab: !!activeTab, 
       tabKind: activeTab?.kind,
-      hasSession: activeTab?.kind === 'sheet' ? !!sheetSessions[activeTab.id] : true
     });
     
     if (!activeTab) {
@@ -251,55 +262,13 @@ export const Home: React.FC = () => {
       return;
     }
     
-    if (activeTab.kind === "sheet") {
-      // Save sheet data
-      const session = sheetSessions[activeTab.id];
-      if (session) {
-        console.log('[Home] Saving sheet session', activeTab.id);
-        handleSaveSheetSession(activeTab.id, session);
-      } else {
-        console.warn('[Home] No sheet session found for', activeTab.id);
-      }
-    } else if (activeTab.kind === "manifest") {
-      // Save manifest
-      console.log('[Home] Saving manifest', activeTab.workbookId);
-      handleSaveManifest(activeTab.workbookId, activeTab.file);
-    } else if (activeTab.kind === "code") {
-      // Save code file
-      console.log('[Home] Saving code file', activeTab.codeFile.absolutePath);
-      onSaveCode(activeTab.codeFile).catch((error) => {
-        console.error("Failed to save code file:", error);
-      });
+    try {
+      await save(activeTab.id);
+      console.log('[Home] Save completed');
+    } catch (error) {
+      console.error('[Home] Save failed:', error);
     }
-  }, [activeTab, sheetSessions, handleSaveSheetSession, handleSaveManifest, onSaveCode]);
-
-  // Refs to access latest state in auto-save without causing re-renders
-  const stateRef = useRef({
-    sheetDirtyMap,
-    sheetSessions,
-    manifestDirtyMap,
-    codeSessions,
-    openTabs,
-    handleSaveSheetSession,
-    handleSaveManifest,
-    onSaveCode,
-    getManifestSessionKey,
-  });
-  
-  // Update refs on each render
-  useEffect(() => {
-    stateRef.current = {
-      sheetDirtyMap,
-      sheetSessions,
-      manifestDirtyMap,
-      codeSessions,
-      openTabs,
-      handleSaveSheetSession,
-      handleSaveManifest,
-      onSaveCode,
-      getManifestSessionKey,
-    };
-  });
+  }, [activeTab, save]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -320,8 +289,8 @@ export const Home: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSave]);
 
-  // Compute dirty count for auto-save
-  const dirtyCount = Object.keys(dirtyNodeIds).length;
+  // Compute dirty count for auto-save (use SaveManager's dirtyIds)
+  const dirtyCount = dirtyIds.length;
 
   // Auto-save logic: debounce and save after 2 seconds of inactivity
   useEffect(() => {
@@ -347,48 +316,14 @@ export const Home: React.FC = () => {
 
     // Set new timer for 2 seconds
     console.log('[Home] AutoSave: scheduling save in 2 seconds');
-    autoSaveTimerRef.current = setTimeout(() => {
-      console.log('[Home] AutoSave: executing save all');
-      
-      // Use refs to get latest state without triggering re-renders
-      const state = stateRef.current;
-      
-      // Save all dirty sheets
-      Object.keys(state.sheetDirtyMap).forEach((tabId) => {
-        const session = state.sheetSessions[tabId];
-        if (session) {
-          console.log('[Home] Auto-saving sheet session', tabId);
-          state.handleSaveSheetSession(tabId, session);
-        }
-      });
-      
-      // Save all dirty manifests
-      Object.entries(state.manifestDirtyMap).forEach(([key, isDirty]) => {
-        if (!isDirty) return;
-        const tab = state.openTabs.find((t) => 
-          t.kind === 'manifest' && state.getManifestSessionKey(t.file) === key
-        );
-        if (tab && tab.kind === 'manifest') {
-          console.log('[Home] Auto-saving manifest', tab.workbookId);
-          state.handleSaveManifest(tab.workbookId, tab.file);
-        }
-      });
-      
-      // Save all dirty code files
-      Object.entries(state.codeSessions).forEach(([path, session]) => {
-        if (session.content !== session.originalContent) {
-          const tab = state.openTabs.find((t) => 
-            t.kind === 'code' && t.codeFile.absolutePath === path
-          );
-          if (tab && tab.kind === 'code') {
-            console.log('[Home] Auto-saving code file', path);
-            state.onSaveCode(tab.codeFile).catch((error) => {
-              console.error("Failed to auto-save code file:", error);
-            });
-          }
-        }
-      });
-      
+    autoSaveTimerRef.current = setTimeout(async () => {
+      console.log('[Home] AutoSave: executing saveAll');
+      try {
+        await saveAll();
+        console.log('[Home] AutoSave: completed successfully');
+      } catch (error) {
+        console.error('[Home] AutoSave: failed', error);
+      }
       autoSaveTimerRef.current = null;
     }, 2000);
 
@@ -399,7 +334,7 @@ export const Home: React.FC = () => {
         autoSaveTimerRef.current = null;
       }
     };
-  }, [autoSaveEnabled, dirtyCount]);
+  }, [autoSaveEnabled, dirtyCount, saveAll]);
 
   const handleAutoSaveToggle = useCallback((enabled: boolean) => {
     console.log('[Home] AutoSave toggled:', enabled);
@@ -463,7 +398,14 @@ export const Home: React.FC = () => {
         platformCapabilities={platformCapabilities}
         onSessionChange={(state) => handlePersistSheetSession(activeTab!.id, state)}
         onSaveSession={(state) => handleSaveSheetSession(activeTab!.id, state)}
-        onDirtyChange={(dirty) => handleSheetDirtyChange(activeTab!.id, dirty)}
+        onDirtyChange={(dirty) => {
+          console.log('[Home] Sheet dirty change:', activeTab!.id, dirty);
+          if (dirty) {
+            markDirty(activeTab!.id);
+          } else {
+            markClean(activeTab!.id);
+          }
+        }}
         onCellSelect={handleCellSelect}
         onRangeSelect={handleRangeSelect}
         onActiveCellDetails={handleActiveCellDetails}
