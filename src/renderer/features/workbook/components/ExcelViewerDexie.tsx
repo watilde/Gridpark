@@ -179,24 +179,17 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
   // Session State for ExcelViewer (backward compatibility)
   // ============================================================================
   
-  // Use ref to maintain stable reference for data unless it actually changes
-  const data2DRef = useRef(data2D);
-  
-  useEffect(() => {
-    // Only update ref if data length changed or is truly different
-    if (data2D.length !== data2DRef.current.length || data2D !== data2DRef.current) {
-      data2DRef.current = data2D;
-    }
-  }, [data2D]);
-  
+  // FIX: Pass data2D directly to sessionState to ensure changes are reflected
+  // PROBLEM: Using data2DRef caused stale data - sessionState didn't update when data2D changed
+  // SOLUTION: Include data2D in useMemo dependencies
   const sessionState = useMemo(() => ({
-    data: data2DRef.current,
+    data: data2D,
     dirty: isDirty,
     scrollTop: 0,
     scrollLeft: 0,
     selectedCell: null,
     selectionRange: null,
-  }), [isDirty]);
+  }), [data2D, isDirty]);
   
   // ============================================================================
   // Callbacks
