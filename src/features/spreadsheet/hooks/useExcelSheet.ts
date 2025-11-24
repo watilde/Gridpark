@@ -83,23 +83,39 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   
   // Initialize sheet metadata on mount (separate from useLiveQuery)
   useEffect(() => {
+    let cancelled = false;
+    
     const initMetadata = async () => {
-      const existing = await db.getSheetMetadata(tabId);
-      if (!existing) {
-        // Create initial metadata
-        await db.upsertSheetMetadata({
-          tabId,
-          workbookId,
-          sheetName,
-          sheetIndex,
-          maxRow: 0,
-          maxCol: 0,
-          cellCount: 0,
-          dirty: false,
-        });
+      try {
+        const existing = await db.getSheetMetadata(tabId);
+        if (!existing && !cancelled) {
+          // Create initial metadata
+          await db.upsertSheetMetadata({
+            tabId,
+            workbookId,
+            sheetName,
+            sheetIndex,
+            maxRow: 0,
+            maxCol: 0,
+            cellCount: 0,
+            dirty: false,
+          });
+        }
+      } catch (error: any) {
+        // Ignore ConstraintError (likely from React Strict Mode double invoke)
+        if (error?.name === 'ConstraintError') {
+          console.log('[useExcelSheet] ConstraintError ignored (expected in Strict Mode):', tabId);
+        } else {
+          console.error('[useExcelSheet] Error initializing metadata:', error);
+        }
       }
     };
+    
     initMetadata();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [tabId, workbookId, sheetName, sheetIndex]);
   
   // Get sheet metadata (read-only reactive query)

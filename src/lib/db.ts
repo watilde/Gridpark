@@ -174,23 +174,26 @@ export class AppDatabase extends Dexie {
   async upsertSheetMetadata(
     data: Omit<SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>
   ): Promise<number> {
-    const existing = await this.getSheetMetadata(data.tabId);
-    
-    if (existing) {
-      await this.sheetMetadata.update(existing.id!, {
-        ...data,
-        updatedAt: new Date(),
-        lastAccessedAt: new Date(),
-      });
-      return existing.id!;
-    } else {
-      return await this.sheetMetadata.add({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastAccessedAt: new Date(),
-      });
-    }
+    // Use transaction to prevent race conditions (React Strict Mode double invoke)
+    return await this.transaction('rw', this.sheetMetadata, async () => {
+      const existing = await this.getSheetMetadata(data.tabId);
+      
+      if (existing) {
+        await this.sheetMetadata.update(existing.id!, {
+          ...data,
+          updatedAt: new Date(),
+          lastAccessedAt: new Date(),
+        });
+        return existing.id!;
+      } else {
+        return await this.sheetMetadata.add({
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastAccessedAt: new Date(),
+        });
+      }
+    });
   }
 
   /**
