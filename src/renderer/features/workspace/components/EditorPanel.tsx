@@ -7,7 +7,7 @@ import {
   FormulaCommitCommand,
   ActiveCellDetails,
 } from "../../workbook/components/ExcelViewer";
-import { ExcelViewerDexie } from "../../workbook/components/ExcelViewerDexie";
+import { ExcelViewerDexie, ExcelViewerDexieHandle } from "../../workbook/components/ExcelViewerDexie";
 import { CodeEditorPanel, CodeEditorPanelHandle } from "../../code-editor/CodeEditorPanel";
 import { ManifestEditorPanel } from "../../manifest-editor/ManifestEditorPanel";
 import { FormulaBar } from "../../formula-bar/FormulaBar";
@@ -104,29 +104,38 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
   formulaBarState,
 }, ref) => {
   const codeEditorRef = useRef<CodeEditorPanelHandle>(null);
+  const sheetViewerRef = useRef<ExcelViewerDexieHandle>(null);
 
   // Expose undo/redo methods via ref
-  // Currently only code editor supports undo/redo
+  // Supports both code editor and sheet viewer
   useImperativeHandle(ref, () => ({
     undo: () => {
       if (activeTab?.kind === 'code') {
         codeEditorRef.current?.undo();
+      } else if (activeTab?.kind === 'sheet') {
+        sheetViewerRef.current?.undo();
       }
     },
     redo: () => {
       if (activeTab?.kind === 'code') {
         codeEditorRef.current?.redo();
+      } else if (activeTab?.kind === 'sheet') {
+        sheetViewerRef.current?.redo();
       }
     },
     canUndo: () => {
       if (activeTab?.kind === 'code') {
         return codeEditorRef.current?.canUndo() ?? false;
+      } else if (activeTab?.kind === 'sheet') {
+        return sheetViewerRef.current?.canUndo() ?? false;
       }
       return false;
     },
     canRedo: () => {
       if (activeTab?.kind === 'code') {
         return codeEditorRef.current?.canRedo() ?? false;
+      } else if (activeTab?.kind === 'sheet') {
+        return sheetViewerRef.current?.canRedo() ?? false;
       }
       return false;
     },
@@ -156,6 +165,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
         <FormulaBar formulaBarState={formulaBarState} />
         <Box sx={{ flex: 1, minHeight: 0 }}>
           <ExcelViewerDexie
+            ref={sheetViewerRef}
             tabId={activeTab.id}
             file={activeTab.file}
             sheetIndex={activeTab.sheetIndex}

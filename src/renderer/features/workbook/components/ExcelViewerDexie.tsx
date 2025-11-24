@@ -9,7 +9,7 @@
  * This component replaces the old session-based ExcelViewer.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { ExcelFile, CellData, CellPosition, CellRange } from '../../../types/excel';
 import { useExcelSheet } from '../../../../features/spreadsheet/hooks/useExcelSheet';
 import { ExcelViewer } from './ExcelViewer';
@@ -44,9 +44,31 @@ export interface ExcelViewerDexieProps {
 }
 
 /**
+ * Ref handle exposed by ExcelViewerDexie
+ */
+export interface ExcelViewerDexieHandle {
+  /**
+   * Execute undo operation
+   */
+  undo: () => void;
+  /**
+   * Execute redo operation
+   */
+  redo: () => void;
+  /**
+   * Check if undo is available
+   */
+  canUndo: () => boolean;
+  /**
+   * Check if redo is available
+   */
+  canRedo: () => boolean;
+}
+
+/**
  * Dexie-powered Excel Viewer
  */
-export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
+export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDexieProps>(({
   tabId,
   file,
   sheetIndex = 0,
@@ -58,7 +80,7 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
   replaceCommand,
   formulaCommit,
   onActiveCellDetails,
-}) => {
+}, ref) => {
   // ============================================================================
   // Dexie Integration
   // ============================================================================
@@ -83,7 +105,22 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
     isDirty,
     save2DArray,
     isLoading,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = excelSheet;
+  
+  // ============================================================================
+  // Expose undo/redo methods via ref
+  // ============================================================================
+  
+  useImperativeHandle(ref, () => ({
+    undo: () => undo(),
+    redo: () => redo(),
+    canUndo: () => canUndo,
+    canRedo: () => canRedo,
+  }), [undo, redo, canUndo, canRedo]);
   
   // ============================================================================
   // Performance Optimization - Debounce saves
@@ -253,4 +290,4 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
       onActiveCellDetails={onActiveCellDetails}
     />
   );
-};
+});

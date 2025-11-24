@@ -27,6 +27,7 @@ import {
   markClean,
   selectIsDirty,
 } from '../../../stores/spreadsheetSlice';
+import { useExcelUndoRedo, CellChange } from './useExcelUndoRedo';
 
 // ============================================================================
 // Types
@@ -70,6 +71,12 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   } = params;
   
   const dispatch = useAppDispatch();
+  
+  // ========================================================================
+  // Undo/Redo History
+  // ========================================================================
+  
+  const undoRedo = useExcelUndoRedo();
   
   // ========================================================================
   // Redux State (UI state - dirty tracking only)
@@ -193,18 +200,53 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   const updateCell = useCallback(async (update: CellUpdate) => {
     const { row, col, ...data } = update;
     
+    // Get old cell value for history
+    const oldCell = getCell(row, col);
+    const oldData = oldCell ? {
+      value: oldCell.value,
+      type: oldCell.type,
+      formula: oldCell.formula,
+      style: oldCell.style,
+    } : { value: null, type: 'empty' };
+    
     // Update database
     await db.upsertCell(tabId, row, col, data as Partial<StoredCellData>);
+    
+    // Record history
+    undoRedo.pushHistory([{
+      row,
+      col,
+      before: oldData,
+      after: data,
+    }]);
     
     // Mark sheet as dirty in DB and Redux
     await db.markSheetDirty(tabId, true);
     dispatch(markDirty(tabId));
-  }, [tabId, dispatch]);
+  }, [tabId, dispatch, getCell, undoRedo]);
   
   /**
    * Update multiple cells at once (optimized)
    */
   const updateCells = useCallback(async (updates: CellUpdate[]) => {
+    // Collect history for all changes
+    const changes: CellChange[] = updates.map(({ row, col, ...data }) => {
+      const oldCell = getCell(row, col);
+      const oldData = oldCell ? {
+        value: oldCell.value,
+        type: oldCell.type,
+        formula: oldCell.formula,
+        style: oldCell.style,
+      } : { value: null, type: 'empty' };
+      
+      return {
+        row,
+        col,
+        before: oldData,
+        after: data,
+      };
+    });
+    
     const cellUpdates = updates.map(({ row, col, ...data }) => ({
       row,
       col,
@@ -214,10 +256,13 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     // Bulk update database
     await db.bulkUpsertCells(tabId, cellUpdates);
     
+    // Record history
+    undoRedo.pushHistory(changes);
+    
     // Mark sheet as dirty in DB and Redux
     await db.markSheetDirty(tabId, true);
     dispatch(markDirty(tabId));
-  }, [tabId, dispatch]);
+  }, [tabId, dispatch, getCell, undoRedo]);
   
   /**
    * Clear a cell
@@ -261,6 +306,55 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     await db.markSheetDirty(tabId, false);
     dispatch(markClean(tabId));
   }, [tabId, dispatch]);
+  
+  // ========================================================================
+  // Undo/Redo Operations
+  // ========================================================================
+  
+  /**
+   * Apply cell changes (used by undo/redo)
+   */
+  const applyChanges = useCallback(async (changes: CellChange[]) => {
+    const cellUpdates = changes.map(({ row, col, after }) => ({
+      row,
+      col,
+      data: after as Partial<StoredCellData>,
+    }));
+    
+    // Bulk update database (without recording history)
+    await db.bulkUpsertCells(tabId, cellUpdates);
+    
+    // Mark sheet as dirty in DB and Redux
+    await db.markSheetDirty(tabId, true);
+    dispatch(markDirty(tabId));
+  }, [tabId, dispatch]);
+  
+  /**
+   * Undo last change
+   */
+  const undo = useCallback(async () => {
+    const changes = undoRedo.undo();
+    if (changes) {
+      await applyChanges(changes);
+    }
+  }, [undoRedo, applyChanges]);
+  
+  /**
+   * Redo previously undone change
+   */
+  const redo = useCallback(async () => {
+    const changes = undoRedo.redo();
+    if (changes) {
+      await applyChanges(changes);
+    }
+  }, [undoRedo, applyChanges]);
+  
+  /**
+   * Clear undo/redo history
+   */
+  const clearHistory = useCallback(() => {
+    undoRedo.clear();
+  }, [undoRedo]);
   
   // NOTE: Session state (scroll, selection) removed from Redux
   // Components should manage their own UI state with useState if needed
@@ -310,6 +404,13 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     
     // Actions
     markSaved,
+    
+    // Undo/Redo
+    undo,
+    redo,
+    canUndo: undoRedo.canUndo,
+    canRedo: undoRedo.canRedo,
+    clearHistory,
     
     // Loading state
     isLoading: !metadata,
