@@ -81,13 +81,52 @@ interface DependenciesResponseMessage {
   dependents: string[];
 }
 
+interface InvalidateCacheMessage {
+  type: 'INVALIDATE_CACHE';
+  id: string;
+  tabId: string;
+  row: number;
+  col: number;
+}
+
+interface CheckCircularRefsMessage {
+  type: 'CHECK_CIRCULAR_REFS';
+  id: string;
+  tabId: string;
+}
+
+interface CircularRefsResponseMessage {
+  type: 'CIRCULAR_REFS';
+  id: string;
+  hasCircularRefs: boolean;
+  circularCells: string[];
+}
+
+interface CacheStatsMessage {
+  type: 'GET_CACHE_STATS';
+  id: string;
+}
+
+interface CacheStatsResponseMessage {
+  type: 'CACHE_STATS';
+  id: string;
+  stats: {
+    cacheSize: number;
+    dirtyCellsCount: number;
+    hitRate: number;
+  };
+}
+
 type WorkerResponse = 
   | ResultMessage 
   | BatchResultMessage 
   | ErrorMessage 
   | LoadSheetResponseMessage
   | DependenciesResponseMessage
-  | { type: 'READY' };
+  | CircularRefsResponseMessage
+  | CacheStatsResponseMessage
+  | { type: 'READY' }
+  | { type: 'CACHE_INVALIDATED'; id: string };
 
 interface PendingCalculation {
   resolve: (result: number | string) => void;
@@ -109,6 +148,16 @@ interface PendingDependencyRequest {
   reject: (error: Error) => void;
 }
 
+interface PendingCircularRefCheck {
+  resolve: (data: { hasCircularRefs: boolean; circularCells: string[] }) => void;
+  reject: (error: Error) => void;
+}
+
+interface PendingCacheStatsRequest {
+  resolve: (stats: { cacheSize: number; dirtyCellsCount: number; hitRate: number }) => void;
+  reject: (error: Error) => void;
+}
+
 // ============================================================================
 // Hook Implementation
 // ============================================================================
@@ -119,8 +168,15 @@ export function useFormulaWorker(tabId: string) {
   const pendingBatchCalculationsRef = useRef<Map<string, PendingBatchCalculation>>(new Map());
   const pendingSheetLoadsRef = useRef<Map<string, PendingSheetLoad>>(new Map());
   const pendingDependencyRequestsRef = useRef<Map<string, PendingDependencyRequest>>(new Map());
+  const pendingCircularRefChecksRef = useRef<Map<string, PendingCircularRefCheck>>(new Map());
+  const pendingCacheStatsRef = useRef<Map<string, PendingCacheStatsRequest>>(new Map());
   const [isReady, setIsReady] = useState(false);
   const [isSheetLoaded, setIsSheetLoaded] = useState(false);
+  const [cacheStats, setCacheStats] = useState({
+    cacheSize: 0,
+    dirtyCellsCount: 0,
+    hitRate: 0,
+  });
   const [stats, setStats] = useState({
     totalCalculations: 0,
     totalDuration: 0,
@@ -208,6 +264,33 @@ export function useFormulaWorker(tabId: string) {
           pendingDependencyRequestsRef.current.delete(id);
         }
         
+      } else if (message.type === 'CIRCULAR_REFS') {
+        const { id, hasCircularRefs, circularCells } = message;
+        console.log('[useFormulaWorker] Circular references:', { hasCircularRefs, circularCells });
+        
+        const pending = pendingCircularRefChecksRef.current.get(id);
+        if (pending) {
+          pending.resolve({ hasCircularRefs, circularCells });
+          pendingCircularRefChecksRef.current.delete(id);
+        }
+        
+      } else if (message.type === 'CACHE_STATS') {
+        const { id, stats: workerStats } = message;
+        console.log('[useFormulaWorker] Cache stats:', workerStats);
+        
+        const pending = pendingCacheStatsRef.current.get(id);
+        if (pending) {
+          pending.resolve(workerStats);
+          pendingCacheStatsRef.current.delete(id);
+        }
+        
+        // Update local cache stats
+        setCacheStats(workerStats);
+        
+      } else if (message.type === 'CACHE_INVALIDATED') {
+        console.log('[useFormulaWorker] Cache invalidated');
+        // No action needed, just logging
+        
       } else if (message.type === 'ERROR') {
         const { id, error } = message;
         console.error('[useFormulaWorker] Error:', error);
@@ -234,6 +317,18 @@ export function useFormulaWorker(tabId: string) {
         if (pendingDep) {
           pendingDep.reject(new Error(error));
           pendingDependencyRequestsRef.current.delete(id);
+        }
+        
+        const pendingCircular = pendingCircularRefChecksRef.current.get(id);
+        if (pendingCircular) {
+          pendingCircular.reject(new Error(error));
+          pendingCircularRefChecksRef.current.delete(id);
+        }
+        
+        const pendingCacheStats = pendingCacheStatsRef.current.get(id);
+        if (pendingCacheStats) {
+          pendingCacheStats.reject(new Error(error));
+          pendingCacheStatsRef.current.delete(id);
         }
       }
     };
@@ -399,6 +494,96 @@ export function useFormulaWorker(tabId: string) {
   }, [tabId, isReady]);
   
   // ============================================================================
+  // Phase 4: Cache Management & Optimization
+  // ============================================================================
+  
+  const invalidateCache = useCallback((row: number, col: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current || !isReady) {
+        reject(new Error('Worker not ready'));
+        return;
+      }
+      
+      const id = `invalidate-${row}-${col}-${Date.now()}`;
+      
+      // Send message to worker
+      const message: InvalidateCacheMessage = {
+        type: 'INVALIDATE_CACHE',
+        id,
+        tabId,
+        row,
+        col,
+      };
+      
+      workerRef.current.postMessage(message);
+      
+      // Resolve immediately (fire and forget)
+      setTimeout(() => resolve(), 100);
+    });
+  }, [tabId, isReady]);
+  
+  const checkCircularReferences = useCallback((): Promise<{ hasCircularRefs: boolean; circularCells: string[] }> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current || !isReady) {
+        reject(new Error('Worker not ready'));
+        return;
+      }
+      
+      const id = `circular-${Date.now()}`;
+      
+      // Store pending request
+      pendingCircularRefChecksRef.current.set(id, { resolve, reject });
+      
+      // Send message to worker
+      const message: CheckCircularRefsMessage = {
+        type: 'CHECK_CIRCULAR_REFS',
+        id,
+        tabId,
+      };
+      
+      workerRef.current.postMessage(message);
+      
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        if (pendingCircularRefChecksRef.current.has(id)) {
+          pendingCircularRefChecksRef.current.delete(id);
+          reject(new Error('Circular reference check timeout'));
+        }
+      }, 10000);
+    });
+  }, [tabId, isReady]);
+  
+  const getCacheStats = useCallback((): Promise<{ cacheSize: number; dirtyCellsCount: number; hitRate: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current || !isReady) {
+        reject(new Error('Worker not ready'));
+        return;
+      }
+      
+      const id = `cache-stats-${Date.now()}`;
+      
+      // Store pending request
+      pendingCacheStatsRef.current.set(id, { resolve, reject });
+      
+      // Send message to worker
+      const message: CacheStatsMessage = {
+        type: 'GET_CACHE_STATS',
+        id,
+      };
+      
+      workerRef.current.postMessage(message);
+      
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        if (pendingCacheStatsRef.current.has(id)) {
+          pendingCacheStatsRef.current.delete(id);
+          reject(new Error('Cache stats request timeout'));
+        }
+      }, 5000);
+    });
+  }, [isReady]);
+  
+  // ============================================================================
   // Return API
   // ============================================================================
   
@@ -411,22 +596,39 @@ export function useFormulaWorker(tabId: string) {
     loadSheet,
     getDependencies,
     
+    // Optimization features (Phase 4)
+    invalidateCache,
+    checkCircularReferences,
+    getCacheStats,
+    
     // Status
     isReady,
     isSheetLoaded,
+    cacheStats,
     stats,
   };
 }
 
 /**
- * Example usage (Phase 3 - HyperFormula):
+ * Example usage (Phase 4 - With Caching & Optimization):
  * 
- * const { calculate, calculateBatch, loadSheet, getDependencies, isReady, stats } = useFormulaWorker(tabId);
+ * const { 
+ *   calculate, 
+ *   calculateBatch, 
+ *   loadSheet, 
+ *   getDependencies,
+ *   invalidateCache,
+ *   checkCircularReferences,
+ *   getCacheStats,
+ *   isReady, 
+ *   cacheStats,
+ *   stats 
+ * } = useFormulaWorker(tabId);
  * 
  * // Load sheet into HyperFormula (optional - auto-loads on first calculation)
  * await loadSheet();
  * 
- * // Single calculation - Now supports 400+ Excel functions!
+ * // Single calculation - Now supports 400+ Excel functions with caching!
  * const sum = await calculate('=SUM(A1:A100)', 'B1');
  * const vlookup = await calculate('=VLOOKUP(A1, B1:D10, 3, FALSE)', 'E1');
  * const ifResult = await calculate('=IF(A1>10, "High", "Low")', 'F1');
@@ -445,6 +647,22 @@ export function useFormulaWorker(tabId: string) {
  * const { dependencies, dependents } = await getDependencies('B1');
  * console.log('B1 depends on:', dependencies); // ['A1', 'A2', ..., 'A100']
  * console.log('Cells that depend on B1:', dependents); // ['C1', 'D5', ...]
+ * 
+ * // Phase 4: Cache management
+ * // When a cell changes, invalidate its cache (automatic dependency invalidation)
+ * await invalidateCache(0, 0); // Invalidate A1
+ * 
+ * // Check for circular references
+ * const { hasCircularRefs, circularCells } = await checkCircularReferences();
+ * if (hasCircularRefs) {
+ *   console.warn('Circular references detected:', circularCells);
+ * }
+ * 
+ * // Get cache statistics
+ * const stats = await getCacheStats();
+ * console.log('Cache size:', stats.cacheSize);
+ * console.log('Dirty cells:', stats.dirtyCellsCount);
+ * console.log('Cache hit rate:', stats.hitRate, '%');
  * 
  * // Check worker status
  * console.log('Worker ready:', isReady);

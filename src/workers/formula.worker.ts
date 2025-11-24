@@ -73,6 +73,141 @@ const hfEngine = HyperFormula.buildEmpty({
 // Sheet ID mapping (tabId -> HyperFormula sheet ID)
 const sheetIdMap = new Map<string, number>();
 
+// ============================================================================
+// Phase 4: Calculation Cache & Optimization
+// ============================================================================
+
+interface CachedResult {
+  result: number | string;
+  dependencies: string[];  // Cells this formula depends on
+  timestamp: number;       // When calculated
+  version: number;         // Cell version when calculated
+}
+
+// Cache: cellRef -> CachedResult
+const calculationCache = new Map<string, CachedResult>();
+
+// Dirty cells tracking (cells that need recalculation)
+const dirtyCells = new Set<string>();
+
+// Cell version tracking (tabId:row:col -> version)
+const cellVersions = new Map<string, number>();
+
+/**
+ * Get cache key for a cell
+ */
+function getCacheKey(tabId: string, cellRef: string): string {
+  return `${tabId}:${cellRef}`;
+}
+
+/**
+ * Get cell version key
+ */
+function getVersionKey(tabId: string, row: number, col: number): string {
+  return `${tabId}:${row}:${col}`;
+}
+
+/**
+ * Check if cached result is still valid
+ */
+function isCacheValid(cacheKey: string, cached: CachedResult, tabId: string): boolean {
+  // Check if any dependencies have changed
+  for (const depRef of cached.dependencies) {
+    const { row, col } = parseCellRef(depRef);
+    const versionKey = getVersionKey(tabId, row, col);
+    const currentVersion = cellVersions.get(versionKey) || 0;
+    
+    // If any dependency has a newer version, cache is invalid
+    if (currentVersion > cached.version) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Invalidate cache for a cell and its dependents
+ */
+function invalidateCache(tabId: string, row: number, col: number) {
+  const cellRef = `${columnIndexToLetter(col)}${row + 1}`;
+  const cacheKey = getCacheKey(tabId, cellRef);
+  
+  // Remove from cache
+  calculationCache.delete(cacheKey);
+  
+  // Mark as dirty
+  dirtyCells.add(cacheKey);
+  
+  // Increment version
+  const versionKey = getVersionKey(tabId, row, col);
+  const currentVersion = cellVersions.get(versionKey) || 0;
+  cellVersions.set(versionKey, currentVersion + 1);
+  
+  // Invalidate dependents (cells that depend on this cell)
+  const sheetId = sheetIdMap.get(tabId);
+  if (sheetId !== undefined) {
+    try {
+      const dependents = hfEngine.getCellDependents({
+        sheet: sheetId,
+        row,
+        col,
+      });
+      
+      // Recursively invalidate dependents
+      for (const dependent of dependents) {
+        invalidateCache(tabId, dependent.row, dependent.col);
+      }
+    } catch (error) {
+      // Sheet not loaded, ignore
+    }
+  }
+}
+
+/**
+ * Get cached result if available and valid
+ */
+function getCachedResult(tabId: string, cellRef: string): number | string | null {
+  const cacheKey = getCacheKey(tabId, cellRef);
+  const cached = calculationCache.get(cacheKey);
+  
+  if (!cached) {
+    return null;
+  }
+  
+  if (!isCacheValid(cacheKey, cached, tabId)) {
+    // Cache invalid, remove it
+    calculationCache.delete(cacheKey);
+    return null;
+  }
+  
+  return cached.result;
+}
+
+/**
+ * Store result in cache
+ */
+function setCachedResult(
+  tabId: string, 
+  cellRef: string, 
+  result: number | string, 
+  dependencies: string[]
+) {
+  const cacheKey = getCacheKey(tabId, cellRef);
+  const { row, col } = parseCellRef(cellRef);
+  const versionKey = getVersionKey(tabId, row, col);
+  
+  calculationCache.set(cacheKey, {
+    result,
+    dependencies,
+    timestamp: Date.now(),
+    version: cellVersions.get(versionKey) || 0,
+  });
+  
+  // Remove from dirty set
+  dirtyCells.delete(cacheKey);
+}
+
 /**
  * Load sheet data from IndexedDB into HyperFormula
  */
@@ -210,6 +345,42 @@ interface DependenciesResponseMessage {
   dependents: string[];
 }
 
+interface InvalidateCacheMessage {
+  type: 'INVALIDATE_CACHE';
+  id: string;
+  tabId: string;
+  row: number;
+  col: number;
+}
+
+interface CheckCircularRefsMessage {
+  type: 'CHECK_CIRCULAR_REFS';
+  id: string;
+  tabId: string;
+}
+
+interface CircularRefsResponseMessage {
+  type: 'CIRCULAR_REFS';
+  id: string;
+  hasCircularRefs: boolean;
+  circularCells: string[];
+}
+
+interface CacheStatsMessage {
+  type: 'GET_CACHE_STATS';
+  id: string;
+}
+
+interface CacheStatsResponseMessage {
+  type: 'CACHE_STATS';
+  id: string;
+  stats: {
+    cacheSize: number;
+    dirtyCellsCount: number;
+    hitRate: number;
+  };
+}
+
 // ============================================================================
 // Formula Parsing
 // ============================================================================
@@ -326,7 +497,7 @@ async function calculateMAX(tabId: string, range: CellRange): Promise<number> {
 // ============================================================================
 
 /**
- * Calculate formula using HyperFormula engine
+ * Calculate formula using HyperFormula engine (Phase 4: with caching)
  * Supports 400+ Excel functions
  */
 async function calculateWithHyperFormula(
@@ -335,6 +506,13 @@ async function calculateWithHyperFormula(
   cellRef: string
 ): Promise<number | string> {
   try {
+    // Check cache first (Phase 4)
+    const cachedResult = getCachedResult(tabId, cellRef);
+    if (cachedResult !== null) {
+      console.log(`[FormulaWorker] Cache hit for ${cellRef}:`, cachedResult);
+      return cachedResult;
+    }
+    
     // Load sheet if not already loaded
     const sheetId = await loadSheetIntoHyperFormula(tabId);
     
@@ -352,6 +530,20 @@ async function calculateWithHyperFormula(
     const result = hfEngine.calculateFormula(formula, cellAddress);
     
     console.log(`[FormulaWorker] HyperFormula result for ${cellRef}:`, result);
+    
+    // Get dependencies for caching (Phase 4)
+    const dependencies: string[] = [];
+    try {
+      const precedents = hfEngine.getCellPrecedents(cellAddress);
+      for (const precedent of precedents) {
+        dependencies.push(`${columnIndexToLetter(precedent.col)}${precedent.row + 1}`);
+      }
+    } catch (error) {
+      // No dependencies
+    }
+    
+    // Store in cache (Phase 4)
+    setCachedResult(tabId, cellRef, result, dependencies);
     
     return result;
   } catch (error) {
@@ -465,6 +657,68 @@ function columnIndexToLetter(index: number): string {
 }
 
 // ============================================================================
+// Phase 4: Circular Reference Detection
+// ============================================================================
+
+/**
+ * Check for circular references in the sheet
+ */
+async function checkCircularReferences(tabId: string): Promise<{
+  hasCircularRefs: boolean;
+  circularCells: string[];
+}> {
+  try {
+    const sheetId = sheetIdMap.get(tabId);
+    
+    if (sheetId === undefined) {
+      return { hasCircularRefs: false, circularCells: [] };
+    }
+
+    const circularCells: string[] = [];
+    
+    // Get serialized data from HyperFormula
+    const serialized = hfEngine.getSheetSerialized(sheetId);
+    
+    // Look for circular reference errors (#CYCLE!)
+    serialized.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        if (cell && typeof cell === 'object' && 'error' in cell) {
+          const errorValue = (cell as any).error;
+          if (errorValue === '#CYCLE!') {
+            const cellRef = `${columnIndexToLetter(colIndex)}${rowIndex + 1}`;
+            circularCells.push(cellRef);
+          }
+        }
+      });
+    });
+
+    return {
+      hasCircularRefs: circularCells.length > 0,
+      circularCells,
+    };
+  } catch (error) {
+    console.error('[FormulaWorker] Error checking circular references:', error);
+    return { hasCircularRefs: false, circularCells: [] };
+  }
+}
+
+/**
+ * Get cache statistics
+ */
+function getCacheStats() {
+  const totalCalculations = calculationCache.size + dirtyCells.size;
+  const hitRate = totalCalculations > 0 
+    ? calculationCache.size / totalCalculations 
+    : 0;
+  
+  return {
+    cacheSize: calculationCache.size,
+    dirtyCellsCount: dirtyCells.size,
+    hitRate: hitRate * 100, // Convert to percentage
+  };
+}
+
+// ============================================================================
 // Message Handler
 // ============================================================================
 
@@ -544,6 +798,47 @@ self.addEventListener('message', async (event: MessageEvent) => {
         cellRef,
         dependencies,
         dependents,
+      };
+      
+      self.postMessage(response);
+      
+    } else if (message.type === 'INVALIDATE_CACHE') {
+      const { id, tabId, row, col } = message as InvalidateCacheMessage;
+      
+      console.log('[FormulaWorker] Invalidating cache for:', { tabId, row, col });
+      
+      invalidateCache(tabId, row, col);
+      
+      self.postMessage({
+        type: 'CACHE_INVALIDATED',
+        id,
+      });
+      
+    } else if (message.type === 'CHECK_CIRCULAR_REFS') {
+      const { id, tabId } = message as CheckCircularRefsMessage;
+      
+      console.log('[FormulaWorker] Checking circular references for:', tabId);
+      
+      const { hasCircularRefs, circularCells } = await checkCircularReferences(tabId);
+      
+      const response: CircularRefsResponseMessage = {
+        type: 'CIRCULAR_REFS',
+        id,
+        hasCircularRefs,
+        circularCells,
+      };
+      
+      self.postMessage(response);
+      
+    } else if (message.type === 'GET_CACHE_STATS') {
+      const { id } = message as CacheStatsMessage;
+      
+      const stats = getCacheStats();
+      
+      const response: CacheStatsResponseMessage = {
+        type: 'CACHE_STATS',
+        id,
+        stats,
       };
       
       self.postMessage(response);

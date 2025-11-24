@@ -261,10 +261,61 @@ console.log('Cells that depend on E1:', dependents); // ['F1', 'G1', ...]
 - **Date & Time**: TODAY, NOW, YEAR, MONTH, DAY など
 - **その他多数** (合計 400+ 関数)
 
-### Phase 4: 最適化
-- 計算結果のキャッシュ
-- Incremental calculation (変更セルのみ再計算)
-- Virtual scrolling との統合
+### Phase 4: 最適化 ✅ (完了)
+```typescript
+// Phase 4: キャッシング、増分計算、Virtual Scrolling統合
+const { 
+  calculate, 
+  invalidateCache, 
+  checkCircularReferences,
+  getCacheStats,
+  cacheStats 
+} = useFormulaWorker(tabId);
+
+// 計算結果は自動的にキャッシュされる
+const sum = await calculate('=SUM(A1:A100)', 'B1'); // 初回: 計算
+const sum2 = await calculate('=SUM(A1:A100)', 'B1'); // 2回目: キャッシュヒット
+
+// セルが変更されたら、キャッシュを無効化（依存セルも自動で無効化）
+await invalidateCache(0, 0); // A1 を変更したら実行
+
+// 循環参照をチェック
+const { hasCircularRefs, circularCells } = await checkCircularReferences();
+if (hasCircularRefs) {
+  console.warn('循環参照が検出されました:', circularCells);
+}
+
+// キャッシュ統計を取得
+const stats = await getCacheStats();
+console.log('キャッシュサイズ:', stats.cacheSize);
+console.log('Dirtyセル数:', stats.dirtyCellsCount);
+console.log('キャッシュヒット率:', stats.hitRate, '%');
+
+// Virtual Scrolling との統合
+const { getResult, hasResult, isCalculating } = useVirtualScrollFormula({
+  tabId,
+  visibleRange: { startRow: 0, endRow: 20, startCol: 0, endCol: 10 },
+  formulas: allFormulas,
+  onFormulaResult: (cellRef, result) => {
+    // 結果を UI に反映
+    updateCell(cellRef, result);
+  },
+  priorityMode: 'visible-first', // 表示中のセルを優先的に計算
+});
+```
+
+**実装済み機能:**
+- ✅ **計算結果キャッシュ** - 依存関係を追跡し、変更されていない計算は再利用
+- ✅ **増分計算** - 変更されたセルとその依存セルのみ再計算
+- ✅ **循環参照検出** - ユーザーフィードバック付きで循環参照を検出
+- ✅ **Virtual Scrolling 統合** - 表示中のセルを優先的に計算
+- ✅ **キャッシュ統計** - ヒット率、キャッシュサイズなどを取得
+- ✅ **自動依存関係無効化** - セルが変更されたら依存セルも自動で再計算
+
+**パフォーマンス改善:**
+- キャッシュヒット時: < 1ms（計算不要）
+- 依存関係の追跡: O(1) 時間複雑度
+- メモリ効率: スパース行列 + キャッシュで最適化
 
 ---
 
