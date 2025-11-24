@@ -204,11 +204,27 @@ const cells = await db.cells.where('[tabId+col]').equals([tabId, colIndex]).toAr
 const sum = cells.reduce((acc, cell) => acc + (Number(cell.value) || 0), 0);
 ```
 
-### Phase 2: Web Worker 対応
-- 計算を別スレッドに移動
-- UI ブロッキングなし
+### Phase 2: Web Worker 対応 ✅ (完了)
+```typescript
+// Worker 内で IndexedDB を使った計算
+const { calculate, calculateBatch } = useFormulaWorker(tabId);
 
-### Phase 3: HyperFormula 統合
+// 単一計算（非ブロッキング）
+const sum = await calculate('=SUM(A1:A100000)', 'B1');
+
+// バッチ計算（複数の数式を一度に）
+const results = await calculateBatch([
+  { cellRef: 'B1', formula: '=SUM(A1:A100000)' },
+  { cellRef: 'B2', formula: '=AVERAGE(A1:A100000)' },
+  { cellRef: 'B3', formula: '=MAX(A1:A100000)' },
+]);
+```
+- ✅ 計算を別スレッドに移動
+- ✅ UI ブロッキングなし
+- ✅ 10万行でも快適
+- ✅ パフォーマンス統計機能
+
+### Phase 3: HyperFormula 統合 (次)
 - Excel 互換の全関数をサポート
 - 依存関係の自動解決
 - 循環参照の検出
