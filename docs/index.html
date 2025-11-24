@@ -4,6 +4,16 @@
     <meta charset="utf-8" />
     <link rel="icon" type="image/png" href="./icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com blob:;
+      style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+      img-src 'self' data: https://www.google-analytics.com;
+      connect-src 'self' https://www.google-analytics.com;
+      worker-src 'self' blob:;
+      child-src 'self' blob:;
+      font-src 'self' data:;
+    ">
     <title>Gridpark · Playground</title>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LJ44KL06E6"></script>
     <script>
