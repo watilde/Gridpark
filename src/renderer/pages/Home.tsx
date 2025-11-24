@@ -343,16 +343,6 @@ export const Home: React.FC = () => {
     }
   }, [activeTab, save]);
 
-  // Sheet dirty change handler (memoized to prevent infinite loops)
-  const handleSheetDirtyChange = useCallback((tabId: string, dirty: boolean) => {
-    console.log('[Home] Sheet dirty change:', tabId, dirty);
-    if (dirty) {
-      markDirty(tabId);
-    } else {
-      markClean(tabId);
-    }
-  }, [markDirty, markClean]);
-
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -479,9 +469,18 @@ export const Home: React.FC = () => {
         manifestIsDirty={manifestIsDirty}
         canEditManifest={canEditManifest}
         platformCapabilities={platformCapabilities}
-        onSessionChange={(state) => handlePersistSheetSession(activeTab!.id, state)}
+        onSessionChange={(state) => {
+          const tabId = activeTab!.id;
+          handlePersistSheetSession(tabId, state, (dirty) => {
+            if (dirty) {
+              markDirty(tabId);
+            } else {
+              markClean(tabId);
+            }
+          });
+        }}
         onSaveSession={(state) => handleSaveSheetSession(activeTab!.id, state)}
-        onDirtyChange={(dirty) => handleSheetDirtyChange(activeTab!.id, dirty)}
+        onDirtyChange={(dirty) => {}} // No-op, handled in onSessionChange now
         onCellSelect={handleCellSelect}
         onRangeSelect={handleRangeSelect}
         onActiveCellDetails={handleActiveCellDetails}

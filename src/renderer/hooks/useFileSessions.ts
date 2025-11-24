@@ -31,16 +31,20 @@ export const useSheetSessions = () => {
   const [sheetSessions, setSheetSessions] = useState<Record<string, SheetSessionState>>({});
 
   const handlePersistSheetSession = useCallback(
-    (tabId: string, state: SheetSessionState) => {
+    (tabId: string, state: SheetSessionState, onDirtyChange?: (dirty: boolean) => void) => {
       setSheetSessions((prev) => {
         const prevSession = prev[tabId];
         if (sheetSessionEqual(prevSession, state)) {
           return prev;
         }
+        
+        // Notify dirty state change if callback provided
+        if (onDirtyChange) {
+          onDirtyChange(state.dirty);
+        }
+        
         return { ...prev, [tabId]: state };
       });
-      // Note: dirty state is now managed by SaveManager in Home.tsx
-      // via onDirtyChange callback, not here
     },
     [],
   );
