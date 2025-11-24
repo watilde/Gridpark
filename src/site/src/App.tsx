@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
 import { ThemeProvider } from "@renderer/theme/ThemeProvider";
-import { HeroDemo } from "./HeroDemo";
 
 const sprayPalette = [
   "#ff1744",
@@ -568,7 +567,17 @@ export const App = () => {
           </h2>
           <div className="demo-container">
             <div className="demo-live-app">
-              <HeroDemo />
+              <img 
+                src="./images/demo-screenshot.png" 
+                alt="Gridpark Demo - Street Art Themed Inventory Management"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                  border: '2px solid rgba(255, 255, 255, 0.1)'
+                }}
+              />
             </div>
           </div>
         </section>
