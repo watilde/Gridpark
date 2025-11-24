@@ -28,7 +28,6 @@ import { useSettings } from "../hooks/useSettings";
 import { useManifestHandlers } from "../hooks/useManifestHandlers";
 import { useSheetHandlers } from "../hooks/useSheetHandlers";
 import { useElectronIntegration } from "../hooks/useElectronAPI";
-import { useSaveManager } from "../hooks/useSaveManager";
 import { cloneManifest } from "../utils/sessionHelpers";
 
 /**
@@ -70,6 +69,29 @@ export const Home: React.FC = () => {
   // AutoSave state
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ============================================
+  // Unified Dirty State Management (Single Source of Truth)
+  // ============================================
+  const [dirtyMap, setDirtyMap] = useState<Record<string, boolean>>({});
+
+  const markDirty = useCallback((id: string) => {
+    console.log('[Home] markDirty:', id);
+    setDirtyMap(prev => prev[id] ? prev : { ...prev, [id]: true });
+  }, []);
+
+  const markClean = useCallback((id: string) => {
+    console.log('[Home] markClean:', id);
+    setDirtyMap(prev => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  const isDirty = useCallback((id: string) => Boolean(dirtyMap[id]), [dirtyMap]);
+  const dirtyIds = useMemo(() => Object.keys(dirtyMap), [dirtyMap]);
 
   // Electron API integration with useSyncExternalStore
   const electron = useElectronIntegration();
@@ -137,17 +159,15 @@ export const Home: React.FC = () => {
     handleCloseTab,
   } = workspace;
 
-  // Use SaveManager's dirty state for tabs
+  // Derive UI state from dirtyMap (one-way data flow)
   const tabIsDirty = useCallback((tab: WorkbookTab) => {
-    return isDirty(tab.id);
-  }, [isDirty]);
+    return Boolean(dirtyMap[tab.id]);
+  }, [dirtyMap]);
 
-  // Use SaveManager's dirty state for tree nodes
   const dirtyNodeIds = useMemo(() => {
     const map: Record<string, boolean> = {};
-    // Mark tabs as dirty based on SaveManager
     openTabs.forEach(tab => {
-      if (isDirty(tab.id)) {
+      if (dirtyMap[tab.id]) {
         map[tab.treeNodeId] = true;
         // Also mark parent workbook as dirty
         const workbook = workbookNodes.find(n => n.id === tab.workbookId);
@@ -157,7 +177,7 @@ export const Home: React.FC = () => {
       }
     });
     return map;
-  }, [openTabs, workbookNodes, isDirty]);
+  }, [openTabs, workbookNodes, dirtyMap]);
 
   // Search state using reducer
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
@@ -194,26 +214,58 @@ export const Home: React.FC = () => {
     createDefaultManifest,
   });
 
-  // Unified Save Manager
-  const saveManager = useSaveManager(
-    {
-      sheetSessions,
-      findWorkbookNode,
-      updateWorkbookReferences,
-      saveWorkbookFile,
-      manifestSessions,
-      getManifestSessionKey,
-      codeSessions,
-      openTabs,
-    },
-    {
-      handleSaveSheetSession: async () => {}, // Dummy, useSaveManager handles internally
-      handleSaveManifest: manifestSaveHandler,
-      onSaveCode,
-    }
-  );
+  // ============================================
+  // Simple Save Functions
+  // ============================================
+  const saveSheet = useCallback(async (tabId: string) => {
+    console.log('[Home] saveSheet:', tabId);
+    const session = sheetSessions[tabId];
+    const tab = openTabs.find(t => t.id === tabId && t.kind === 'sheet');
+    if (!session || !tab || tab.kind !== 'sheet') return;
 
-  const { dirtyMap, dirtyIds, isDirty, markDirty, markClean, save, saveAll } = saveManager;
+    const workbookNode = findWorkbookNode(tab.workbookId);
+    const workbookFile = workbookNode?.file;
+    if (!workbookFile) return;
+
+    const updatedSheets = workbookFile.sheets.map((sheet) =>
+      sheet.name === tab.sheetName
+        ? {
+            ...sheet,
+            data: session.data,
+            rowCount: session.data.length,
+            colCount: session.data[0]?.length ?? sheet.colCount,
+          }
+        : sheet,
+    );
+    const updatedFile = { ...workbookFile, sheets: updatedSheets };
+    updateWorkbookReferences(tab.workbookId, updatedFile);
+    await saveWorkbookFile(updatedFile);
+    markClean(tabId);
+  }, [sheetSessions, openTabs, findWorkbookNode, updateWorkbookReferences, saveWorkbookFile, markClean]);
+
+  const save = useCallback(async (tabId: string) => {
+    const tab = openTabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    try {
+      if (tab.kind === 'sheet') {
+        await saveSheet(tabId);
+      } else if (tab.kind === 'manifest') {
+        await manifestSaveHandler(tab.workbookId, tab.file);
+        markClean(tabId);
+      } else if (tab.kind === 'code') {
+        await onSaveCode(tab.codeFile);
+        markClean(tabId);
+      }
+    } catch (error) {
+      console.error('[Home] Save failed:', error);
+    }
+  }, [openTabs, saveSheet, manifestSaveHandler, onSaveCode, markClean]);
+
+  const saveAll = useCallback(async () => {
+    console.log('[Home] saveAll:', dirtyIds.length, 'files');
+    await Promise.allSettled(dirtyIds.map(id => save(id)));
+  }, [dirtyIds, save]);
 
   // Update window title
   const activeTitle = useMemo(() => {
