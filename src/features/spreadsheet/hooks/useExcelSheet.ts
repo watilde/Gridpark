@@ -81,12 +81,12 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   // Dexie State (Table data with reactive queries)
   // ========================================================================
   
-  // Get sheet metadata (auto-create if doesn't exist)
-  const metadata = useLiveQuery(
-    async () => {
+  // Initialize sheet metadata on mount (separate from useLiveQuery)
+  useEffect(() => {
+    const initMetadata = async () => {
       const existing = await db.getSheetMetadata(tabId);
       if (!existing) {
-        // Auto-create sheet metadata
+        // Create initial metadata
         await db.upsertSheetMetadata({
           tabId,
           workbookId,
@@ -97,14 +97,20 @@ export function useExcelSheet(params: UseExcelSheetParams) {
           cellCount: 0,
           dirty: false,
         });
-        return await db.getSheetMetadata(tabId);
       }
-      return existing;
+    };
+    initMetadata();
+  }, [tabId, workbookId, sheetName, sheetIndex]);
+  
+  // Get sheet metadata (read-only reactive query)
+  const metadata = useLiveQuery(
+    async () => {
+      return await db.getSheetMetadata(tabId);
     },
-    [tabId, workbookId, sheetName, sheetIndex]
+    [tabId]
   );
   
-  // Get all cells for this sheet (reactive, sparse array)
+  // Get all cells for this sheet (read-only reactive query)
   const cells = useLiveQuery(
     async () => {
       return await db.getCellsForSheet(tabId);
