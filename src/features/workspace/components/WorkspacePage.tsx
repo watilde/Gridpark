@@ -247,17 +247,27 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       activeTabKind: activeTab?.kind,
     });
     
+    let previousCanUndo = false;
+    let previousCanRedo = false;
+    
     // Update undo/redo state when active tab changes
     const updateUndoRedoState = () => {
       const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
       const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-      console.log('🟢 [WorkspacePage] Updating undo/redo state', {
-        activeTabId: activeTab?.id,
-        activeTabKind: activeTab?.kind,
-        canUndo: newCanUndo,
-        canRedo: newCanRedo,
-        hasEditorPanelRef: !!editorPanelRef.current,
-      });
+      
+      // Only log when state actually changes
+      if (newCanUndo !== previousCanUndo || newCanRedo !== previousCanRedo) {
+        console.log('🟢 [WorkspacePage] Undo/Redo state CHANGED', {
+          activeTabId: activeTab?.id,
+          activeTabKind: activeTab?.kind,
+          canUndo: `${previousCanUndo} → ${newCanUndo}`,
+          canRedo: `${previousCanRedo} → ${newCanRedo}`,
+          hasEditorPanelRef: !!editorPanelRef.current,
+        });
+        previousCanUndo = newCanUndo;
+        previousCanRedo = newCanRedo;
+      }
+      
       setCanUndo(newCanUndo);
       setCanRedo(newCanRedo);
     };

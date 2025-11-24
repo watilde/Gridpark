@@ -57,22 +57,20 @@ export const CodeEditorPanel = forwardRef<CodeEditorPanelHandle, CodeEditorPanel
   // Expose undo/redo methods via ref
   useImperativeHandle(ref, () => ({
     undo: () => {
-      console.log('[CodeEditorPanel] Undo called', { hasMonacoRef: !!monacoRef.current });
+      console.log('⏪ [CodeEditorPanel] Undo called', { hasMonacoRef: !!monacoRef.current });
       monacoRef.current?.undo();
     },
     redo: () => {
-      console.log('[CodeEditorPanel] Redo called', { hasMonacoRef: !!monacoRef.current });
+      console.log('⏩ [CodeEditorPanel] Redo called', { hasMonacoRef: !!monacoRef.current });
       monacoRef.current?.redo();
     },
     canUndo: () => {
-      const result = monacoRef.current?.canUndo() ?? false;
-      console.log('[CodeEditorPanel] canUndo queried', { result, hasMonacoRef: !!monacoRef.current });
-      return result;
+      // No logging here - called every 200ms
+      return monacoRef.current?.canUndo() ?? false;
     },
     canRedo: () => {
-      const result = monacoRef.current?.canRedo() ?? false;
-      console.log('[CodeEditorPanel] canRedo queried', { result, hasMonacoRef: !!monacoRef.current });
-      return result;
+      // No logging here - called every 200ms
+      return monacoRef.current?.canRedo() ?? false;
     },
   }), []);
 

@@ -117,19 +117,19 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
   
   useImperativeHandle(ref, () => ({
     undo: () => {
-      console.log('[ExcelViewerDexie] Undo called', { tabId, canUndo });
+      console.log('⏪ [ExcelViewerDexie] Undo called', { tabId, canUndo });
       undo();
     },
     redo: () => {
-      console.log('[ExcelViewerDexie] Redo called', { tabId, canRedo });
+      console.log('⏩ [ExcelViewerDexie] Redo called', { tabId, canRedo });
       redo();
     },
     canUndo: () => {
-      console.log('[ExcelViewerDexie] canUndo queried', { tabId, canUndo });
+      // No logging here - called every 200ms
       return canUndo;
     },
     canRedo: () => {
-      console.log('[ExcelViewerDexie] canRedo queried', { tabId, canRedo });
+      // No logging here - called every 200ms
       return canRedo;
     },
   }), [undo, redo, canUndo, canRedo, tabId]);

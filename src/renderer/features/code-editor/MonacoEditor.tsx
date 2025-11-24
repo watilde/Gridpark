@@ -174,24 +174,22 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(({
   // Expose undo/redo methods via ref
   useImperativeHandle(ref, () => ({
     undo: () => {
-      console.log('[MonacoEditor] Undo called', { hasEditor: !!editorRef.current });
+      console.log('⏪ [MonacoEditor] Undo called', { hasEditor: !!editorRef.current });
       editorRef.current?.trigger('keyboard', 'undo', null);
     },
     redo: () => {
-      console.log('[MonacoEditor] Redo called', { hasEditor: !!editorRef.current });
+      console.log('⏩ [MonacoEditor] Redo called', { hasEditor: !!editorRef.current });
       editorRef.current?.trigger('keyboard', 'redo', null);
     },
     canUndo: () => {
+      // No logging here - called every 200ms
       const model = editorRef.current?.getModel();
-      const result = model ? model.canUndo() : false;
-      console.log('[MonacoEditor] canUndo queried', { hasModel: !!model, result });
-      return result;
+      return model ? model.canUndo() : false;
     },
     canRedo: () => {
+      // No logging here - called every 200ms
       const model = editorRef.current?.getModel();
-      const result = model ? model.canRedo() : false;
-      console.log('[MonacoEditor] canRedo queried', { hasModel: !!model, result });
-      return result;
+      return model ? model.canRedo() : false;
     },
     getEditor: () => editorRef.current,
   }), []);
@@ -245,10 +243,7 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(({
         theme={normalizedTheme}
         options={editorOptions}
         onChange={(nextValue) => {
-          console.log('[MonacoEditor] onChange triggered', {
-            nextValue: nextValue?.substring(0, 100),
-            hasOnChange: !!onChange,
-          });
+          // onChange callback (no logging - fires frequently)
           onChange?.(nextValue ?? "");
         }}
         onMount={handleMount}

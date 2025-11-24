@@ -110,7 +110,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
   // Supports both code editor and sheet viewer
   useImperativeHandle(ref, () => ({
     undo: () => {
-      console.log('[EditorPanel] Undo called', { 
+      console.log('⏪ [EditorPanel] Undo called', { 
         tabKind: activeTab?.kind,
         hasCodeRef: !!codeEditorRef.current,
         hasSheetRef: !!sheetViewerRef.current,
@@ -122,7 +122,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
       }
     },
     redo: () => {
-      console.log('[EditorPanel] Redo called', { 
+      console.log('⏩ [EditorPanel] Redo called', { 
         tabKind: activeTab?.kind,
         hasCodeRef: !!codeEditorRef.current,
         hasSheetRef: !!sheetViewerRef.current,
@@ -134,34 +134,22 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
       }
     },
     canUndo: () => {
-      let result = false;
+      // No logging here - called every 200ms
       if (activeTab?.kind === 'code') {
-        result = codeEditorRef.current?.canUndo() ?? false;
+        return codeEditorRef.current?.canUndo() ?? false;
       } else if (activeTab?.kind === 'sheet') {
-        result = sheetViewerRef.current?.canUndo() ?? false;
+        return sheetViewerRef.current?.canUndo() ?? false;
       }
-      console.log('[EditorPanel] canUndo', { 
-        tabKind: activeTab?.kind, 
-        result,
-        hasCodeRef: !!codeEditorRef.current,
-        hasSheetRef: !!sheetViewerRef.current,
-      });
-      return result;
+      return false;
     },
     canRedo: () => {
-      let result = false;
+      // No logging here - called every 200ms
       if (activeTab?.kind === 'code') {
-        result = codeEditorRef.current?.canRedo() ?? false;
+        return codeEditorRef.current?.canRedo() ?? false;
       } else if (activeTab?.kind === 'sheet') {
-        result = sheetViewerRef.current?.canRedo() ?? false;
+        return sheetViewerRef.current?.canRedo() ?? false;
       }
-      console.log('[EditorPanel] canRedo', { 
-        tabKind: activeTab?.kind, 
-        result,
-        hasCodeRef: !!codeEditorRef.current,
-        hasSheetRef: !!sheetViewerRef.current,
-      });
-      return result;
+      return false;
     },
   }), [activeTab]);
   if (!activeTab) {
