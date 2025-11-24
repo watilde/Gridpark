@@ -864,7 +864,16 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     });
   }, [searchNavigation, searchMatches.length]);
 
+  // Track if we're in the process of updating to prevent circular updates
+  const isUpdatingFromGridDataRef = useRef(false);
+  
   useEffect(() => {
+    // Only update gridData from sessionState if we're not currently pushing changes
+    // This prevents the circular update: gridData -> sessionState -> gridData
+    if (isUpdatingFromGridDataRef.current) {
+      return;
+    }
+    
     if (sessionState && sessionState.data.length) {
       setGridData(recalculateSheetData(sessionState.data));
       setHasLocalChanges(sessionState.dirty);
@@ -881,7 +890,22 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
 
   useEffect(() => {
     latestGridDataRef.current = gridData;
-  }, [gridData]);
+    
+    // FIX: Call onSessionChange immediately when gridData changes
+    // This ensures ExcelViewerDexie always has the latest data
+    // Set flag to prevent circular updates (gridData -> sessionState -> gridData)
+    if (onSessionChange) {
+      isUpdatingFromGridDataRef.current = true;
+      onSessionChange({
+        data: gridData,
+        dirty: hasLocalChanges,
+      });
+      // Reset flag after a short delay to allow sessionState to update
+      setTimeout(() => {
+        isUpdatingFromGridDataRef.current = false;
+      }, 100);
+    }
+  }, [gridData, hasLocalChanges, onSessionChange]);
 
   useEffect(() => {
     dirtyRef.current = hasLocalChanges;
@@ -893,6 +917,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     emitActiveCellDetails(selectedCell.row, selectedCell.col);
   }, [selectedCell, sheetData, emitActiveCellDetails]);
 
+  // Cleanup: ensure final state is saved on unmount
   useEffect(() => {
     return () => {
       if (onSessionChange) {
