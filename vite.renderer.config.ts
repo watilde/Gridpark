@@ -18,6 +18,26 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'src/renderer/index.html'),
       },
+      output: {
+        manualChunks(id) {
+          // Bundle Monaco Editor separately
+          if (id.includes('monaco-editor')) {
+            // Exclude language support files except essential ones
+            if (id.includes('/basic-languages/')) {
+              const lang = id.match(/\/basic-languages\/(\w+)\//)?.[1];
+              // Only include JavaScript, TypeScript, CSS, HTML
+              if (!['javascript', 'typescript', 'css', 'html'].includes(lang || '')) {
+                return; // Exclude this language
+              }
+            }
+            return 'monaco-editor';
+          }
+          // Bundle workers  
+          if (id.includes('.worker')) {
+            return 'monaco-workers';
+          }
+        },
+      },
     },
   },
   
@@ -36,7 +56,7 @@ export default defineConfig({
       '@ui': resolve(__dirname, './src/renderer/components/ui'),
     },
   },
-  
+
   // Optimize dependencies
   optimizeDeps: {
     include: [
@@ -45,6 +65,7 @@ export default defineConfig({
       '@mui/joy',
       '@emotion/react',
       '@emotion/styled',
+      'monaco-editor/esm/vs/editor/editor.api',
     ],
   },
   
