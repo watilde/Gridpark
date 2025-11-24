@@ -119,16 +119,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   }, [activeTab, saveManager]);
   
   const handleUndo = useCallback(() => {
-    console.log('⏪ [WorkspacePage] handleUndo called', { 
-      hasCustomHandler: !!onUndo,
-      activeTabId: activeTab?.id,
-      activeTabKind: activeTab?.kind,
-      hasEditorPanelRef: !!editorPanelRef.current,
-    });
     if (onUndo) {
       onUndo();
     } else {
-      console.log('⏪ [WorkspacePage] Executing undo via editorPanelRef');
       editorPanelRef.current?.undo();
       // Update undo/redo state after operation
       setTimeout(() => {
@@ -136,19 +129,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         setCanRedo(editorPanelRef.current?.canRedo() ?? false);
       }, 0);
     }
-  }, [onUndo, activeTab]);
+  }, [onUndo]);
   
   const handleRedo = useCallback(() => {
-    console.log('⏩ [WorkspacePage] handleRedo called', { 
-      hasCustomHandler: !!onRedo,
-      activeTabId: activeTab?.id,
-      activeTabKind: activeTab?.kind,
-      hasEditorPanelRef: !!editorPanelRef.current,
-    });
     if (onRedo) {
       onRedo();
     } else {
-      console.log('⏩ [WorkspacePage] Executing redo via editorPanelRef');
       editorPanelRef.current?.redo();
       // Update undo/redo state after operation
       setTimeout(() => {
@@ -156,7 +142,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         setCanRedo(editorPanelRef.current?.canRedo() ?? false);
       }, 0);
     }
-  }, [onRedo, activeTab]);
+  }, [onRedo]);
   
   const handleCellSelect = useCallback((pos: any) => {
     // TODO: Implement cell selection handling
@@ -242,32 +228,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   // ============================================================================
   
   useEffect(() => {
-    console.log('🔵 [WorkspacePage] useEffect for undo/redo polling started', {
-      activeTabId: activeTab?.id,
-      activeTabKind: activeTab?.kind,
-    });
-    
-    let previousCanUndo = false;
-    let previousCanRedo = false;
-    
     // Update undo/redo state when active tab changes
     const updateUndoRedoState = () => {
       const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
       const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-      
-      // Only log when state actually changes
-      if (newCanUndo !== previousCanUndo || newCanRedo !== previousCanRedo) {
-        console.log('🟢 [WorkspacePage] Undo/Redo state CHANGED', {
-          activeTabId: activeTab?.id,
-          activeTabKind: activeTab?.kind,
-          canUndo: `${previousCanUndo} → ${newCanUndo}`,
-          canRedo: `${previousCanRedo} → ${newCanRedo}`,
-          hasEditorPanelRef: !!editorPanelRef.current,
-        });
-        previousCanUndo = newCanUndo;
-        previousCanRedo = newCanRedo;
-      }
-      
       setCanUndo(newCanUndo);
       setCanRedo(newCanRedo);
     };
@@ -277,10 +241,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     // Poll for updates (Monaco editor doesn't provide change events for undo stack)
     const interval = setInterval(updateUndoRedoState, 200);
     
-    return () => {
-      console.log('🔴 [WorkspacePage] useEffect cleanup - stopping undo/redo polling');
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [activeTab]);
   
   // ============================================================================

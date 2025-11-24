@@ -110,11 +110,6 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
   // Supports both code editor and sheet viewer
   useImperativeHandle(ref, () => ({
     undo: () => {
-      console.log('⏪ [EditorPanel] Undo called', { 
-        tabKind: activeTab?.kind,
-        hasCodeRef: !!codeEditorRef.current,
-        hasSheetRef: !!sheetViewerRef.current,
-      });
       if (activeTab?.kind === 'code') {
         codeEditorRef.current?.undo();
       } else if (activeTab?.kind === 'sheet') {
@@ -122,11 +117,6 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
       }
     },
     redo: () => {
-      console.log('⏩ [EditorPanel] Redo called', { 
-        tabKind: activeTab?.kind,
-        hasCodeRef: !!codeEditorRef.current,
-        hasSheetRef: !!sheetViewerRef.current,
-      });
       if (activeTab?.kind === 'code') {
         codeEditorRef.current?.redo();
       } else if (activeTab?.kind === 'sheet') {

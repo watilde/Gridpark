@@ -28,14 +28,14 @@ import spreadsheetReducer from './spreadsheetSlice';
 // Persist Configuration
 // ============================================================================
 
-const persistConfig = {
-  key: 'root',
-  version: 1,
+const spreadsheetPersistConfig = {
+  key: 'spreadsheet',
   storage,
-  // Whitelist: only persist these slices
-  whitelist: ['spreadsheet'],
-  // Blacklist: never persist these
-  blacklist: [],
+  version: 1,
+  // Only persist UI preferences, not workspace/tab state
+  whitelist: ['autoSaveEnabled', 'autoSaveInterval'],
+  // Don't persist tabs, workbook nodes, or selections (lost on app restart)
+  blacklist: ['openTabs', 'activeTabId', 'workbookNodes', 'selectedNodeId', 'dirtyMap', 'currentDirectoryName'],
 };
 
 // ============================================================================
@@ -43,20 +43,18 @@ const persistConfig = {
 // ============================================================================
 
 const rootReducer = combineReducers({
-  spreadsheet: spreadsheetReducer,
+  spreadsheet: persistReducer(spreadsheetPersistConfig, spreadsheetReducer),
   // Add more slices here as needed:
   // workspace: workspaceReducer,
   // settings: settingsReducer,
 });
-
-const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 // ============================================================================
 // Store Configuration
 // ============================================================================
 
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
