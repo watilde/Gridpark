@@ -102,10 +102,11 @@ export const Home: React.FC = () => {
   } = useCodeSessions();
 
   // Unified workspace hook (consolidates 4 previous hooks)
+  // Note: We pass empty sheetDirtyMap because SaveManager will override it later
   const workspace = useWorkspace(
     {
       sheetSessions,
-      sheetDirtyMap: dirtyMap, // Use SaveManager's dirtyMap
+      sheetDirtyMap: {}, // Placeholder, SaveManager will override
       codeSessions,
       manifestDirtyMap,
       getManifestSessionKey,
