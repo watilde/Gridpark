@@ -207,6 +207,11 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
         
         // Initial load should NOT record history or mark dirty (it's not a user edit)
         await save2DArray(sheet.data, { recordHistory: false, markDirty: false });
+        
+        console.log('[ExcelViewerDexie] Initial data saved to Dexie', {
+          tabId,
+          cellCount: excelSheet.cellCount,
+        });
       } else if (excelSheet.cellCount > 0) {
         // Data already exists in Dexie, mark as loaded
         initialDataLoadedRef.current = true;
@@ -238,14 +243,23 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
   // FIX: Pass data2D directly to sessionState to ensure changes are reflected
   // PROBLEM: Using data2DRef caused stale data - sessionState didn't update when data2D changed
   // SOLUTION: Include data2D in useMemo dependencies
-  const sessionState = useMemo(() => ({
-    data: data2D,
-    dirty: isDirty,
-    scrollTop: 0,
-    scrollLeft: 0,
-    selectedCell: null,
-    selectionRange: null,
-  }), [data2D, isDirty]);
+  const sessionState = useMemo(() => {
+    console.log('[ExcelViewerDexie] sessionState updated', {
+      tabId,
+      dataRows: data2D?.length || 0,
+      dataCols: data2D?.[0]?.length || 0,
+      isDirty,
+      cellCount: excelSheet.cellCount,
+    });
+    return {
+      data: data2D,
+      dirty: isDirty,
+      scrollTop: 0,
+      scrollLeft: 0,
+      selectedCell: null,
+      selectionRange: null,
+    };
+  }, [data2D, isDirty, tabId, excelSheet.cellCount]);
   
   // ============================================================================
   // Callbacks

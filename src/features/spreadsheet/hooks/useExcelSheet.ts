@@ -147,10 +147,22 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   
   // Convert sparse cell array to 2D array (for ExcelViewer compatibility)
   const data2D = useMemo(() => {
-    if (!cells) return [];
+    if (!cells) {
+      console.log('[useExcelSheet] data2D: cells is null/undefined', { tabId });
+      return [];
+    }
     
     const rows = Math.max(minRows, (metadata?.maxRow ?? 0) + 1);
     const cols = Math.max(minCols, (metadata?.maxCol ?? 0) + 1);
+    
+    console.log('[useExcelSheet] data2D: building array', {
+      tabId,
+      cellsLength: cells.length,
+      rows,
+      cols,
+      maxRow: metadata?.maxRow,
+      maxCol: metadata?.maxCol,
+    });
     
     // Create empty 2D array
     const result: any[][] = Array(rows).fill(null).map(() => 
@@ -170,7 +182,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     });
     
     return result;
-  }, [cells, metadata?.maxRow, metadata?.maxCol, minRows, minCols]);
+  }, [cells, metadata?.maxRow, metadata?.maxCol, minRows, minCols, tabId]);
   
   // Convert cell array to map for fast lookup
   const cellMap = useMemo(() => {
