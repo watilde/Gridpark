@@ -35,24 +35,21 @@ if (typeof window !== 'undefined') {
 }
 
 // Prevent @monaco-editor/react from using CDN
-loader.config({
-  paths: {
-    vs: 'monaco-editor/esm/vs',
-  },
-});
+// Import only core Monaco editor without all language contributions
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution';
+import 'monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution';
+import 'monaco-editor/esm/vs/language/json/monaco.contribution';
+import 'monaco-editor/esm/vs/language/css/monaco.contribution';
+import 'monaco-editor/esm/vs/language/html/monaco.contribution';
 
-// Initialize loader to prevent CDN usage
+// Configure loader with imported monaco to prevent CDN usage
+loader.config({ monaco });
+
+// No need for additional configuration
 let monacoConfigured = false;
 
-const configureMonaco = async () => {
-  if (monacoConfigured) return;
-  
-  // Import monaco-editor to bundle it locally
-  const monaco = await import('monaco-editor');
-  
-  // Configure loader with the imported monaco instance
-  loader.config({ monaco: monaco.default || monaco });
-  
+const configureMonaco = () => {
   monacoConfigured = true;
 };
 
