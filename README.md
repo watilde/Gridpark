@@ -20,9 +20,9 @@ npm test
 ## Documentation
 
 See the [docs/](docs/) directory for detailed documentation:
-- [QUICK_START.md](docs/QUICK_START.md) - Getting started guide
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture
+- [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) - Architecture and development guide
 - [Gridpark_Spec_v2.0.md](docs/Gridpark_Spec_v2.0.md) - Full specification
+- [Gridpark_Selector_Spec.md](docs/Gridpark_Selector_Spec.md) - Selector specification
 
 ## License
 
