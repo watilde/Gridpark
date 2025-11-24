@@ -9,21 +9,52 @@ import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-nati
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
-import child from 'node:child_process';
+import { execSync } from 'node:child_process';
 
 // ---------------------------------------------------------------------
-// 🔥 Apple Silicon GitHub Actions で hdiutil detach が壊れる問題対策（retry）
-const originalDetach = MakerDMG.prototype.detach;
-MakerDMG.prototype.detach = async function (device) {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return originalDetach.call(this, device);
-    } catch (err) {
-      console.warn(`Retrying detach (${i + 1}/3):`, err.message);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+// 🔥 GitHub Actions での hdiutil detach エラー対策
+// 問題: DMGボリュームがマウントされていない、または既にdetachされている場合のエラー
+// 解決策: detach前にボリュームの存在を確認し、存在する場合のみdetachする
+// ---------------------------------------------------------------------
+const originalMake = MakerDMG.prototype.make;
+MakerDMG.prototype.make = async function (...args) {
+  console.log('[DMG] Starting DMG creation with improved error handling...');
+  
+  // 既存のマウントポイントをクリーンアップ
+  try {
+    const volumes = execSync('ls /Volumes', { encoding: 'utf8' });
+    if (volumes.includes('Gridpark')) {
+      console.log('[DMG] Found existing Gridpark volume, attempting to detach...');
+      try {
+        execSync('hdiutil detach "/Volumes/Gridpark" -force', { encoding: 'utf8' });
+        console.log('[DMG] Successfully detached existing volume');
+      } catch (detachError: any) {
+        console.warn('[DMG] Failed to detach existing volume:', detachError.message);
+        // Continue anyway - it might have been detached already
+      }
+      // Wait a bit for the system to process the detach
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
+  } catch (error: any) {
+    console.warn('[DMG] Error checking volumes:', error.message);
   }
-  throw new Error(`Failed to detach device: ${device}`);
+  
+  try {
+    const result = await originalMake.apply(this, args);
+    console.log('[DMG] DMG creation completed successfully');
+    return result;
+  } catch (error: any) {
+    console.error('[DMG] DMG creation failed:', error.message);
+    
+    // クリーンアップを試みる
+    try {
+      execSync('hdiutil detach "/Volumes/Gridpark" -force 2>/dev/null || true', { encoding: 'utf8' });
+    } catch {
+      // Ignore cleanup errors
+    }
+    
+    throw error;
+  }
 };
 // ---------------------------------------------------------------------
 
@@ -47,9 +78,19 @@ const config: ForgeConfig = {
       name: '@electron-forge/maker-dmg',
       platforms: ['darwin'],
       config: {
-        title: 'Gridpark',     // ★ Volume 名を固定
+        name: 'Gridpark',      // ★ DMGファイル名
+        title: 'Gridpark',     // ★ Volume名を固定
         overwrite: true,       // ★ CIビルドの競合防止
         format: 'ULFO',        // ★ Apple Silicon に最適（既定値より安定）
+        // ★ GitHub Actions環境での安定性向上
+        additionalDMGOptions: {
+          window: {
+            size: {
+              width: 540,
+              height: 380
+            }
+          }
+        }
       },
     },
     {
