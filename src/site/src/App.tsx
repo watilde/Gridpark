@@ -271,7 +271,7 @@ export const App = () => {
                   handleDemoClick();
                 }}
               >
-                Demo
+                Selfie
               </a>
             </li>
             <li>
@@ -326,7 +326,7 @@ export const App = () => {
             </p>
             <div className="hero-buttons">
               <button className="btn-hero btn-neon" type="button" onClick={handleDemoClick}>
-                Try Demo
+                See my selfie
               </button>
               <button
                 className="btn-hero btn-outline"
