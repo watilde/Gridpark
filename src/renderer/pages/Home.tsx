@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useReducer, useState, useRef } from "react";
+import React, { useCallback, useMemo, useEffect, useReducer, useRef } from "react";
 import { Box } from "@mui/joy";
 import { AppLayout } from "../components/layout/AppLayout";
 import {
@@ -28,6 +28,18 @@ import { useSettings } from "../hooks/useSettings";
 import { useManifestHandlers } from "../hooks/useManifestHandlers";
 import { useElectronIntegration } from "../hooks/useElectronAPI";
 import { cloneManifest } from "../utils/sessionHelpers";
+
+// Redux
+import { useAppDispatch, useAppSelector } from "../../stores";
+import {
+  markDirty,
+  markClean,
+  selectDirtyTabs,
+  selectDirtyMap,
+  setAutoSaveEnabled,
+  selectAutoSaveEnabled,
+  selectAutoSaveInterval,
+} from "../../stores/spreadsheetSlice";
 
 /**
  * Search state managed by reducer
@@ -65,32 +77,18 @@ export const Home: React.FC = () => {
   const { presetId } = settings;
   const isGridparkTheme = presetId === "gridpark";
 
-  // AutoSave state
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
+  // ============================================
+  // Redux State Management
+  // ============================================
+  const dispatch = useAppDispatch();
+  const dirtyMap = useAppSelector(selectDirtyMap);
+  const dirtyIds = useAppSelector(selectDirtyTabs);
+  const autoSaveEnabled = useAppSelector(selectAutoSaveEnabled);
+  const autoSaveInterval = useAppSelector(selectAutoSaveInterval);
+  
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ============================================
-  // Unified Dirty State Management (Single Source of Truth)
-  // ============================================
-  const [dirtyMap, setDirtyMap] = useState<Record<string, boolean>>({});
-
-  const markDirty = useCallback((id: string) => {
-    console.log('[Home] markDirty:', id);
-    setDirtyMap(prev => prev[id] ? prev : { ...prev, [id]: true });
-  }, []);
-
-  const markClean = useCallback((id: string) => {
-    console.log('[Home] markClean:', id);
-    setDirtyMap(prev => {
-      if (!prev[id]) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }, []);
-
   const isDirty = useCallback((id: string) => Boolean(dirtyMap[id]), [dirtyMap]);
-  const dirtyIds = useMemo(() => Object.keys(dirtyMap), [dirtyMap]);
 
   // Electron API integration with useSyncExternalStore
   const electron = useElectronIntegration();
@@ -234,8 +232,8 @@ export const Home: React.FC = () => {
     const updatedFile = { ...workbookFile, sheets: updatedSheets };
     updateWorkbookReferences(tab.workbookId, updatedFile);
     await saveWorkbookFile(updatedFile);
-    markClean(tabId);
-  }, [sheetSessions, openTabs, findWorkbookNode, updateWorkbookReferences, saveWorkbookFile, markClean]);
+    dispatch(markClean(tabId));
+  }, [sheetSessions, openTabs, findWorkbookNode, updateWorkbookReferences, saveWorkbookFile, dispatch]);
 
   const save = useCallback(async (tabId: string) => {
     const tab = openTabs.find(t => t.id === tabId);
@@ -246,15 +244,15 @@ export const Home: React.FC = () => {
         await saveSheet(tabId);
       } else if (tab.kind === 'manifest') {
         await manifestSaveHandler(tab.workbookId, tab.file);
-        markClean(tabId);
+        dispatch(markClean(tabId));
       } else if (tab.kind === 'code') {
         await onSaveCode(tab.codeFile);
-        markClean(tabId);
+        dispatch(markClean(tabId));
       }
     } catch (error) {
       console.error('[Home] Save failed:', error);
     }
-  }, [openTabs, saveSheet, manifestSaveHandler, onSaveCode, markClean]);
+  }, [openTabs, saveSheet, manifestSaveHandler, onSaveCode, dispatch]);
 
   const saveAll = useCallback(async () => {
     console.log('[Home] saveAll:', dirtyIds.length, 'files');
@@ -398,7 +396,7 @@ export const Home: React.FC = () => {
         console.error('[Home] AutoSave: failed', error);
       }
       autoSaveTimerRef.current = null;
-    }, 2000);
+    }, autoSaveInterval);
 
     // Cleanup on unmount or dependency change
     return () => {
@@ -407,18 +405,18 @@ export const Home: React.FC = () => {
         autoSaveTimerRef.current = null;
       }
     };
-  }, [autoSaveEnabled, dirtyCount, saveAll]);
+  }, [autoSaveEnabled, dirtyCount, saveAll, autoSaveInterval]);
 
   const handleAutoSaveToggle = useCallback((enabled: boolean) => {
     console.log('[Home] AutoSave toggled:', enabled);
-    setAutoSaveEnabled(enabled);
+    dispatch(setAutoSaveEnabled(enabled));
     
     // Clear any pending auto-save timer when toggling off
     if (!enabled && autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
-  }, []);
+  }, [dispatch]);
 
   const handleCellSelect = useCallback((pos: any) => {
     // TODO: Implement cell selection handling
@@ -473,9 +471,9 @@ export const Home: React.FC = () => {
           const tabId = activeTab!.id;
           handlePersistSheetSession(tabId, state, (dirty) => {
             if (dirty) {
-              markDirty(tabId);
+              dispatch(markDirty(tabId));
             } else {
-              markClean(tabId);
+              dispatch(markClean(tabId));
             }
           });
         }}

@@ -1,8 +1,12 @@
-import React from "react";
-import { Sheet, Typography, Drawer, Divider, Box, Select, Option } from "@mui/joy";
+import React, { useState, useCallback } from "react";
+import { Sheet, Typography, Drawer, Divider, Box, Select, Option, Button, Alert } from "@mui/joy";
 import { themeOptions, useThemePreset, type ColorSchemePreference } from "../../theme/ThemeProvider";
 import type { ThemePresetId } from "../../theme/theme";
 import { useSettings } from "../../hooks/useSettings";
+import { db, resetDatabase, getDatabaseStats } from "../../../lib/db";
+import { persistor } from "../../../stores";
+import { useAppDispatch } from "../../../stores";
+import { resetSpreadsheetState } from "../../../stores/spreadsheetSlice";
 
 interface SettingsDrawerProps {
   settings: ReturnType<typeof useSettings>;
@@ -23,6 +27,119 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
   } = settings;
   
   const { colorScheme, setColorScheme } = useThemePreset();
+  const dispatch = useAppDispatch();
+  
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Reset Dexie database
+  const handleResetDexie = useCallback(async () => {
+    if (!confirm('Are you sure you want to reset the database? This will delete all table data (cells, sheets). This action cannot be undone.')) {
+      return;
+    }
+    
+    setIsResetting(true);
+    setResetMessage(null);
+    
+    try {
+      const statsBefore = await getDatabaseStats();
+      console.log('[Settings] Database stats before reset:', statsBefore);
+      
+      await resetDatabase();
+      
+      setResetMessage({
+        type: 'success',
+        text: `Database reset successfully. Cleared ${statsBefore.cells} cells, ${statsBefore.sheets} sheets, ${statsBefore.workbooks} workbooks.`,
+      });
+      
+      console.log('[Settings] Database reset completed');
+    } catch (error) {
+      console.error('[Settings] Database reset failed:', error);
+      setResetMessage({
+        type: 'error',
+        text: `Failed to reset database: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  }, []);
+  
+  // Reset Redux persist
+  const handleResetRedux = useCallback(async () => {
+    if (!confirm('Are you sure you want to reset Redux state? This will clear all dirty state, tabs, and settings. This action cannot be undone.')) {
+      return;
+    }
+    
+    setIsResetting(true);
+    setResetMessage(null);
+    
+    try {
+      // Reset Redux state
+      dispatch(resetSpreadsheetState());
+      
+      // Purge redux-persist storage
+      await persistor.purge();
+      
+      setResetMessage({
+        type: 'success',
+        text: 'Redux state reset successfully. All tabs and dirty state cleared.',
+      });
+      
+      console.log('[Settings] Redux state reset completed');
+      
+      // Reload page to fully reset
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('[Settings] Redux reset failed:', error);
+      setResetMessage({
+        type: 'error',
+        text: `Failed to reset Redux: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  }, [dispatch]);
+  
+  // Reset everything
+  const handleResetAll = useCallback(async () => {
+    if (!confirm('Are you sure you want to reset EVERYTHING? This will delete all data including database, state, and settings. This action cannot be undone.')) {
+      return;
+    }
+    
+    setIsResetting(true);
+    setResetMessage(null);
+    
+    try {
+      // Reset database
+      await resetDatabase();
+      
+      // Reset Redux
+      dispatch(resetSpreadsheetState());
+      await persistor.purge();
+      
+      setResetMessage({
+        type: 'success',
+        text: 'All data reset successfully. Reloading application...',
+      });
+      
+      console.log('[Settings] Complete reset completed');
+      
+      // Reload page
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('[Settings] Complete reset failed:', error);
+      setResetMessage({
+        type: 'error',
+        text: `Failed to reset: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  }, [dispatch]);
 
   return (
     <Drawer
@@ -80,6 +197,77 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
               </Option>
             ))}
           </Select>
+        </Box>
+        
+        <Divider />
+        
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Typography level="title-sm" color="danger">
+            ⚠️ Danger Zone
+          </Typography>
+          
+          {resetMessage && (
+            <Alert color={resetMessage.type === 'success' ? 'success' : 'danger'}>
+              {resetMessage.text}
+            </Alert>
+          )}
+          
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography level="body-sm">
+              Reset Database (Dexie)
+            </Typography>
+            <Typography level="body-xs" color="neutral">
+              Clears all table data (cells, sheets, workbooks) stored in IndexedDB.
+            </Typography>
+            <Button
+              size="sm"
+              color="danger"
+              variant="outlined"
+              onClick={handleResetDexie}
+              disabled={isResetting}
+              loading={isResetting}
+            >
+              Reset Database
+            </Button>
+          </Box>
+          
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography level="body-sm">
+              Reset Redux State
+            </Typography>
+            <Typography level="body-xs" color="neutral">
+              Clears dirty state, tabs, and auto-save settings. Page will reload.
+            </Typography>
+            <Button
+              size="sm"
+              color="danger"
+              variant="outlined"
+              onClick={handleResetRedux}
+              disabled={isResetting}
+              loading={isResetting}
+            >
+              Reset Redux
+            </Button>
+          </Box>
+          
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography level="body-sm">
+              Reset Everything
+            </Typography>
+            <Typography level="body-xs" color="neutral">
+              Complete reset: database + state + settings. Page will reload.
+            </Typography>
+            <Button
+              size="sm"
+              color="danger"
+              variant="solid"
+              onClick={handleResetAll}
+              disabled={isResetting}
+              loading={isResetting}
+            >
+              Reset All Data
+            </Button>
+          </Box>
         </Box>
       </Sheet>
     </Drawer>
