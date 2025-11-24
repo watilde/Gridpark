@@ -9,7 +9,7 @@
  * This component replaces the old session-based ExcelViewer.
  */
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ExcelFile, CellData, CellPosition, CellRange } from '../../../types/excel';
 import { useExcelSheet } from '../../../../features/spreadsheet/hooks/useExcelSheet';
 import { ExcelViewer } from './ExcelViewer';
@@ -82,6 +82,55 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
   } = excelSheet;
   
   // ============================================================================
+  // Performance Optimization - Debounce saves
+  // ============================================================================
+  
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingDataRef = useRef<any[][] | null>(null);
+  const lastSavedDataRef = useRef<any[][] | null>(null);
+  
+  // Debounced save function
+  const debouncedSave = useCallback((newData: any[][]) => {
+    pendingDataRef.current = newData;
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout
+    saveTimeoutRef.current = setTimeout(async () => {
+      const dataToSave = pendingDataRef.current;
+      if (dataToSave && dataToSave !== lastSavedDataRef.current) {
+        console.log('[ExcelViewerDexie] Debounced save executing', {
+          tabId,
+          rows: dataToSave.length,
+          cols: dataToSave[0]?.length || 0,
+        });
+        
+        try {
+          await save2DArray(dataToSave);
+          lastSavedDataRef.current = dataToSave;
+        } catch (error) {
+          console.error('[ExcelViewerDexie] Error saving data:', error);
+        }
+      }
+      
+      pendingDataRef.current = null;
+      saveTimeoutRef.current = null;
+    }, 500); // 500ms debounce
+  }, [save2DArray, tabId]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  // ============================================================================
   // Initial Data Load
   // ============================================================================
   
@@ -111,23 +160,39 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
   // Dirty State Synchronization
   // ============================================================================
   
+  const prevIsDirtyRef = useRef<boolean>(isDirty);
+  
   useEffect(() => {
-    console.log('[ExcelViewerDexie] Dirty state changed', { tabId, isDirty });
-    onDirtyChange?.(isDirty);
+    // Only notify if dirty state actually changed
+    if (prevIsDirtyRef.current !== isDirty) {
+      console.log('[ExcelViewerDexie] Dirty state changed', { tabId, isDirty });
+      onDirtyChange?.(isDirty);
+      prevIsDirtyRef.current = isDirty;
+    }
   }, [isDirty, onDirtyChange, tabId]);
   
   // ============================================================================
   // Session State for ExcelViewer (backward compatibility)
   // ============================================================================
   
+  // Use ref to maintain stable reference for data unless it actually changes
+  const data2DRef = useRef(data2D);
+  
+  useEffect(() => {
+    // Only update ref if data length changed or is truly different
+    if (data2D.length !== data2DRef.current.length || data2D !== data2DRef.current) {
+      data2DRef.current = data2D;
+    }
+  }, [data2D]);
+  
   const sessionState = useMemo(() => ({
-    data: data2D,
+    data: data2DRef.current,
     dirty: isDirty,
     scrollTop: 0,
     scrollLeft: 0,
     selectedCell: null,
     selectionRange: null,
-  }), [data2D, isDirty]);
+  }), [isDirty]);
   
   // ============================================================================
   // Callbacks
@@ -135,21 +200,17 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
   
   /**
    * Handle session changes from ExcelViewer
-   * This saves the 2D array back to Dexie
+   * OPTIMIZATION: Use debounced save to prevent saving on every cell click
    */
-  const handleSessionChange = useCallback(async (newState: any) => {
+  const handleSessionChange = useCallback((newState: any) => {
     if (!newState?.data) return;
     
-    console.log('[ExcelViewerDexie] Session changed, saving to Dexie', {
-      tabId,
-      rows: newState.data.length,
-      cols: newState.data[0]?.length || 0,
-      dirty: newState.dirty,
-    });
-    
-    // Save to Dexie (this will automatically mark as dirty)
-    await save2DArray(newState.data);
-  }, [save2DArray, tabId]);
+    // Only trigger save if data actually changed (dirty flag is true)
+    if (newState.dirty) {
+      // Use debounced save instead of immediate save
+      debouncedSave(newState.data);
+    }
+  }, [debouncedSave]);
   
   /**
    * Handle save session (when user explicitly saves)
