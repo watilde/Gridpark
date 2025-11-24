@@ -207,12 +207,17 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
         initialDataLoadedRef.current = true;
         
         // Initial load should NOT record history or mark dirty (it's not a user edit)
-        await save2DArray(sheet.data, { recordHistory: false, markDirty: false });
-        
-        console.log('[ExcelViewerDexie] Initial data saved to Dexie', {
-          tabId,
-          cellCount: excelSheet.cellCount,
-        });
+        try {
+          await save2DArray(sheet.data, { recordHistory: false, markDirty: false });
+          
+          console.log('[ExcelViewerDexie] Initial data saved to Dexie', {
+            tabId,
+            cellCount: excelSheet.cellCount,
+          });
+        } catch (error) {
+          console.error('[ExcelViewerDexie] Failed to save initial data:', error);
+          initialDataLoadedRef.current = false; // Reset flag so it can retry
+        }
       } else if (excelSheet.cellCount > 0) {
         // Data already exists in Dexie, mark as loaded
         initialDataLoadedRef.current = true;

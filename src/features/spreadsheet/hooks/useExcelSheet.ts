@@ -300,6 +300,14 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     data: any[][], 
     options: { recordHistory?: boolean; markDirty?: boolean } = {}
   ) => {
+    console.log('[useExcelSheet] save2DArray called', {
+      tabId,
+      dataRows: data.length,
+      dataCols: data[0]?.length || 0,
+      recordHistory: options.recordHistory ?? true,
+      markDirty: options.markDirty ?? true,
+    });
+    
     const { recordHistory = true, markDirty: shouldMarkDirty = true } = options;
     
     // Calculate changes for history (only if recordHistory is true)

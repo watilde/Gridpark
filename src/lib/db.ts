@@ -404,9 +404,16 @@ export class AppDatabase extends Dexie {
    * Save 2D array to sparse cell storage (for migration from useState)
    */
   async save2DArrayAsCells(tabId: string, data: any[][]): Promise<void> {
+    console.log('[db] save2DArrayAsCells called', {
+      tabId,
+      dataRows: data.length,
+      dataCols: data[0]?.length || 0,
+    });
+    
     await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
       // Clear existing cells
       await this.clearSheetCells(tabId);
+      console.log('[db] Cleared existing cells for', tabId);
       
       // Convert to sparse format (only save non-empty cells)
       const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> = [];
@@ -439,8 +446,12 @@ export class AppDatabase extends Dexie {
         });
       });
       
+      console.log('[db] Prepared', cellUpdates.length, 'cells to save');
+      
       // Bulk insert
       await this.bulkUpsertCells(tabId, cellUpdates);
+      
+      console.log('[db] Bulk upsert completed for', tabId);
     });
   }
 
