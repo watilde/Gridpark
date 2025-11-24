@@ -207,7 +207,6 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           sheetName: sheet.name,
           rows: sheet.data.length,
           cols: sheet.data[0]?.length || 0,
-          sampleCells: sheet.data.slice(0, 3).map(row => row.slice(0, 5)),
         });
         
         // Mark as loaded BEFORE calling save2DArray to prevent re-entry
@@ -219,7 +218,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           
           console.log('[ExcelViewerDexie] Initial data saved to Dexie', {
             tabId,
-            cellCount: existingCells.length,
+            cellsLoaded: sheet.data.length * (sheet.data[0]?.length || 0),
           });
         } catch (error) {
           console.error('[ExcelViewerDexie] Failed to save initial data:', error);
@@ -306,6 +305,19 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
         Loading sheet data...
+      </div>
+    );
+  }
+  
+  // Wait for initial data to load if this is a new sheet
+  const hasData = data2D && data2D.length > 0 && data2D.some(row => 
+    row.some(cell => cell && cell.value !== null && cell.value !== undefined && cell.value !== '')
+  );
+  
+  if (!hasData && !initialDataLoadedRef.current[tabId]) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        Loading initial data...
       </div>
     );
   }
