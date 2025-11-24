@@ -8,6 +8,8 @@ This application uses a modern, scalable architecture with clear separation of c
 - **Redux Toolkit (RTK) + redux-persist** for UI state management
 - **Feature-based structure** for better organization
 
+📖 **See [DIRECTORY_STRUCTURE.md](./DIRECTORY_STRUCTURE.md)** for detailed explanation of components vs features vs pages
+
 ## Architecture Diagram
 
 ```
@@ -47,17 +49,17 @@ src/
 ├── app/                      # App-level configuration
 │   └── AppProvider.tsx       # Redux Provider + PersistGate + Theme
 ├── assets/                   # Static assets
-├── components/               # Generic reusable components
-├── features/                 # ★ Feature modules (main development area)
+├── components/               # 🧱 Generic reusable components (The Lego Bricks)
+├── features/                 # ⚙️ Feature modules - The Engine (main development area)
 │   └── spreadsheet/          # Spreadsheet feature
-│       ├── components/       # Feature-specific UI components
+│       ├── components/       # Feature-specific UI components (domain-aware)
 │       │   └── ExcelGrid.tsx
 │       └── hooks/            # ★ State layer (Dexie + Redux bridge)
 │           └── useExcelSheet.ts
 ├── hooks/                    # Generic reusable hooks
 ├── lib/                      # ★ Infrastructure setup
 │   └── db.ts                 # Dexie database configuration
-├── pages/                    # Page components
+├── pages/                    # 🖼️ Page components - The Showroom (composition only)
 ├── stores/                   # ★ Redux state management
 │   ├── index.ts              # Store configuration (RTK + persist)
 │   └── spreadsheetSlice.ts   # Spreadsheet UI state
