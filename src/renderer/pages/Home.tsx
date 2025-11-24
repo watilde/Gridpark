@@ -273,6 +273,58 @@ export const Home: React.FC = () => {
     }
   }, [activeTab, sheetSessions, handleSaveSheetSession, handleSaveManifest, onSaveCode]);
 
+  // Save all dirty tabs (for auto-save)
+  const handleSaveAll = useCallback(() => {
+    console.log('[Home] handleSaveAll called', { dirtyCount: Object.keys(dirtyNodeIds).length });
+    
+    // Save all dirty sheets
+    Object.keys(sheetDirtyMap).forEach((tabId) => {
+      const session = sheetSessions[tabId];
+      if (session) {
+        console.log('[Home] Auto-saving sheet session', tabId);
+        handleSaveSheetSession(tabId, session);
+      }
+    });
+    
+    // Save all dirty manifests
+    Object.entries(manifestDirtyMap).forEach(([key, isDirty]) => {
+      if (!isDirty) return;
+      const tab = openTabs.find((t) => 
+        t.kind === 'manifest' && getManifestSessionKey(t.file) === key
+      );
+      if (tab && tab.kind === 'manifest') {
+        console.log('[Home] Auto-saving manifest', tab.workbookId);
+        handleSaveManifest(tab.workbookId, tab.file);
+      }
+    });
+    
+    // Save all dirty code files
+    Object.entries(codeSessions).forEach(([path, session]) => {
+      if (session.content !== session.originalContent) {
+        const tab = openTabs.find((t) => 
+          t.kind === 'code' && t.codeFile.absolutePath === path
+        );
+        if (tab && tab.kind === 'code') {
+          console.log('[Home] Auto-saving code file', path);
+          onSaveCode(tab.codeFile).catch((error) => {
+            console.error("Failed to auto-save code file:", error);
+          });
+        }
+      }
+    });
+  }, [
+    dirtyNodeIds,
+    sheetDirtyMap,
+    sheetSessions,
+    manifestDirtyMap,
+    codeSessions,
+    openTabs,
+    handleSaveSheetSession,
+    handleSaveManifest,
+    onSaveCode,
+    getManifestSessionKey,
+  ]);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -320,8 +372,8 @@ export const Home: React.FC = () => {
     // Set new timer for 2 seconds
     console.log('[Home] AutoSave: scheduling save in 2 seconds');
     autoSaveTimerRef.current = setTimeout(() => {
-      console.log('[Home] AutoSave: executing save');
-      handleSave();
+      console.log('[Home] AutoSave: executing save all');
+      handleSaveAll();
       autoSaveTimerRef.current = null;
     }, 2000);
 
@@ -332,7 +384,7 @@ export const Home: React.FC = () => {
         autoSaveTimerRef.current = null;
       }
     };
-  }, [autoSaveEnabled, dirtyCount, handleSave]);
+  }, [autoSaveEnabled, dirtyCount, handleSaveAll]);
 
   const handleAutoSaveToggle = useCallback((enabled: boolean) => {
     console.log('[Home] AutoSave toggled:', enabled);

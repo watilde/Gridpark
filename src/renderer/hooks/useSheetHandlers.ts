@@ -57,9 +57,11 @@ export const useSheetHandlers = ({
       // Only update dirtyMap, don't touch the session state
       // to avoid triggering re-renders
       setSheetDirtyMap((prev) => {
+        console.log('[useSheetHandlers] Clearing dirty state for', tabId, 'exists:', !!prev[tabId]);
         if (!prev[tabId]) return prev;
         const next = { ...prev };
         delete next[tabId];
+        console.log('[useSheetHandlers] Dirty state cleared for', tabId);
         return next;
       });
     },
@@ -77,14 +79,17 @@ export const useSheetHandlers = ({
    */
   const handleSheetDirtyChange = useCallback(
     (tabId: string, dirty: boolean) => {
+      console.log('[useSheetHandlers] handleSheetDirtyChange called', { tabId, dirty });
       setSheetDirtyMap((prev) => {
         if (dirty) {
           if (prev[tabId]) return prev;
+          console.log('[useSheetHandlers] Setting dirty for', tabId);
           return { ...prev, [tabId]: true };
         }
         if (!prev[tabId]) return prev;
         const next = { ...prev };
         delete next[tabId];
+        console.log('[useSheetHandlers] Clearing dirty for', tabId);
         return next;
       });
     },
