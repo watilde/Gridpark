@@ -40,16 +40,8 @@ export const useSheetSessions = () => {
         }
         return { ...prev, [tabId]: state };
       });
-      setSheetDirtyMap((prev) => {
-        if (!state.dirty) {
-          if (!prev[tabId]) return prev;
-          const next = { ...prev };
-          delete next[tabId];
-          return next;
-        }
-        if (prev[tabId]) return prev;
-        return { ...prev, [tabId]: true };
-      });
+      // Note: dirty state is now managed by SaveManager in Home.tsx
+      // via onDirtyChange callback, not here
     },
     [],
   );
