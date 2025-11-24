@@ -21,7 +21,10 @@ export interface TabContentAreaProps {
   tabIsDirty: (tab: WorkbookTab) => boolean;
 
   activeTab: WorkbookTab | null;
-  activeSheetSession: SheetSessionState | undefined;
+  
+  // DEPRECATED: Sheet session is now managed by useExcelSheet hook
+  activeSheetSession?: SheetSessionState | undefined;
+  
   activeCodeSession: {
     content: string;
     originalContent: string;
@@ -41,9 +44,12 @@ export interface TabContentAreaProps {
     hasFilesystem: boolean;
     hasShell: boolean;
   };
-  onSessionChange: (state: SheetSessionState) => void;
-  onSaveSession: (state: SheetSessionState) => void;
-  onDirtyChange: (dirty: boolean) => void;
+  
+  // DEPRECATED: Sheet session callbacks (managed by useExcelSheet)
+  onSessionChange?: (state: SheetSessionState) => void;
+  onSaveSession?: (state: SheetSessionState) => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  
   onCellSelect: (position: CellPosition) => void;
   onRangeSelect: (range: CellRange) => void;
   onActiveCellDetails: (details: ActiveCellDetails) => void;

@@ -22,9 +22,6 @@ import type { ExcelFile, GridparkCodeFile } from '../../../renderer/types/excel'
 import type { WorkbookTab } from '../../../renderer/types/tabs';
 
 export interface UseSaveManagerParams {
-  // Session data
-  sheetSessions: Record<string, any>;
-  
   // Workspace functions
   findWorkbookNode: (workbookId: string) => any;
   updateWorkbookReferences: (workbookId: string, file: ExcelFile) => void;
@@ -58,7 +55,6 @@ export interface UseSaveManagerReturn {
 
 export function useSaveManager(params: UseSaveManagerParams): UseSaveManagerReturn {
   const {
-    sheetSessions,
     findWorkbookNode,
     updateWorkbookReferences,
     saveWorkbookFile,
@@ -97,29 +93,23 @@ export function useSaveManager(params: UseSaveManagerParams): UseSaveManagerRetu
   
   const saveSheet = useCallback(async (tabId: string) => {
     console.log('[SaveManager] saveSheet:', tabId);
-    const session = sheetSessions[tabId];
     const tab = openTabs.find(t => t.id === tabId && t.kind === 'sheet');
-    if (!session || !tab || tab.kind !== 'sheet') return;
+    if (!tab || tab.kind !== 'sheet') return;
 
     const workbookNode = findWorkbookNode(tab.workbookId);
     const workbookFile = workbookNode?.file;
     if (!workbookFile) return;
 
-    const updatedSheets = workbookFile.sheets.map((sheet) =>
-      sheet.name === tab.sheetName
-        ? {
-            ...sheet,
-            data: session.data,
-            rowCount: session.data.length,
-            colCount: session.data[0]?.length ?? sheet.colCount,
-          }
-        : sheet,
-    );
-    const updatedFile = { ...workbookFile, sheets: updatedSheets };
-    updateWorkbookReferences(tab.workbookId, updatedFile);
-    await saveWorkbookFile(updatedFile);
+    // Save workbook (will load data from Dexie)
+    await saveWorkbookFile(workbookFile);
+    
+    // Mark as clean in both Redux and Dexie
     markTabClean(tabId);
-  }, [sheetSessions, openTabs, findWorkbookNode, updateWorkbookReferences, saveWorkbookFile, markTabClean]);
+    
+    // Also mark clean in Dexie
+    const { db } = await import('../../../lib/db');
+    await db.markSheetDirty(tabId, false);
+  }, [openTabs, findWorkbookNode, saveWorkbookFile, markTabClean]);
   
   const saveTab = useCallback(async (tabId: string) => {
     const tab = openTabs.find(t => t.id === tabId);

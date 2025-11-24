@@ -10,44 +10,52 @@
  */
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { WorkbookTab } from '../renderer/types/tabs';
+import type { FileNode } from '../renderer/features/file-explorer/FileTree';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface Tab {
-  id: string;
-  kind: 'sheet' | 'manifest' | 'code';
-  workbookId: string;
-  label: string;
-  sheetName?: string;
-  file?: any;
-  codeFile?: any;
-}
+// Use the actual WorkbookTab type from the application
+export type { WorkbookTab };
 
-export interface SheetSession {
-  scrollTop: number;
-  scrollLeft: number;
-  selectedCell?: { row: number; col: number };
-  dirty: boolean;
-}
-
+/**
+ * OPTIMIZED Redux State: UI State ONLY
+ * 
+ * Data persistence is handled by Dexie.js:
+ * - Sheet data → Dexie cells table
+ * - Manifest/Code → File system (via Electron)
+ * 
+ * Redux manages UI state:
+ * - Workspace navigation (tabs, nodes, selection)
+ * - Dirty tracking (which tabs need saving)
+ * - UI preferences (auto-save, settings)
+ */
 export interface SpreadsheetState {
-  // Tabs
-  openTabs: Tab[];
-  activeTabId: string | null;
+  // ========================================================================
+  // Workspace State (Navigation & Structure)
+  // ========================================================================
+  workbookNodes: FileNode[];
+  currentDirectoryName: string;
+  selectedNodeId: string;
   
-  // Dirty state (single source of truth)
+  // ========================================================================
+  // Tabs (Open Files)
+  // ========================================================================
+  openTabs: WorkbookTab[];
+  activeTabId: string;
+  
+  // ========================================================================
+  // Dirty State (Unsaved Changes Tracking)
+  // ========================================================================
   dirtyMap: Record<string, boolean>;
   
-  // Auto-save
+  // ========================================================================
+  // UI Preferences
+  // ========================================================================
   autoSaveEnabled: boolean;
   autoSaveInterval: number; // milliseconds
-  
-  // Sessions (per tab)
-  sheetSessions: Record<string, SheetSession>;
-  manifestSessions: Record<string, any>;
-  codeSessions: Record<string, any>;
 }
 
 // ============================================================================
@@ -55,14 +63,14 @@ export interface SpreadsheetState {
 // ============================================================================
 
 const initialState: SpreadsheetState = {
+  workbookNodes: [],
+  currentDirectoryName: '',
+  selectedNodeId: '',
   openTabs: [],
-  activeTabId: null,
+  activeTabId: '',
   dirtyMap: {},
   autoSaveEnabled: false,
   autoSaveInterval: 2000,
-  sheetSessions: {},
-  manifestSessions: {},
-  codeSessions: {},
 };
 
 // ============================================================================
@@ -74,42 +82,101 @@ const spreadsheetSlice = createSlice({
   initialState,
   reducers: {
     // ========================================================================
+    // Workspace Management
+    // ========================================================================
+    
+    setWorkbooks: (state, action: PayloadAction<{ nodes: FileNode[]; directoryName: string }>) => {
+      state.workbookNodes = action.payload.nodes;
+      state.currentDirectoryName = action.payload.directoryName;
+    },
+    
+    updateWorkbook: (state, action: PayloadAction<{ workbookId: string; updatedFile: any }>) => {
+      const { workbookId, updatedFile } = action.payload;
+      
+      const cloneNodeWithFile = (node: FileNode): FileNode => {
+        const next: FileNode = { ...node };
+        if (node.file) {
+          next.file = updatedFile;
+        }
+        if (node.type === 'workbook') {
+          next.name = updatedFile.name;
+        }
+        if (node.children) {
+          next.children = node.children.map((child) => cloneNodeWithFile(child));
+        }
+        return next;
+      };
+      
+      state.workbookNodes = state.workbookNodes.map((node) =>
+        node.id === workbookId ? cloneNodeWithFile(node) : node
+      );
+      
+      state.openTabs = state.openTabs.map((tab) =>
+        tab.workbookId === workbookId
+          ? { ...tab, file: updatedFile, fileName: updatedFile.name }
+          : tab
+      );
+    },
+    
+    setSelectedNode: (state, action: PayloadAction<string>) => {
+      state.selectedNodeId = action.payload;
+    },
+    
+    resetWorkspace: (state, action: PayloadAction<{ nodes: FileNode[]; directoryName: string; firstTab: WorkbookTab | null }>) => {
+      const { nodes, directoryName, firstTab } = action.payload;
+      state.workbookNodes = nodes;
+      state.currentDirectoryName = directoryName;
+      state.openTabs = firstTab ? [firstTab] : [];
+      state.activeTabId = firstTab?.id ?? '';
+      state.selectedNodeId = firstTab?.treeNodeId ?? '';
+    },
+    
+    // ========================================================================
     // Tab Management
     // ========================================================================
     
-    addTab: (state, action: PayloadAction<Tab>) => {
+    openTab: (state, action: PayloadAction<WorkbookTab>) => {
       const exists = state.openTabs.find(tab => tab.id === action.payload.id);
       if (!exists) {
         state.openTabs.push(action.payload);
       }
       state.activeTabId = action.payload.id;
+      state.selectedNodeId = action.payload.treeNodeId;
     },
     
-    removeTab: (state, action: PayloadAction<string>) => {
+    closeTab: (state, action: PayloadAction<string>) => {
       const tabId = action.payload;
-      state.openTabs = state.openTabs.filter(tab => tab.id !== tabId);
+      const nextTabs = state.openTabs.filter(tab => tab.id !== tabId);
       
-      // Clean up related state
+      // Clean up dirty state only (data is in Dexie)
       delete state.dirtyMap[tabId];
-      delete state.sheetSessions[tabId];
-      delete state.manifestSessions[tabId];
-      delete state.codeSessions[tabId];
       
       // Update active tab
       if (state.activeTabId === tabId) {
-        state.activeTabId = state.openTabs.length > 0 ? state.openTabs[0].id : null;
+        const nextActive = nextTabs[nextTabs.length - 1];
+        if (nextActive) {
+          state.activeTabId = nextActive.id;
+          state.selectedNodeId = nextActive.treeNodeId;
+        } else {
+          state.activeTabId = '';
+          state.selectedNodeId = '';
+        }
       }
+      
+      state.openTabs = nextTabs;
     },
     
     setActiveTab: (state, action: PayloadAction<string>) => {
       state.activeTabId = action.payload;
+      const tab = state.openTabs.find(t => t.id === action.payload);
+      if (tab) {
+        state.selectedNodeId = tab.treeNodeId;
+      }
     },
     
-    updateTab: (state, action: PayloadAction<{ id: string; updates: Partial<Tab> }>) => {
-      const tab = state.openTabs.find(t => t.id === action.payload.id);
-      if (tab) {
-        Object.assign(tab, action.payload.updates);
-      }
+    focusTab: (state, action: PayloadAction<WorkbookTab>) => {
+      state.activeTabId = action.payload.id;
+      state.selectedNodeId = action.payload.treeNodeId;
     },
     
     // ========================================================================
@@ -147,28 +214,6 @@ const spreadsheetSlice = createSlice({
     },
     
     // ========================================================================
-    // Session Management
-    // ========================================================================
-    
-    updateSheetSession: (state, action: PayloadAction<{ tabId: string; session: Partial<SheetSession> }>) => {
-      const { tabId, session } = action.payload;
-      state.sheetSessions[tabId] = {
-        ...state.sheetSessions[tabId],
-        ...session,
-      };
-    },
-    
-    updateManifestSession: (state, action: PayloadAction<{ key: string; session: any }>) => {
-      const { key, session } = action.payload;
-      state.manifestSessions[key] = session;
-    },
-    
-    updateCodeSession: (state, action: PayloadAction<{ path: string; session: any }>) => {
-      const { path, session } = action.payload;
-      state.codeSessions[path] = session;
-    },
-    
-    // ========================================================================
     // Bulk Operations
     // ========================================================================
     
@@ -181,11 +226,17 @@ const spreadsheetSlice = createSlice({
 // ============================================================================
 
 export const {
+  // Workspace
+  setWorkbooks,
+  updateWorkbook,
+  setSelectedNode,
+  resetWorkspace,
+  
   // Tabs
-  addTab,
-  removeTab,
+  openTab,
+  closeTab,
   setActiveTab,
-  updateTab,
+  focusTab,
   
   // Dirty state
   markDirty,
@@ -195,11 +246,6 @@ export const {
   // Auto-save
   setAutoSaveEnabled,
   setAutoSaveInterval,
-  
-  // Sessions
-  updateSheetSession,
-  updateManifestSession,
-  updateCodeSession,
   
   // Bulk
   resetSpreadsheetState,
@@ -214,6 +260,12 @@ export default spreadsheetSlice.reducer;
 import { RootState } from './index';
 import { createSelector } from '@reduxjs/toolkit';
 
+// Workspace selectors
+export const selectWorkbookNodes = (state: RootState) => state.spreadsheet.workbookNodes;
+export const selectCurrentDirectoryName = (state: RootState) => state.spreadsheet.currentDirectoryName;
+export const selectSelectedNodeId = (state: RootState) => state.spreadsheet.selectedNodeId;
+
+// Tab selectors
 export const selectOpenTabs = (state: RootState) => state.spreadsheet.openTabs;
 export const selectActiveTabId = (state: RootState) => state.spreadsheet.activeTabId;
 export const selectActiveTab = (state: RootState) => {
@@ -221,6 +273,7 @@ export const selectActiveTab = (state: RootState) => {
   return openTabs.find(tab => tab.id === activeTabId) || null;
 };
 
+// Dirty state selectors
 export const selectDirtyMap = (state: RootState) => state.spreadsheet.dirtyMap;
 
 // ✅ Memoized selector to prevent unnecessary re-renders
@@ -233,12 +286,6 @@ export const selectDirtyTabs = createSelector(
 export const selectIsDirty = (tabId: string) => (state: RootState) => 
   Boolean(state.spreadsheet.dirtyMap[tabId]);
 
+// Auto-save selectors
 export const selectAutoSaveEnabled = (state: RootState) => state.spreadsheet.autoSaveEnabled;
 export const selectAutoSaveInterval = (state: RootState) => state.spreadsheet.autoSaveInterval;
-
-export const selectSheetSession = (tabId: string) => (state: RootState) => 
-  state.spreadsheet.sheetSessions[tabId];
-export const selectManifestSession = (key: string) => (state: RootState) => 
-  state.spreadsheet.manifestSessions[key];
-export const selectCodeSession = (path: string) => (state: RootState) => 
-  state.spreadsheet.codeSessions[path];

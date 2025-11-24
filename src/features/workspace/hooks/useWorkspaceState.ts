@@ -16,7 +16,7 @@
 
 import { useMemo, useCallback, useReducer } from 'react';
 import { useWorkspace } from '../../../renderer/hooks/useWorkspace';
-import { useSheetSessions, useManifestSessions, useCodeSessions } from '../../../renderer/hooks/useFileSessions';
+import { useSaveWorkbook, useManifestSessions, useCodeSessions } from '../../../renderer/hooks/useFileSessions';
 import { useFormulaBarOptimized } from '../../../renderer/hooks/useFormulaBarOptimized';
 import { useManifestHandlers } from '../../../renderer/hooks/useManifestHandlers';
 import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
@@ -66,8 +66,7 @@ export interface UseWorkspaceStateReturn {
   activeTab: any;
   isLoadingFiles: boolean;
   
-  // File sessions
-  sheetSessions: Record<string, any>;
+  // File sessions (manifest & code only - sheets are in Dexie)
   manifestSessions: Record<string, any>;
   codeSessions: Record<string, any>;
   
@@ -94,15 +93,14 @@ export interface UseWorkspaceStateReturn {
     toggleAutoSave: (enabled: boolean) => void;
   };
   
-  // Workspace actions
-  handleTabChange: (tabId: string) => void;
+  // Workspace actions (matching useWorkspace signatures)
+  handleTabChange: (_event: React.SyntheticEvent | null, value: string | number | null) => void;
   handleCloseTab: (tabId: string) => void;
-  handleNodeSelect: (nodeId: string) => void;
+  handleNodeSelect: (node: any) => void;
   findWorkbookNode: (workbookId: string) => any;
   updateWorkbookReferences: (workbookId: string, file: ExcelFile) => void;
   
   // File operations
-  handlePersistSheetSession: (tabId: string, state: any, onDirtyChange?: (dirty: boolean) => void) => void;
   handleManifestChange: (workbookId: string, file: ExcelFile, data: any) => void;
   handleCodeChange: (codeFile: GridparkCodeFile, value: string) => void;
   readManifestFile: (file: ExcelFile) => Promise<void>;
@@ -112,7 +110,6 @@ export interface UseWorkspaceStateReturn {
   formulaBarState: any;
   
   // Computed values
-  activeSheetSession: any;
   activeManifestSession: any;
   activeCodeSession: any;
   manifestEditorData: any;
@@ -128,15 +125,13 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   const electron = useElectronIntegration();
   
   // ============================================
-  // File Sessions
+  // File Sessions (OPTIMIZED - Direct Dexie + File System)
   // ============================================
   
-  const {
-    sheetSessions,
-    setSheetSessions,
-    handlePersistSheetSession,
-    saveWorkbookFile,
-  } = useSheetSessions();
+  // Sheet data: Managed by Dexie (use useExcelSheet hook in components)
+  const { saveWorkbookFile } = useSaveWorkbook();
+  
+  // Manifest & Code: File system access only (no useState caching)
 
   const {
     manifestSessions,
@@ -161,8 +156,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   
   const workspace = useWorkspace(
     {
-      sheetSessions,
-      sheetDirtyMap: {}, // Placeholder, not used
       codeSessions,
       manifestDirtyMap,
       getManifestSessionKey,
@@ -170,8 +163,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     {
       ensureManifestSession,
       ensureCodeSession,
-      setSheetSessions,
-      setSheetDirtyMap: () => {}, // No-op
     }
   );
 
@@ -222,7 +213,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   // ============================================
   
   const saveManager = useSaveManager({
-    sheetSessions,
     findWorkbookNode,
     updateWorkbookReferences,
     saveWorkbookFile,
@@ -249,10 +239,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     [openTabs, activeTabId]
   );
   
-  const activeSheetSession = useMemo(
-    () => (activeTab?.kind === "sheet" ? sheetSessions[activeTab.id] : undefined),
-    [activeTab, sheetSessions]
-  );
+  // NOTE: activeSheetSession is removed - use useExcelSheet hook in components
   
   const activeManifestKey = useMemo(
     () => (activeTab?.kind === "manifest" ? getManifestSessionKey(activeTab.file) : null),
@@ -324,8 +311,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     activeTab,
     isLoadingFiles,
     
-    // File sessions
-    sheetSessions,
+    // File sessions (manifest & code only)
     manifestSessions,
     codeSessions,
     
@@ -347,7 +333,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     updateWorkbookReferences,
     
     // File operations
-    handlePersistSheetSession,
     handleManifestChange,
     handleCodeChange,
     readManifestFile,
@@ -357,7 +342,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     formulaBarState,
     
     // Computed values
-    activeSheetSession,
     activeManifestSession,
     activeCodeSession,
     manifestEditorData,

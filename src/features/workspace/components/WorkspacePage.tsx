@@ -40,20 +40,17 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     activeTabId,
     selectedNodeId,
     activeTab,
-    sheetSessions,
     searchState,
     setTreeSearchQuery,
     saveManager,
     autoSave,
-    handleTabChange,
+    handleTabChange: handleTabChangeRaw,
     handleCloseTab,
-    handleNodeSelect,
-    handlePersistSheetSession,
+    handleNodeSelect: handleNodeSelectRaw,
     handleManifestChange,
     handleCodeChange,
     readManifestFile,
     formulaBarState,
-    activeSheetSession,
     activeManifestSession,
     activeCodeSession,
     manifestEditorData,
@@ -64,10 +61,33 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   } = state;
   
   // ============================================
+  // Wrapper functions to match component API
+  // ============================================
+  
+  const handleNodeSelect = useCallback((node: any) => {
+    handleNodeSelectRaw(node);
+  }, [handleNodeSelectRaw]);
+  
+  const handleTabChange = useCallback((event: React.SyntheticEvent, value: string | number) => {
+    handleTabChangeRaw(event, value);
+  }, [handleTabChangeRaw]);
+  
+  // ============================================
   // Platform Capabilities (memoized once)
   // ============================================
   
-  const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
+  const platformCapabilities = useMemo(() => {
+    const caps = getPlatformCapabilities();
+    // Transform to TabContentArea expected format
+    return {
+      isMac: typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac'),
+      isWindows: typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('win'),
+      isLinux: typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('linux'),
+      isWeb: caps.platform === 'web',
+      hasFilesystem: caps.canAccessFileSystem,
+      hasShell: caps.hasSystemIntegration,
+    };
+  }, []);
   
   // ============================================
   // Event Handlers
@@ -136,28 +156,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     }
   }, [openTabs, saveManager]);
   
-  const handleSaveSheetSession = useCallback((tabId: string, state: any) => {
-    // This is called when a sheet session needs to be persisted
-    // but not marked as dirty (e.g., on load or initial state)
-    handlePersistSheetSession(tabId, state);
-  }, [handlePersistSheetSession]);
-  
-  // ============================================================================
-  // Session change handler (memoized to prevent infinite loops)
-  // ============================================================================
-  
-  const handleSessionChange = useCallback((sessionState: any) => {
-    if (!activeTab) return;
-    
-    const tabId = activeTab.id;
-    handlePersistSheetSession(tabId, sessionState, (dirty) => {
-      if (dirty) {
-        saveManager.markTabDirty(tabId);
-      } else {
-        saveManager.markTabClean(tabId);
-      }
-    });
-  }, [activeTab, handlePersistSheetSession, saveManager.markTabDirty, saveManager.markTabClean]);
+  // NOTE: Sheet session handling is now done directly by useExcelSheet hook
+  // No need for handleSaveSheetSession or handleSessionChange callbacks
   
   // ============================================================================
   // Global keyboard shortcuts
@@ -235,16 +235,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onCloseTab={handleCloseTab}
         tabIsDirty={saveManager.tabIsDirty}
         activeTab={activeTab}
-        activeSheetSession={activeSheetSession}
         activeCodeSession={activeCodeSession}
         activeManifestSession={activeManifestSession}
         manifestEditorData={manifestEditorData}
         manifestIsDirty={manifestIsDirty}
         canEditManifest={canEditManifest}
         platformCapabilities={platformCapabilities}
-        onSessionChange={handleSessionChange}
-        onSaveSession={handleSaveSheetSession}
-        onDirtyChange={() => {}} // No-op, handled in onSessionChange
         onCellSelect={handleCellSelect}
         onRangeSelect={handleRangeSelect}
         onActiveCellDetails={formulaBarState.handleActiveCellDetails}
