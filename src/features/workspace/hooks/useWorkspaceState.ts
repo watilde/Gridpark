@@ -131,22 +131,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   // Sheet data: Managed by Dexie (use useExcelSheet hook in components)
   const { saveWorkbookFile } = useSaveWorkbook();
   
-  // Compatibility layer: Dummy sheetSessions for components that still expect it
-  // In Phase 2/3, sheet data is in Dexie, but we provide empty object for compatibility
-  const sheetSessions = useMemo(() => ({}), []);
-  
-  // Compatibility layer: handlePersistSheetSession
-  // This is a no-op now since ExcelViewer should use useExcelSheet directly
-  // But we keep it to prevent errors
-  const handlePersistSheetSession = useCallback((tabId: string, state: any, onDirtyChange?: (dirty: boolean) => void) => {
-    console.warn('[useWorkspaceState] handlePersistSheetSession called, but sheet sessions are now managed by Dexie');
-    console.warn('[useWorkspaceState] Components should use useExcelSheet hook directly');
-    // Call onDirtyChange if provided
-    if (onDirtyChange && state?.dirty !== undefined) {
-      onDirtyChange(state.dirty);
-    }
-  }, []);
-  
   // Manifest & Code: File system access only (no useState caching)
 
   const {
@@ -255,12 +239,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     [openTabs, activeTabId]
   );
   
-  // Compatibility: activeSheetSession (empty for now, sheet data is in Dexie)
-  const activeSheetSession = useMemo(
-    () => activeTab?.kind === 'sheet' ? undefined : undefined,
-    [activeTab]
-  );
-  
   // NOTE: activeSheetSession is removed - use useExcelSheet hook in components
   
   const activeManifestKey = useMemo(
@@ -334,7 +312,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     isLoadingFiles,
     
     // File sessions
-    sheetSessions,           // Compatibility: empty object
     manifestSessions,
     codeSessions,
     
@@ -356,7 +333,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     updateWorkbookReferences,
     
     // File operations
-    handlePersistSheetSession,  // Compatibility: no-op
     handleManifestChange,
     handleCodeChange,
     readManifestFile,
@@ -366,7 +342,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     formulaBarState,
     
     // Computed values
-    activeSheetSession,      // Compatibility: undefined
     activeManifestSession,
     activeCodeSession,
     manifestEditorData,

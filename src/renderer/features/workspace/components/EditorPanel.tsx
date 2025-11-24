@@ -1,13 +1,13 @@
 import React from "react";
 import { Sheet, Typography, Box } from "@mui/joy";
 import {
-  ExcelViewer,
   SheetSessionState,
   SearchNavigationCommand,
   ReplaceCommand,
   FormulaCommitCommand,
   ActiveCellDetails,
 } from "../../workbook/components/ExcelViewer";
+import { ExcelViewerDexie } from "../../workbook/components/ExcelViewerDexie";
 import { CodeEditorPanel } from "../../code-editor/CodeEditorPanel";
 import { ManifestEditorPanel } from "../../manifest-editor/ManifestEditorPanel";
 import { FormulaBar } from "../../formula-bar/FormulaBar";
@@ -17,7 +17,7 @@ import { ManifestSession } from "../../../hooks/useFileSessions";
 
 interface EditorPanelProps {
   activeTab: WorkbookTab | null;
-  activeSheetSession?: SheetSessionState;
+  activeSheetSession?: SheetSessionState; // DEPRECATED: kept for type compatibility
   activeCodeSession?: {
     content: string;
     originalContent: string;
@@ -31,8 +31,8 @@ interface EditorPanelProps {
   canEditManifest: boolean;
   platformCapabilities: any;
   // Sheet handlers
-  onSessionChange: (state: SheetSessionState) => void;
-  onSaveSession: (state: SheetSessionState) => void;
+  onSessionChange?: (state: SheetSessionState) => void; // DEPRECATED: no longer used
+  onSaveSession?: (state: SheetSessionState) => void; // DEPRECATED: no longer used
   onDirtyChange: (dirty: boolean) => void;
   onCellSelect: (position: CellPosition) => void;
   onRangeSelect: (range: CellRange) => void;
@@ -55,15 +55,15 @@ interface EditorPanelProps {
 
 export const EditorPanel: React.FC<EditorPanelProps> = ({
   activeTab,
-  activeSheetSession,
+  activeSheetSession, // DEPRECATED: unused
   activeCodeSession,
   activeManifestSession,
   manifestEditorData,
   manifestIsDirty,
   canEditManifest,
   platformCapabilities,
-  onSessionChange,
-  onSaveSession,
+  onSessionChange, // DEPRECATED: unused
+  onSaveSession, // DEPRECATED: unused
   onDirtyChange,
   onCellSelect,
   onRangeSelect,
@@ -104,12 +104,10 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
         <FormulaBar formulaBarState={formulaBarState} />
         <Box sx={{ flex: 1, minHeight: 0 }}>
-          <ExcelViewer
+          <ExcelViewerDexie
+            tabId={activeTab.id}
             file={activeTab.file}
             sheetIndex={activeTab.sheetIndex}
-            sessionState={activeSheetSession}
-            onSessionChange={onSessionChange}
-            onSaveSession={onSaveSession}
             onDirtyChange={onDirtyChange}
             onCellSelect={onCellSelect}
             onRangeSelect={onRangeSelect}

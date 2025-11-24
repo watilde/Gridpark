@@ -22,9 +22,6 @@ export interface TabContentAreaProps {
 
   activeTab: WorkbookTab | null;
   
-  // DEPRECATED: Sheet session is now managed by useExcelSheet hook
-  activeSheetSession?: SheetSessionState | undefined;
-  
   activeCodeSession: {
     content: string;
     originalContent: string;
@@ -45,10 +42,7 @@ export interface TabContentAreaProps {
     hasShell: boolean;
   };
   
-  // DEPRECATED: Sheet session callbacks (managed by useExcelSheet)
-  onSessionChange?: (state: SheetSessionState) => void;
-  onSaveSession?: (state: SheetSessionState) => void;
-  onDirtyChange?: (dirty: boolean) => void;
+  onDirtyChange: (dirty: boolean) => void;
   
   onCellSelect: (position: CellPosition) => void;
   onRangeSelect: (range: CellRange) => void;
@@ -74,15 +68,12 @@ export const TabContentArea: React.FC<TabContentAreaProps> = ({
   tabIsDirty,
 
   activeTab,
-  activeSheetSession,
   activeCodeSession,
   activeManifestSession,
   manifestEditorData,
   manifestIsDirty,
   canEditManifest,
   platformCapabilities,
-  onSessionChange,
-  onSaveSession,
   onDirtyChange,
   onCellSelect,
   onRangeSelect,
@@ -111,15 +102,12 @@ export const TabContentArea: React.FC<TabContentAreaProps> = ({
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <EditorPanel
           activeTab={activeTab}
-          activeSheetSession={activeSheetSession}
           activeCodeSession={activeCodeSession}
           activeManifestSession={activeManifestSession}
           manifestEditorData={manifestEditorData}
           manifestIsDirty={manifestIsDirty}
           canEditManifest={canEditManifest}
           platformCapabilities={platformCapabilities}
-          onSessionChange={onSessionChange}
-          onSaveSession={onSaveSession}
           onDirtyChange={onDirtyChange}
           onCellSelect={onCellSelect}
           onRangeSelect={onRangeSelect}

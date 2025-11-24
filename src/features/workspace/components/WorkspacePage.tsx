@@ -40,7 +40,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     activeTabId,
     selectedNodeId,
     activeTab,
-    sheetSessions,
     searchState,
     setTreeSearchQuery,
     saveManager,
@@ -48,12 +47,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     handleTabChange: handleTabChangeRaw,
     handleCloseTab,
     handleNodeSelect: handleNodeSelectRaw,
-    handlePersistSheetSession,
     handleManifestChange,
     handleCodeChange,
     readManifestFile,
     formulaBarState,
-    activeSheetSession,
     activeManifestSession,
     activeCodeSession,
     manifestEditorData,
@@ -159,24 +156,14 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     }
   }, [openTabs, saveManager]);
   
-  // NOTE: Sheet session management is now in Dexie (Phase 2/3)
-  // These callbacks are for backward compatibility only
-  // ExcelViewer should be updated to use useExcelSheet hook directly
+  // ============================================================================
+  // Sheet dirty tracking (Dexie-powered)
+  // ============================================================================
   
-  const handleSessionChange = useCallback((sessionState: any) => {
-    // No-op: Session state is managed by Dexie
-    console.log('[WorkspacePage] handleSessionChange (no-op, using Dexie)', sessionState);
-  }, []);
-  
-  const handleSaveSheetSession = useCallback((state: any) => {
-    // No-op: Session state is managed by Dexie
-    console.log('[WorkspacePage] handleSaveSheetSession (no-op, using Dexie)', state);
-  }, []);
-  
-  // Direct dirty change handler (bypasses session management)
+  // ExcelViewerDexie calls this directly when sheet is edited
   const handleDirtyChange = useCallback((dirty: boolean) => {
     if (!activeTab) return;
-    console.log('[WorkspacePage] handleDirtyChange', { tabId: activeTab.id, dirty });
+    console.log('[WorkspacePage] Sheet dirty state changed', { tabId: activeTab.id, dirty });
     if (dirty) {
       saveManager.markTabDirty(activeTab.id);
     } else {
@@ -260,15 +247,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onCloseTab={handleCloseTab}
         tabIsDirty={saveManager.tabIsDirty}
         activeTab={activeTab}
-        activeSheetSession={activeSheetSession}
         activeCodeSession={activeCodeSession}
         activeManifestSession={activeManifestSession}
         manifestEditorData={manifestEditorData}
         manifestIsDirty={manifestIsDirty}
         canEditManifest={canEditManifest}
         platformCapabilities={platformCapabilities}
-        onSessionChange={handleSessionChange}
-        onSaveSession={handleSaveSheetSession}
         onDirtyChange={handleDirtyChange}
         onCellSelect={handleCellSelect}
         onRangeSelect={handleRangeSelect}
