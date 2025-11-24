@@ -68,6 +68,34 @@ export const Home: React.FC = () => {
   // AutoSave state
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Refs to access latest state in auto-save without causing re-renders
+  const stateRef = useRef({
+    sheetDirtyMap,
+    sheetSessions,
+    manifestDirtyMap,
+    codeSessions,
+    openTabs,
+    handleSaveSheetSession,
+    handleSaveManifest,
+    onSaveCode,
+    getManifestSessionKey,
+  });
+  
+  // Update refs on each render
+  useEffect(() => {
+    stateRef.current = {
+      sheetDirtyMap,
+      sheetSessions,
+      manifestDirtyMap,
+      codeSessions,
+      openTabs,
+      handleSaveSheetSession,
+      handleSaveManifest,
+      onSaveCode,
+      getManifestSessionKey,
+    };
+  });
 
   // Electron API integration with useSyncExternalStore
   const electron = useElectronIntegration();
@@ -273,57 +301,7 @@ export const Home: React.FC = () => {
     }
   }, [activeTab, sheetSessions, handleSaveSheetSession, handleSaveManifest, onSaveCode]);
 
-  // Save all dirty tabs (for auto-save)
-  const handleSaveAll = useCallback(() => {
-    console.log('[Home] handleSaveAll called', { dirtyCount: Object.keys(dirtyNodeIds).length });
-    
-    // Save all dirty sheets
-    Object.keys(sheetDirtyMap).forEach((tabId) => {
-      const session = sheetSessions[tabId];
-      if (session) {
-        console.log('[Home] Auto-saving sheet session', tabId);
-        handleSaveSheetSession(tabId, session);
-      }
-    });
-    
-    // Save all dirty manifests
-    Object.entries(manifestDirtyMap).forEach(([key, isDirty]) => {
-      if (!isDirty) return;
-      const tab = openTabs.find((t) => 
-        t.kind === 'manifest' && getManifestSessionKey(t.file) === key
-      );
-      if (tab && tab.kind === 'manifest') {
-        console.log('[Home] Auto-saving manifest', tab.workbookId);
-        handleSaveManifest(tab.workbookId, tab.file);
-      }
-    });
-    
-    // Save all dirty code files
-    Object.entries(codeSessions).forEach(([path, session]) => {
-      if (session.content !== session.originalContent) {
-        const tab = openTabs.find((t) => 
-          t.kind === 'code' && t.codeFile.absolutePath === path
-        );
-        if (tab && tab.kind === 'code') {
-          console.log('[Home] Auto-saving code file', path);
-          onSaveCode(tab.codeFile).catch((error) => {
-            console.error("Failed to auto-save code file:", error);
-          });
-        }
-      }
-    });
-  }, [
-    dirtyNodeIds,
-    sheetDirtyMap,
-    sheetSessions,
-    manifestDirtyMap,
-    codeSessions,
-    openTabs,
-    handleSaveSheetSession,
-    handleSaveManifest,
-    onSaveCode,
-    getManifestSessionKey,
-  ]);
+
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -373,7 +351,46 @@ export const Home: React.FC = () => {
     console.log('[Home] AutoSave: scheduling save in 2 seconds');
     autoSaveTimerRef.current = setTimeout(() => {
       console.log('[Home] AutoSave: executing save all');
-      handleSaveAll();
+      
+      // Use refs to get latest state without triggering re-renders
+      const state = stateRef.current;
+      
+      // Save all dirty sheets
+      Object.keys(state.sheetDirtyMap).forEach((tabId) => {
+        const session = state.sheetSessions[tabId];
+        if (session) {
+          console.log('[Home] Auto-saving sheet session', tabId);
+          state.handleSaveSheetSession(tabId, session);
+        }
+      });
+      
+      // Save all dirty manifests
+      Object.entries(state.manifestDirtyMap).forEach(([key, isDirty]) => {
+        if (!isDirty) return;
+        const tab = state.openTabs.find((t) => 
+          t.kind === 'manifest' && state.getManifestSessionKey(t.file) === key
+        );
+        if (tab && tab.kind === 'manifest') {
+          console.log('[Home] Auto-saving manifest', tab.workbookId);
+          state.handleSaveManifest(tab.workbookId, tab.file);
+        }
+      });
+      
+      // Save all dirty code files
+      Object.entries(state.codeSessions).forEach(([path, session]) => {
+        if (session.content !== session.originalContent) {
+          const tab = state.openTabs.find((t) => 
+            t.kind === 'code' && t.codeFile.absolutePath === path
+          );
+          if (tab && tab.kind === 'code') {
+            console.log('[Home] Auto-saving code file', path);
+            state.onSaveCode(tab.codeFile).catch((error) => {
+              console.error("Failed to auto-save code file:", error);
+            });
+          }
+        }
+      });
+      
       autoSaveTimerRef.current = null;
     }, 2000);
 
@@ -384,7 +401,7 @@ export const Home: React.FC = () => {
         autoSaveTimerRef.current = null;
       }
     };
-  }, [autoSaveEnabled, dirtyCount, handleSaveAll]);
+  }, [autoSaveEnabled, dirtyCount]);
 
   const handleAutoSaveToggle = useCallback((enabled: boolean) => {
     console.log('[Home] AutoSave toggled:', enabled);
