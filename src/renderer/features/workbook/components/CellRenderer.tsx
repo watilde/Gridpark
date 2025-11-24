@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CellData, CellStyle, CellPosition, CellRange } from '../../../types/excel';
 import { styled } from "@mui/joy/styles";
 import { excelPalette } from "./theme";
@@ -108,6 +108,65 @@ export const CellItem = React.memo((props: any) => {
     const isInRange = isCellInRange(rowIndex, columnIndex);
     const hasError = cell.value === "#ERROR"; // Assuming #ERROR signifies an error cell
 
+    // ========================================================================
+    // FIX: Use local state for editing to prevent first character loss
+    // ========================================================================
+    // PROBLEM: Controlled input + debounced save = first character disappears
+    // SOLUTION: Use uncontrolled input with local state during editing
+    
+    const [editValue, setEditValue] = useState<string | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const isEditing = editValue !== null;
+    
+    // Update edit value when cell changes externally (e.g., formula recalculation)
+    useEffect(() => {
+      if (!isEditing && isActive && inputRef.current && document.activeElement === inputRef.current) {
+        // If this cell becomes active and input is focused, enter edit mode
+        const cellValue = cell.value !== null && cell.value !== undefined ? String(cell.value) : "";
+        setEditValue(cellValue);
+      }
+    }, [isActive, cell.value, isEditing]);
+    
+    // Handle input focus (start editing)
+    const handleFocus = () => {
+      const cellValue = cell.value !== null && cell.value !== undefined ? String(cell.value) : "";
+      setEditValue(cellValue);
+    };
+    
+    // Handle input blur (commit changes)
+    const handleBlur = () => {
+      if (editValue !== null) {
+        const cellValue = cell.value !== null && cell.value !== undefined ? String(cell.value) : "";
+        // Only trigger change if value actually changed
+        if (editValue !== cellValue) {
+          onCellChange(rowIndex, columnIndex, editValue);
+        }
+        setEditValue(null);
+      }
+    };
+    
+    // Handle input change (update local state)
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      setEditValue(event.target.value);
+    };
+    
+    // Handle Enter key (commit and stay in cell)
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        inputRef.current?.blur(); // Trigger blur to commit
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        setEditValue(null); // Cancel edit
+        inputRef.current?.blur();
+      }
+    };
+    
+    // Determine display value
+    const displayValue = isEditing 
+      ? editValue 
+      : (cell.value !== null && cell.value !== undefined ? String(cell.value) : "");
+
     return (
       <Cell
           key={cellKey}
@@ -131,8 +190,12 @@ export const CellItem = React.memo((props: any) => {
           onMouseEnter={() => onCellMouseEnter(rowIndex, columnIndex)}
       >
           <CellInput
-              value={cell.value !== null && cell.value !== undefined ? String(cell.value) : ""}
-              onChange={(event) => onCellChange(rowIndex, columnIndex, event.target.value)}
+              ref={inputRef}
+              value={displayValue}
+              onChange={handleChange}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
           />
       </Cell>
     );
