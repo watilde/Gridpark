@@ -321,8 +321,9 @@ export class AppDatabase extends Dexie {
       count: cellUpdates.length,
     });
     
-    await this.transaction('rw', this.cells, async () => {
+    await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
       // Use Dexie's bulkPut for maximum performance
+      const now = new Date();
       const cellsToInsert: StoredCellData[] = cellUpdates.map(({ row, col, data }) => ({
         tabId,
         row,
@@ -331,6 +332,8 @@ export class AppDatabase extends Dexie {
         type: data.type ?? 'empty',
         formula: data.formula ?? undefined,
         style: data.style ?? undefined,
+        updatedAt: now,
+        version: 1,
       }));
       
       console.log('[db] bulkUpsertCells: calling bulkPut', {
@@ -341,15 +344,37 @@ export class AppDatabase extends Dexie {
       // bulkPut is much faster than individual upserts
       await this.cells.bulkPut(cellsToInsert);
       
-      console.log('[db] bulkUpsertCells: bulkPut completed', { tabId });
+      console.log('[db] bulkUpsertCells: bulkPut completed, updating dimensions', { tabId });
+      
+      // Update sheet dimensions within same transaction
+      let maxRow = 0;
+      let maxCol = 0;
+      
+      cellUpdates.forEach(({ row, col }) => {
+        maxRow = Math.max(maxRow, row);
+        maxCol = Math.max(maxCol, col);
+      });
+      
+      const metadata = await this.getSheetMetadata(tabId);
+      if (metadata) {
+        await this.sheetMetadata.update(metadata.id!, {
+          maxRow,
+          maxCol,
+          cellCount: cellUpdates.length,
+          updatedAt: now,
+        });
+        console.log('[db] bulkUpsertCells: metadata updated', {
+          tabId,
+          maxRow,
+          maxCol,
+          cellCount: cellUpdates.length,
+        });
+      } else {
+        console.warn('[db] bulkUpsertCells: metadata not found for', tabId);
+      }
     });
     
-    console.log('[db] bulkUpsertCells: updating dimensions', { tabId });
-    
-    // Update sheet dimensions after bulk insert
-    await this.updateSheetDimensions(tabId);
-    
-    console.log('[db] bulkUpsertCells: completed', { tabId });
+    console.log('[db] bulkUpsertCells: transaction completed', { tabId });
     
     return cellUpdates.length;
   }
