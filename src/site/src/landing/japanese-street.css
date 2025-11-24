@@ -208,7 +208,7 @@
 
 /* デモセクションの日本語装飾 */
 .demo::before {
-    content: '体験！';
+    content: '遊ぼう！';
     position: absolute;
     top: 10%;
     right: 8%;

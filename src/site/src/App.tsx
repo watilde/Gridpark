@@ -562,8 +562,8 @@ export const App = () => {
           </svg>
         </section>
         <section className="demo" id="demo">
-          <h2 className="section-title spray-text" data-jp="体験">
-            Interactive Demo
+          <h2 className="section-title spray-text" data-jp="表計算で遊ぶ">
+            Graffiti Your Data
           </h2>
           <div className="demo-container">
             <div className="demo-live-app">
