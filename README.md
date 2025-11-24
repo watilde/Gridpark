@@ -69,6 +69,10 @@ Hosted URL: `https://watilde.github.io/Gridpark/` (Vite `base` is set to `/Gridp
 ```
 assets/                    # shared assets (icons, fonts, etc.)
 docs/                      # marketing site build output (static hosting)
+├── development/           # development documentation and guides
+├── specs/                 # specification documents
+├── assets/                # built site assets (JS, CSS)
+└── index.html             # site entry point
 examples/                  # experimental apps or sample data
 out/                       # build artifacts from packaging (cleaned between runs)
 src/
@@ -77,6 +81,21 @@ src/
 ├── site/                   # Vite marketing/demo site (landing page + HeroDemo)
 └── test/                   # Jest test suites & helpers
 ```
+
+## 📚 Documentation
+
+### Development Documentation (`docs/development/`)
+- `ARCHITECTURE.md` - System architecture overview
+- `QUICK_START.md` - Quick start guide for developers
+- `MIGRATION_GUIDE.md` - Migration guide between versions
+- `DIRECTORY_STRUCTURE.md` - Detailed directory structure
+- `CALCULATION_STRATEGY.md` - Formula calculation implementation
+- And more...
+
+### Specifications (`docs/specs/`)
+- `Gridpark_Spec_v2.0.md` - Latest specification (v2.0)
+- `Gridpark_Spec_v1.9.md` - Previous specification (v1.9)
+- `Gridpark_Selector_Spec.md` - Selector specification
 
 ## 🛠️ Development Scripts
 
