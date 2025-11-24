@@ -159,23 +159,30 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     }
   }, [openTabs, saveManager]);
   
+  // NOTE: Sheet session management is now in Dexie (Phase 2/3)
+  // These callbacks are for backward compatibility only
+  // ExcelViewer should be updated to use useExcelSheet hook directly
+  
   const handleSessionChange = useCallback((sessionState: any) => {
-    if (!activeTab) return;
-    const tabId = activeTab.id;
-    handlePersistSheetSession(tabId, sessionState, (dirty) => {
-      if (dirty) {
-        saveManager.markTabDirty(tabId);
-      } else {
-        saveManager.markTabClean(tabId);
-      }
-    });
-  }, [activeTab, handlePersistSheetSession, saveManager]);
+    // No-op: Session state is managed by Dexie
+    console.log('[WorkspacePage] handleSessionChange (no-op, using Dexie)', sessionState);
+  }, []);
   
   const handleSaveSheetSession = useCallback((state: any) => {
-    if (activeTab) {
-      handlePersistSheetSession(activeTab.id, state);
+    // No-op: Session state is managed by Dexie
+    console.log('[WorkspacePage] handleSaveSheetSession (no-op, using Dexie)', state);
+  }, []);
+  
+  // Direct dirty change handler (bypasses session management)
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    if (!activeTab) return;
+    console.log('[WorkspacePage] handleDirtyChange', { tabId: activeTab.id, dirty });
+    if (dirty) {
+      saveManager.markTabDirty(activeTab.id);
+    } else {
+      saveManager.markTabClean(activeTab.id);
     }
-  }, [activeTab, handlePersistSheetSession]);
+  }, [activeTab, saveManager]);
   
   // ============================================================================
   // Global keyboard shortcuts
@@ -262,13 +269,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         platformCapabilities={platformCapabilities}
         onSessionChange={handleSessionChange}
         onSaveSession={handleSaveSheetSession}
-        onDirtyChange={(dirty) => {
-          if (activeTab && dirty) {
-            saveManager.markTabDirty(activeTab.id);
-          } else if (activeTab) {
-            saveManager.markTabClean(activeTab.id);
-          }
-        }}
+        onDirtyChange={handleDirtyChange}
         onCellSelect={handleCellSelect}
         onRangeSelect={handleRangeSelect}
         onActiveCellDetails={formulaBarState.handleActiveCellDetails}
