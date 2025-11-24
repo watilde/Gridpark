@@ -212,6 +212,7 @@ export default spreadsheetSlice.reducer;
 // ============================================================================
 
 import { RootState } from './index';
+import { createSelector } from '@reduxjs/toolkit';
 
 export const selectOpenTabs = (state: RootState) => state.spreadsheet.openTabs;
 export const selectActiveTabId = (state: RootState) => state.spreadsheet.activeTabId;
@@ -221,7 +222,14 @@ export const selectActiveTab = (state: RootState) => {
 };
 
 export const selectDirtyMap = (state: RootState) => state.spreadsheet.dirtyMap;
-export const selectDirtyTabs = (state: RootState) => Object.keys(state.spreadsheet.dirtyMap);
+
+// ✅ Memoized selector to prevent unnecessary re-renders
+// Object.keys() creates a new array every time, so we use createSelector
+export const selectDirtyTabs = createSelector(
+  [selectDirtyMap],
+  (dirtyMap) => Object.keys(dirtyMap)
+);
+
 export const selectIsDirty = (tabId: string) => (state: RootState) => 
   Boolean(state.spreadsheet.dirtyMap[tabId]);
 

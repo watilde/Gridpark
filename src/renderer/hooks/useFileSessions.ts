@@ -32,19 +32,28 @@ export const useSheetSessions = () => {
 
   const handlePersistSheetSession = useCallback(
     (tabId: string, state: SheetSessionState, onDirtyChange?: (dirty: boolean) => void) => {
+      let shouldNotify = false;
+      let dirtyState = false;
+      
       setSheetSessions((prev) => {
         const prevSession = prev[tabId];
         if (sheetSessionEqual(prevSession, state)) {
           return prev;
         }
         
-        // Notify dirty state change if callback provided
+        // Mark that we need to notify, but don't call during setState
         if (onDirtyChange) {
-          onDirtyChange(state.dirty);
+          shouldNotify = true;
+          dirtyState = state.dirty;
         }
         
         return { ...prev, [tabId]: state };
       });
+      
+      // ✅ Call callback AFTER setState completes to avoid nested updates
+      if (shouldNotify && onDirtyChange) {
+        onDirtyChange(dirtyState);
+      }
     },
     [],
   );

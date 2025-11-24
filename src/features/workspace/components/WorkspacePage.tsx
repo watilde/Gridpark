@@ -143,6 +143,23 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   }, [handlePersistSheetSession]);
   
   // ============================================================================
+  // Session change handler (memoized to prevent infinite loops)
+  // ============================================================================
+  
+  const handleSessionChange = useCallback((sessionState: any) => {
+    if (!activeTab) return;
+    
+    const tabId = activeTab.id;
+    handlePersistSheetSession(tabId, sessionState, (dirty) => {
+      if (dirty) {
+        saveManager.markTabDirty(tabId);
+      } else {
+        saveManager.markTabClean(tabId);
+      }
+    });
+  }, [activeTab, handlePersistSheetSession, saveManager.markTabDirty, saveManager.markTabClean]);
+  
+  // ============================================================================
   // Global keyboard shortcuts
   // ============================================================================
   
@@ -225,16 +242,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         manifestIsDirty={manifestIsDirty}
         canEditManifest={canEditManifest}
         platformCapabilities={platformCapabilities}
-        onSessionChange={(sessionState) => {
-          const tabId = activeTab!.id;
-          handlePersistSheetSession(tabId, sessionState, (dirty) => {
-            if (dirty) {
-              saveManager.markTabDirty(tabId);
-            } else {
-              saveManager.markTabClean(tabId);
-            }
-          });
-        }}
+        onSessionChange={handleSessionChange}
         onSaveSession={handleSaveSheetSession}
         onDirtyChange={() => {}} // No-op, handled in onSessionChange
         onCellSelect={handleCellSelect}
