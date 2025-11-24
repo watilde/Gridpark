@@ -193,8 +193,11 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     
     // Check if we need to load initial data
     const loadInitialData = async () => {
-      // If Dexie has no data yet, load from file
-      if (excelSheet.cellCount === 0 && sheet.data && sheet.data.length > 0) {
+      // Check if Dexie already has data for this sheet
+      // Use cells.length directly as it's more reliable than metadata.cellCount during initial render
+      const hasCellsInDexie = excelSheet.cells.length > 0;
+      
+      if (!hasCellsInDexie && sheet.data && sheet.data.length > 0) {
         console.log('[ExcelViewerDexie] Loading initial data from file into Dexie', {
           tabId,
           sheetName: sheet.name,
@@ -212,20 +215,24 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           
           console.log('[ExcelViewerDexie] Initial data saved to Dexie', {
             tabId,
-            cellCount: excelSheet.cellCount,
+            cellCount: excelSheet.cells.length,
           });
         } catch (error) {
           console.error('[ExcelViewerDexie] Failed to save initial data:', error);
           initialDataLoadedRef.current = false; // Reset flag so it can retry
         }
-      } else if (excelSheet.cellCount > 0) {
+      } else if (hasCellsInDexie) {
         // Data already exists in Dexie, mark as loaded
+        console.log('[ExcelViewerDexie] Data already exists in Dexie, skipping initial load', {
+          tabId,
+          cellCount: excelSheet.cells.length,
+        });
         initialDataLoadedRef.current = true;
       }
     };
     
     loadInitialData();
-  }, [file, sheet, isLoading, excelSheet.cellCount, save2DArray, tabId]);
+  }, [file, sheet, isLoading, excelSheet.cells.length, save2DArray, tabId, excelSheet.cells]);
   
   // ============================================================================
   // Dirty State Synchronization
