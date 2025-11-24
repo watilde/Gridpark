@@ -316,20 +316,42 @@ export class AppDatabase extends Dexie {
     tabId: string,
     cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }>
   ): Promise<number> {
-    let count = 0;
+    console.log('[db] bulkUpsertCells: preparing bulk insert', {
+      tabId,
+      count: cellUpdates.length,
+    });
     
     await this.transaction('rw', this.cells, async () => {
-      // Batch updates for better performance
-      for (const { row, col, data } of cellUpdates) {
-        await this.upsertCell(tabId, row, col, data);
-        count++;
-      }
+      // Use Dexie's bulkPut for maximum performance
+      const cellsToInsert: StoredCellData[] = cellUpdates.map(({ row, col, data }) => ({
+        tabId,
+        row,
+        col,
+        value: data.value ?? null,
+        type: data.type ?? 'empty',
+        formula: data.formula ?? undefined,
+        style: data.style ?? undefined,
+      }));
+      
+      console.log('[db] bulkUpsertCells: calling bulkPut', {
+        tabId,
+        count: cellsToInsert.length,
+      });
+      
+      // bulkPut is much faster than individual upserts
+      await this.cells.bulkPut(cellsToInsert);
+      
+      console.log('[db] bulkUpsertCells: bulkPut completed', { tabId });
     });
+    
+    console.log('[db] bulkUpsertCells: updating dimensions', { tabId });
     
     // Update sheet dimensions after bulk insert
     await this.updateSheetDimensions(tabId);
     
-    return count;
+    console.log('[db] bulkUpsertCells: completed', { tabId });
+    
+    return cellUpdates.length;
   }
 
   /**
