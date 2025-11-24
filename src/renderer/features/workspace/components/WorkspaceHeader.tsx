@@ -258,6 +258,11 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
 }) => {
   const [localAutoSave, setLocalAutoSave] = useState(autoSaveEnabled);
 
+  // Debug: Log when canUndo/canRedo props change
+  React.useEffect(() => {
+    console.log('🔘 [WorkspaceHeader] canUndo/canRedo props changed', { canUndo, canRedo });
+  }, [canUndo, canRedo]);
+
   const handleAutoSaveToggle = () => {
     const newValue = !localAutoSave;
     setLocalAutoSave(newValue);
@@ -295,7 +300,10 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
         </ActionButton>
         
         <ActionButton
-          onClick={onUndo}
+          onClick={() => {
+            console.log('⏪ [WorkspaceHeader] Undo button clicked', { canUndo, disabled: !canUndo });
+            onUndo?.();
+          }}
           disabled={!canUndo}
           title="Undo"
         >
@@ -303,7 +311,10 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
         </ActionButton>
         
         <ActionButton
-          onClick={onRedo}
+          onClick={() => {
+            console.log('⏩ [WorkspaceHeader] Redo button clicked', { canRedo, disabled: !canRedo });
+            onRedo?.();
+          }}
           disabled={!canRedo}
           title="Redo"
         >
