@@ -181,21 +181,25 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
   // Initial Data Load
   // ============================================================================
   
-  // Track if initial data has been loaded to prevent re-loading
-  const initialDataLoadedRef = useRef(false);
+  // Track if initial data has been loaded PER TAB to prevent re-loading
+  const initialDataLoadedRef = useRef<Record<string, boolean>>({});
   
   // Load initial data from file into Dexie (if not already loaded)
   useEffect(() => {
     if (!file || !sheet || isLoading) return;
     
-    // Prevent re-running if already loaded
-    if (initialDataLoadedRef.current) return;
+    // Prevent re-running if already loaded for THIS specific tabId
+    if (initialDataLoadedRef.current[tabId]) {
+      return;
+    }
     
     // Check if we need to load initial data
     const loadInitialData = async () => {
       // Check if Dexie already has data for this sheet
-      // Use cells.length directly as it's more reliable than metadata.cellCount during initial render
-      const hasCellsInDexie = excelSheet.cells.length > 0;
+      // Query Dexie directly to avoid depending on useLiveQuery timing
+      const { db } = await import('../../../../lib/db');
+      const existingCells = await db.getCellsForSheet(tabId);
+      const hasCellsInDexie = existingCells.length > 0;
       
       if (!hasCellsInDexie && sheet.data && sheet.data.length > 0) {
         console.log('[ExcelViewerDexie] Loading initial data from file into Dexie', {
@@ -207,7 +211,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
         });
         
         // Mark as loaded BEFORE calling save2DArray to prevent re-entry
-        initialDataLoadedRef.current = true;
+        initialDataLoadedRef.current[tabId] = true;
         
         // Initial load should NOT record history or mark dirty (it's not a user edit)
         try {
@@ -215,24 +219,24 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           
           console.log('[ExcelViewerDexie] Initial data saved to Dexie', {
             tabId,
-            cellCount: excelSheet.cells.length,
+            cellCount: existingCells.length,
           });
         } catch (error) {
           console.error('[ExcelViewerDexie] Failed to save initial data:', error);
-          initialDataLoadedRef.current = false; // Reset flag so it can retry
+          initialDataLoadedRef.current[tabId] = false; // Reset flag so it can retry
         }
       } else if (hasCellsInDexie) {
         // Data already exists in Dexie, mark as loaded
         console.log('[ExcelViewerDexie] Data already exists in Dexie, skipping initial load', {
           tabId,
-          cellCount: excelSheet.cells.length,
+          cellCount: existingCells.length,
         });
-        initialDataLoadedRef.current = true;
+        initialDataLoadedRef.current[tabId] = true;
       }
     };
     
     loadInitialData();
-  }, [file, sheet, isLoading, excelSheet.cells.length, save2DArray, tabId, excelSheet.cells]);
+  }, [file, sheet, isLoading, save2DArray, tabId]);
   
   // ============================================================================
   // Dirty State Synchronization
