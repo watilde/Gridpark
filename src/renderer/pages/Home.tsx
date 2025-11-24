@@ -105,7 +105,7 @@ export const Home: React.FC = () => {
   const workspace = useWorkspace(
     {
       sheetSessions,
-      sheetDirtyMap,
+      sheetDirtyMap: dirtyMap, // Use SaveManager's dirtyMap
       codeSessions,
       manifestDirtyMap,
       getManifestSessionKey,
@@ -114,7 +114,10 @@ export const Home: React.FC = () => {
       ensureManifestSession,
       ensureCodeSession,
       setSheetSessions,
-      setSheetDirtyMap,
+      setSheetDirtyMap: (updater) => {
+        // Ignore - dirty state managed by SaveManager
+        console.warn('[Home] setSheetDirtyMap called but ignored (use SaveManager)');
+      },
     }
   );
 
@@ -127,11 +130,33 @@ export const Home: React.FC = () => {
     findWorkbookNode,
     updateWorkbookReferences,
     handleTabChange,
-    tabIsDirty,
-    dirtyNodeIds,
+    tabIsDirty: _tabIsDirty, // Ignore, use SaveManager instead
+    dirtyNodeIds: _dirtyNodeIds, // Ignore, use SaveManager instead
     handleNodeSelect,
     handleCloseTab,
   } = workspace;
+
+  // Use SaveManager's dirty state for tabs
+  const tabIsDirty = useCallback((tab: WorkbookTab) => {
+    return isDirty(tab.id);
+  }, [isDirty]);
+
+  // Use SaveManager's dirty state for tree nodes
+  const dirtyNodeIds = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    // Mark tabs as dirty based on SaveManager
+    openTabs.forEach(tab => {
+      if (isDirty(tab.id)) {
+        map[tab.treeNodeId] = true;
+        // Also mark parent workbook as dirty
+        const workbook = workbookNodes.find(n => n.id === tab.workbookId);
+        if (workbook) {
+          map[workbook.id] = true;
+        }
+      }
+    });
+    return map;
+  }, [openTabs, workbookNodes, isDirty]);
 
   // Search state using reducer
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
