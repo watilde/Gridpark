@@ -280,7 +280,9 @@ export const useWorkspace = (
   const tabIsDirty = useCallback(
     (tab: WorkbookTab): boolean => {
       if (tab.kind === "sheet") {
-        return Boolean(sheetDirtyMap[tab.id] ?? sheetSessions[tab.id]?.dirty);
+        // Only check sheetDirtyMap, not session.dirty
+        // to avoid issues with save state management
+        return Boolean(sheetDirtyMap[tab.id]);
       }
       if (tab.kind === "code") {
         const session = codeSessions[tab.codeFile.absolutePath];
@@ -292,7 +294,7 @@ export const useWorkspace = (
       }
       return false;
     },
-    [codeSessions, getManifestSessionKey, manifestDirtyMap, sheetDirtyMap, sheetSessions]
+    [codeSessions, getManifestSessionKey, manifestDirtyMap, sheetDirtyMap]
   );
 
   const dirtyNodeIds = useMemo(() => {
