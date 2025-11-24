@@ -165,7 +165,7 @@ export interface TabOperationsDeps {
   ensureManifestSession: (file: ExcelFile) => void;
   ensureCodeSession: (codeFile: GridparkCodeFile) => void;
   setSheetSessions: React.Dispatch<React.SetStateAction<Record<string, SheetSessionState>>>;
-  setSheetDirtyMap: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  setSheetDirtyMap: React.Dispatch<React.SetStateAction<Record<string, boolean>>>; // No-op placeholder
 }
 
 /**

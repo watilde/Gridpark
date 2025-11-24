@@ -26,7 +26,6 @@ import { useSheetSessions, useManifestSessions, useCodeSessions } from "../hooks
 import { useFormulaBarOptimized } from "../hooks/useFormulaBarOptimized";
 import { useSettings } from "../hooks/useSettings";
 import { useManifestHandlers } from "../hooks/useManifestHandlers";
-import { useSheetHandlers } from "../hooks/useSheetHandlers";
 import { useElectronIntegration } from "../hooks/useElectronAPI";
 import { cloneManifest } from "../utils/sessionHelpers";
 
@@ -99,8 +98,6 @@ export const Home: React.FC = () => {
   // File sessions
   const {
     sheetSessions,
-    sheetDirtyMap,
-    setSheetDirtyMap,
     setSheetSessions,
     handlePersistSheetSession,
     saveWorkbookFile,
@@ -124,11 +121,11 @@ export const Home: React.FC = () => {
   } = useCodeSessions();
 
   // Unified workspace hook (consolidates 4 previous hooks)
-  // Note: We pass empty sheetDirtyMap because SaveManager will override it later
+  // Note: We pass empty sheetDirtyMap as placeholder (not used, we override tabIsDirty)
   const workspace = useWorkspace(
     {
       sheetSessions,
-      sheetDirtyMap: {}, // Placeholder, SaveManager will override
+      sheetDirtyMap: {}, // Placeholder, not used
       codeSessions,
       manifestDirtyMap,
       getManifestSessionKey,
@@ -137,10 +134,7 @@ export const Home: React.FC = () => {
       ensureManifestSession,
       ensureCodeSession,
       setSheetSessions,
-      setSheetDirtyMap: (updater) => {
-        // Ignore - dirty state managed by SaveManager
-        console.warn('[Home] setSheetDirtyMap called but ignored (use SaveManager)');
-      },
+      setSheetDirtyMap: () => {}, // No-op, dirty state managed in Home.tsx
     }
   );
 

@@ -29,7 +29,6 @@ const isManifestSessionDirty = (session?: ManifestSession) => {
 
 export const useSheetSessions = () => {
   const [sheetSessions, setSheetSessions] = useState<Record<string, SheetSessionState>>({});
-  const [sheetDirtyMap, setSheetDirtyMap] = useState<Record<string, boolean>>({});
 
   const handlePersistSheetSession = useCallback(
     (tabId: string, state: SheetSessionState) => {
@@ -71,8 +70,6 @@ export const useSheetSessions = () => {
   return {
     sheetSessions,
     setSheetSessions,
-    sheetDirtyMap,
-    setSheetDirtyMap,
     handlePersistSheetSession,
     saveWorkbookFile,
   };
