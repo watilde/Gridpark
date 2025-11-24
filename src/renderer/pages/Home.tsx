@@ -68,34 +68,6 @@ export const Home: React.FC = () => {
   // AutoSave state
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Refs to access latest state in auto-save without causing re-renders
-  const stateRef = useRef({
-    sheetDirtyMap,
-    sheetSessions,
-    manifestDirtyMap,
-    codeSessions,
-    openTabs,
-    handleSaveSheetSession,
-    handleSaveManifest,
-    onSaveCode,
-    getManifestSessionKey,
-  });
-  
-  // Update refs on each render
-  useEffect(() => {
-    stateRef.current = {
-      sheetDirtyMap,
-      sheetSessions,
-      manifestDirtyMap,
-      codeSessions,
-      openTabs,
-      handleSaveSheetSession,
-      handleSaveManifest,
-      onSaveCode,
-      getManifestSessionKey,
-    };
-  });
 
   // Electron API integration with useSyncExternalStore
   const electron = useElectronIntegration();
@@ -301,7 +273,33 @@ export const Home: React.FC = () => {
     }
   }, [activeTab, sheetSessions, handleSaveSheetSession, handleSaveManifest, onSaveCode]);
 
-
+  // Refs to access latest state in auto-save without causing re-renders
+  const stateRef = useRef({
+    sheetDirtyMap,
+    sheetSessions,
+    manifestDirtyMap,
+    codeSessions,
+    openTabs,
+    handleSaveSheetSession,
+    handleSaveManifest,
+    onSaveCode,
+    getManifestSessionKey,
+  });
+  
+  // Update refs on each render
+  useEffect(() => {
+    stateRef.current = {
+      sheetDirtyMap,
+      sheetSessions,
+      manifestDirtyMap,
+      codeSessions,
+      openTabs,
+      handleSaveSheetSession,
+      handleSaveManifest,
+      onSaveCode,
+      getManifestSessionKey,
+    };
+  });
 
   // Global keyboard shortcuts
   useEffect(() => {
