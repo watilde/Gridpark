@@ -156,8 +156,23 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     }
   }, [openTabs, saveManager]);
   
-  // NOTE: Sheet session handling is now done directly by useExcelSheet hook
-  // No need for handleSaveSheetSession or handleSessionChange callbacks
+  const handleSessionChange = useCallback((sessionState: any) => {
+    if (!activeTab) return;
+    const tabId = activeTab.id;
+    handlePersistSheetSession(tabId, sessionState, (dirty) => {
+      if (dirty) {
+        saveManager.markTabDirty(tabId);
+      } else {
+        saveManager.markTabClean(tabId);
+      }
+    });
+  }, [activeTab, handlePersistSheetSession, saveManager]);
+  
+  const handleSaveSheetSession = useCallback((state: any) => {
+    if (activeTab) {
+      handlePersistSheetSession(activeTab.id, state);
+    }
+  }, [activeTab, handlePersistSheetSession]);
   
   // ============================================================================
   // Global keyboard shortcuts
@@ -235,12 +250,22 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onCloseTab={handleCloseTab}
         tabIsDirty={saveManager.tabIsDirty}
         activeTab={activeTab}
+        activeSheetSession={activeSheetSession}
         activeCodeSession={activeCodeSession}
         activeManifestSession={activeManifestSession}
         manifestEditorData={manifestEditorData}
         manifestIsDirty={manifestIsDirty}
         canEditManifest={canEditManifest}
         platformCapabilities={platformCapabilities}
+        onSessionChange={handleSessionChange}
+        onSaveSession={handleSaveSheetSession}
+        onDirtyChange={(dirty) => {
+          if (activeTab && dirty) {
+            saveManager.markTabDirty(activeTab.id);
+          } else if (activeTab) {
+            saveManager.markTabClean(activeTab.id);
+          }
+        }}
         onCellSelect={handleCellSelect}
         onRangeSelect={handleRangeSelect}
         onActiveCellDetails={formulaBarState.handleActiveCellDetails}
