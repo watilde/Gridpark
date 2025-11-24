@@ -22,12 +22,12 @@ import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/SettingsOutlined";
 import { AppLayout } from "@renderer/components/layout/AppLayout";
-import { FileTree, type FileNode } from "@renderer/features/FileTree/FileTree";
+import { FileTree, type FileNode } from "@renderer/features/file-explorer/FileTree";
 import {
   ExcelViewer,
   type SheetSessionState,
-} from "@renderer/features/ExcelViewer/ExcelViewer";
-import { CodeEditorPanel } from "@renderer/features/Monaco/CodeEditorPanel";
+} from "@renderer/features/workbook/components/ExcelViewer";
+import { CodeEditorPanel } from "@renderer/features/code-editor/CodeEditorPanel";
 import type { GridparkCodeFile } from "@renderer/types/excel";
 import {
   demoWorkbook,

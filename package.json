@@ -65,7 +65,8 @@
     "storybook": "^9.1.8",
     "ts-jest": "^29.4.5",
     "typescript": "^5.6.3",
-    "vite": "^7.1.9"
+    "vite": "^7.1.9",
+    "vite-plugin-monaco-editor": "^1.1.0"
   },
   "dependencies": {
     "@electron-forge/maker-dmg": "^7.10.2",

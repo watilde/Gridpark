@@ -14,5 +14,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "../../docs"),
     emptyOutDir: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'monaco-editor': ['monaco-editor'],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ['monaco-editor'],
   },
 });
