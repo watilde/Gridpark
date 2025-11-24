@@ -1,6 +1,6 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from "react";
 import { Sheet, Box, Typography, Alert, CircularProgress } from "@mui/joy";
-import { MonacoEditor } from "./MonacoEditor";
+import { MonacoEditor, MonacoEditorHandle } from "./MonacoEditor";
 import { GridparkCodeFile } from "../../../../types/excel";
 
 export interface CodeEditorPanelProps {
@@ -15,7 +15,29 @@ export interface CodeEditorPanelProps {
   onCloseTab?: () => void;
 }
 
-export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
+/**
+ * Ref handle exposed by CodeEditorPanel
+ */
+export interface CodeEditorPanelHandle {
+  /**
+   * Execute undo operation
+   */
+  undo: () => void;
+  /**
+   * Execute redo operation
+   */
+  redo: () => void;
+  /**
+   * Check if undo is available
+   */
+  canUndo: () => boolean;
+  /**
+   * Check if redo is available
+   */
+  canRedo: () => boolean;
+}
+
+export const CodeEditorPanel = forwardRef<CodeEditorPanelHandle, CodeEditorPanelProps>(({
   codeFile,
   content,
   loading,
@@ -25,11 +47,20 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
   onChange,
   onSave: handleSaveRequest,
   onCloseTab,
-}) => {
+}, ref) => {
+  const monacoRef = useRef<MonacoEditorHandle>(null);
   const canSave = !loading && !saving && isDirty;
   const isMacPlatform =
     typeof navigator !== "undefined" &&
     /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
+  // Expose undo/redo methods via ref
+  useImperativeHandle(ref, () => ({
+    undo: () => monacoRef.current?.undo(),
+    redo: () => monacoRef.current?.redo(),
+    canUndo: () => monacoRef.current?.canUndo() ?? false,
+    canRedo: () => monacoRef.current?.canRedo() ?? false,
+  }), []);
 
   const runSave = useCallback(() => {
     if (!canSave) return;
@@ -101,6 +132,7 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
           </Box>
         ) : (
           <MonacoEditor
+            ref={monacoRef}
             value={content}
             onChange={onChange}
             onSave={(latestValue) => {
@@ -118,6 +150,6 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
       </Box>
     </Sheet>
   );
-};
+});
 
 CodeEditorPanel.displayName = "GridparkCodeEditorPanel";

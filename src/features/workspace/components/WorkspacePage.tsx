@@ -7,11 +7,12 @@
  * Pages should import THIS component, not implement logic directly.
  */
 
-import React, { useCallback, useMemo, useEffect } from "react";
+import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { AppLayout } from "../../../renderer/components/layout/AppLayout";
 import { SidebarExplorer } from "../../../renderer/components/layout/SidebarExplorer";
 import { WorkspaceHeader } from "../../../renderer/features/workspace/components/WorkspaceHeader";
 import { TabContentArea } from "../../../renderer/features/workspace/components/TabContentArea";
+import { EditorPanelHandle } from "../../../renderer/features/workspace/components/EditorPanel";
 import { getPlatformCapabilities } from "../../../renderer/utils/platform";
 import { useWorkspaceState } from "../hooks/useWorkspaceState";
 import type { ExcelFile, GridparkCodeFile } from "../../../renderer/types/excel";
@@ -33,6 +34,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   // ============================================
   
   const state = useWorkspaceState();
+  const editorPanelRef = useRef<EditorPanelHandle>(null);
+  
+  // Track undo/redo availability
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   
   const {
     workbookNodes,
@@ -116,8 +122,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     if (onUndo) {
       onUndo();
     } else {
-      // TODO: Implement undo functionality
-      console.log('[WorkspacePage] Undo not implemented');
+      console.log('[WorkspacePage] Executing undo');
+      editorPanelRef.current?.undo();
+      // Update undo/redo state after operation
+      setTimeout(() => {
+        setCanUndo(editorPanelRef.current?.canUndo() ?? false);
+        setCanRedo(editorPanelRef.current?.canRedo() ?? false);
+      }, 0);
     }
   }, [onUndo]);
   
@@ -125,8 +136,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     if (onRedo) {
       onRedo();
     } else {
-      // TODO: Implement redo functionality
-      console.log('[WorkspacePage] Redo not implemented');
+      console.log('[WorkspacePage] Executing redo');
+      editorPanelRef.current?.redo();
+      // Update undo/redo state after operation
+      setTimeout(() => {
+        setCanUndo(editorPanelRef.current?.canUndo() ?? false);
+        setCanRedo(editorPanelRef.current?.canRedo() ?? false);
+      }, 0);
     }
   }, [onRedo]);
   
@@ -210,6 +226,25 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   }, [activeTitle, electron]);
   
   // ============================================================================
+  // Update undo/redo availability when active tab changes
+  // ============================================================================
+  
+  useEffect(() => {
+    // Update undo/redo state when active tab changes
+    const updateUndoRedoState = () => {
+      setCanUndo(editorPanelRef.current?.canUndo() ?? false);
+      setCanRedo(editorPanelRef.current?.canRedo() ?? false);
+    };
+    
+    updateUndoRedoState();
+    
+    // Poll for updates (Monaco editor doesn't provide change events for undo stack)
+    const interval = setInterval(updateUndoRedoState, 200);
+    
+    return () => clearInterval(interval);
+  }, [activeTab]);
+  
+  // ============================================================================
   // Render
   // ============================================================================
   
@@ -225,8 +260,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           onOpenSettings={onOpenSettings || (() => {})}
           autoSaveEnabled={autoSave.autoSaveEnabled}
           onAutoSaveToggle={autoSave.toggleAutoSave}
-          canUndo={false}
-          canRedo={false}
+          canUndo={canUndo}
+          canRedo={canRedo}
           hasUnsavedChanges={saveManager.dirtyIds.length > 0}
         />
       }
@@ -241,6 +276,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       }
     >
       <TabContentArea
+        ref={editorPanelRef}
         openTabs={openTabs}
         activeTabId={activeTabId}
         onTabChange={handleTabChange}

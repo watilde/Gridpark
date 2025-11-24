@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef, useRef, useImperativeHandle } from "react";
 import { Sheet, Typography, Box } from "@mui/joy";
 import {
   SheetSessionState,
@@ -8,7 +8,7 @@ import {
   ActiveCellDetails,
 } from "../../workbook/components/ExcelViewer";
 import { ExcelViewerDexie } from "../../workbook/components/ExcelViewerDexie";
-import { CodeEditorPanel } from "../../code-editor/CodeEditorPanel";
+import { CodeEditorPanel, CodeEditorPanelHandle } from "../../code-editor/CodeEditorPanel";
 import { ManifestEditorPanel } from "../../manifest-editor/ManifestEditorPanel";
 import { FormulaBar } from "../../formula-bar/FormulaBar";
 import { WorkbookTab } from "../../../types/tabs";
@@ -53,7 +53,30 @@ interface EditorPanelProps {
   formulaBarState: any; // FormulaBar state from useFormulaBarOptimized
 }
 
-export const EditorPanel: React.FC<EditorPanelProps> = ({
+/**
+ * Ref handle exposed by EditorPanel
+ * Currently only supports code editor undo/redo
+ */
+export interface EditorPanelHandle {
+  /**
+   * Execute undo operation
+   */
+  undo: () => void;
+  /**
+   * Execute redo operation
+   */
+  redo: () => void;
+  /**
+   * Check if undo is available
+   */
+  canUndo: () => boolean;
+  /**
+   * Check if redo is available
+   */
+  canRedo: () => boolean;
+}
+
+export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
   activeTab,
   activeSheetSession, // DEPRECATED: unused
   activeCodeSession,
@@ -79,7 +102,35 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   replaceCommand,
   formulaCommitCommand,
   formulaBarState,
-}) => {
+}, ref) => {
+  const codeEditorRef = useRef<CodeEditorPanelHandle>(null);
+
+  // Expose undo/redo methods via ref
+  // Currently only code editor supports undo/redo
+  useImperativeHandle(ref, () => ({
+    undo: () => {
+      if (activeTab?.kind === 'code') {
+        codeEditorRef.current?.undo();
+      }
+    },
+    redo: () => {
+      if (activeTab?.kind === 'code') {
+        codeEditorRef.current?.redo();
+      }
+    },
+    canUndo: () => {
+      if (activeTab?.kind === 'code') {
+        return codeEditorRef.current?.canUndo() ?? false;
+      }
+      return false;
+    },
+    canRedo: () => {
+      if (activeTab?.kind === 'code') {
+        return codeEditorRef.current?.canRedo() ?? false;
+      }
+      return false;
+    },
+  }), [activeTab]);
   if (!activeTab) {
     return (
       <Sheet
@@ -156,6 +207,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
     
     return (
       <CodeEditorPanel
+        ref={codeEditorRef}
         codeFile={activeTab.codeFile}
         content={activeCodeSession?.content ?? ""}
         loading={activeCodeSession ? activeCodeSession.loading : true}
@@ -175,4 +227,4 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   }
 
   return null;
-};
+});

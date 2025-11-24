@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useCallback, useEffect } from "react";
+import React, { useMemo, useRef, useCallback, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Box } from "@mui/joy";
 import { styled } from "@mui/joy/styles";
 import Editor, { OnMount, loader } from "@monaco-editor/react";
@@ -112,6 +112,32 @@ export interface MonacoEditorProps {
 }
 
 /**
+ * Ref handle exposed by MonacoEditor
+ */
+export interface MonacoEditorHandle {
+  /**
+   * Execute undo operation
+   */
+  undo: () => void;
+  /**
+   * Execute redo operation
+   */
+  redo: () => void;
+  /**
+   * Check if undo is available
+   */
+  canUndo: () => boolean;
+  /**
+   * Check if redo is available
+   */
+  canRedo: () => boolean;
+  /**
+   * Get the editor instance
+   */
+  getEditor: () => MonacoEditor.IStandaloneCodeEditor | null;
+}
+
+/**
  * Gridpark Monaco Editor Component
  *
  * A code editor component based on Monaco Editor with Gridpark design principles:
@@ -122,7 +148,7 @@ export interface MonacoEditorProps {
  *
  * Note: Requires @monaco-editor/react + monaco-editor.
  */
-export const MonacoEditor: React.FC<MonacoEditorProps> = ({
+export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(({
   value = "",
   language = "javascript",
   height = "200px",
@@ -132,7 +158,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   onSave,
   theme = "vs-dark",
   options,
-}) => {
+}, ref) => {
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
   const onSaveRef = useRef(onSave);
   const readOnlyRef = useRef(readOnly);
@@ -144,6 +170,27 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   useEffect(() => {
     configureMonaco();
   }, []);
+
+  // Expose undo/redo methods via ref
+  useImperativeHandle(ref, () => ({
+    undo: () => {
+      editorRef.current?.trigger('keyboard', 'undo', null);
+    },
+    redo: () => {
+      editorRef.current?.trigger('keyboard', 'redo', null);
+    },
+    canUndo: () => {
+      const model = editorRef.current?.getModel();
+      if (!model) return false;
+      return model.canUndo();
+    },
+    canRedo: () => {
+      const model = editorRef.current?.getModel();
+      if (!model) return false;
+      return model.canRedo();
+    },
+    getEditor: () => editorRef.current,
+  }), []);
 
   const editorOptions =
     useMemo<MonacoEditor.IStandaloneEditorConstructionOptions>(
@@ -205,6 +252,6 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
       />
     </EditorContainer>
   );
-};
+});
 
 MonacoEditor.displayName = "GridparkMonacoEditor";

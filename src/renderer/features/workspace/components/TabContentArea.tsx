@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Box } from "@mui/joy";
 import { WorkbookTabs } from "./WorkbookTabs";
-import { EditorPanel } from "./EditorPanel";
+import { EditorPanel, EditorPanelHandle } from "./EditorPanel";
 import { WorkbookTab } from "../../../types/tabs";
 import {
   ActiveCellDetails,
@@ -60,7 +60,7 @@ export interface TabContentAreaProps {
   formulaBarState: any; // FormulaBar state from useFormulaBarOptimized
 }
 
-export const TabContentArea: React.FC<TabContentAreaProps> = ({
+export const TabContentArea = forwardRef<EditorPanelHandle, TabContentAreaProps>(({
   openTabs,
   activeTabId,
   onTabChange,
@@ -89,7 +89,7 @@ export const TabContentArea: React.FC<TabContentAreaProps> = ({
   replaceCommand,
   formulaCommitCommand,
   formulaBarState,
-}) => {
+}, ref) => {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <WorkbookTabs
@@ -101,6 +101,7 @@ export const TabContentArea: React.FC<TabContentAreaProps> = ({
       />
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <EditorPanel
+          ref={ref}
           activeTab={activeTab}
           activeCodeSession={activeCodeSession}
           activeManifestSession={activeManifestSession}
@@ -127,4 +128,4 @@ export const TabContentArea: React.FC<TabContentAreaProps> = ({
       </Box>
     </Box>
   );
-};
+});
