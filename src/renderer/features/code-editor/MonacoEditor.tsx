@@ -190,11 +190,16 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
         height="100%"
         width="100%"
         value={value}
-        defaultValue={value}
         language={language}
         theme={normalizedTheme}
         options={editorOptions}
-        onChange={(nextValue) => onChange?.(nextValue ?? "")}
+        onChange={(nextValue) => {
+          console.log('[MonacoEditor] onChange triggered', {
+            nextValue: nextValue?.substring(0, 100),
+            hasOnChange: !!onChange,
+          });
+          onChange?.(nextValue ?? "");
+        }}
         onMount={handleMount}
         loading={<Box sx={{ p: 2 }}>Loading editor…</Box>}
       />

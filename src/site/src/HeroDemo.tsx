@@ -240,6 +240,12 @@ export const HeroDemo = () => {
   }, []);
 
   const handleCodeChange = useCallback((tab: CodeDemoTab, value: string) => {
+    console.log('[HeroDemo] handleCodeChange called', {
+      tabId: tab.id,
+      codeFileId: tab.codeFile.id,
+      absolutePath: tab.codeFile.absolutePath,
+      valueLength: value.length,
+    });
     setCodeContentState((prev) => ({
       ...prev,
       [tab.codeFile.absolutePath]: value,
@@ -296,6 +302,12 @@ export const HeroDemo = () => {
   );
 
   const activeContent = useMemo(() => {
+    console.log('[HeroDemo] activeContent recalculating', {
+      activeTab,
+      activeTabId: activeTab?.id,
+      codeDirty: activeTab?.kind === 'code' ? codeDirty[activeTab.id] : undefined,
+    });
+
     if (!activeTab) {
       return (
         <Box
@@ -326,6 +338,12 @@ export const HeroDemo = () => {
 
     const codeContent =
       codeContentState[activeTab.codeFile.absolutePath] ?? "";
+
+    console.log('[HeroDemo] Rendering CodeEditorPanel', {
+      tabId: activeTab.id,
+      isDirty: Boolean(codeDirty[activeTab.id]),
+      contentLength: codeContent.length,
+    });
 
     return (
       <CodeEditorPanel
