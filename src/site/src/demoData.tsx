@@ -4,7 +4,7 @@ import type {
   GridparkCodeFile,
   GridparkPackage,
 } from "@renderer/types/excel";
-import type { FileNode } from "@renderer/features/FileTree/FileTree";
+import type { FileNode } from "@renderer/features/file-explorer/FileTree";
 
 const createSheet = (name: string, rows: Array<Array<string | number>>) => {
   const data = rows.map((row) =>
@@ -162,7 +162,7 @@ export const demoFileNodes: FileNode[] = [
           const sheetChildren: FileNode[] = [];
           if (jsFile) {
             sheetChildren.push({
-              id: `${sheetNodeId}-js`,
+              id: jsFile.id, // Use the codeFile.id for consistency
               name: "JavaScript",
               type: "code",
               parentId: sheetNodeId,
@@ -171,7 +171,7 @@ export const demoFileNodes: FileNode[] = [
           }
           if (cssFile) {
             sheetChildren.push({
-              id: `${sheetNodeId}-css`,
+              id: cssFile.id, // Use the codeFile.id for consistency
               name: "CSS",
               type: "code",
               parentId: sheetNodeId,
@@ -189,14 +189,14 @@ export const demoFileNodes: FileNode[] = [
         }),
       },
       {
-        id: "walk-main",
+        id: demoCodeFiles[0].id, // Use the codeFile.id for consistency
         name: "JavaScript",
         type: "code",
         parentId: "walk-root",
         codeFile: demoCodeFiles[0],
       },
       {
-        id: "walk-style",
+        id: demoCodeFiles[1].id, // Use the codeFile.id for consistency
         name: "CSS",
         type: "code",
         parentId: "walk-root",
