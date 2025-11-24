@@ -35,10 +35,9 @@ export const Home: React.FC = () => {
   const isGridparkTheme = presetId === "gridpark";
 
   // ✅ WorkspacePage contains ALL business logic
+  // Note: onUndo/onRedo are optional - WorkspacePage has its own implementation
   const workspaceContent = (
     <WorkspacePage 
-      onUndo={() => {/* TODO */}}
-      onRedo={() => {/* TODO */}}
       onOpenSettings={() => settings.setSettingsOpen(true)}
     />
   );
