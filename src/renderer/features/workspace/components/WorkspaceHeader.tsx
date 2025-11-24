@@ -320,7 +320,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           </SearchIconOverlay>
           <SearchInput
             type="text"
-            placeholder="検索"
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             spellCheck={false}
