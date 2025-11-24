@@ -413,8 +413,18 @@ export class AppDatabase extends Dexie {
       
       data.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
-          // Only save non-empty cells
-          if (cell && cell.value !== null && cell.value !== undefined && cell.value !== '') {
+          // Skip null/undefined cells
+          if (!cell) return;
+          
+          // Save cells that:
+          // 1. Have a non-empty value, OR
+          // 2. Have a formula, OR
+          // 3. Have a type other than 'empty'
+          const hasValue = cell.value !== null && cell.value !== undefined && cell.value !== '';
+          const hasFormula = cell.formula !== null && cell.formula !== undefined && cell.formula !== '';
+          const hasType = cell.type && cell.type !== 'empty';
+          
+          if (hasValue || hasFormula || hasType) {
             cellUpdates.push({
               row: rowIndex,
               col: colIndex,

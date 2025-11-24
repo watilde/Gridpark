@@ -200,6 +200,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           sheetName: sheet.name,
           rows: sheet.data.length,
           cols: sheet.data[0]?.length || 0,
+          sampleCells: sheet.data.slice(0, 3).map(row => row.slice(0, 5)),
         });
         
         // Mark as loaded BEFORE calling save2DArray to prevent re-entry
