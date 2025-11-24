@@ -140,26 +140,24 @@ export const useSaveManager = (params: SaveManagerParams, handlers: SaveHandlers
     console.log('[SaveManager] Sheet saved successfully:', tabId);
   }, [sheetSessions, openTabs, findWorkbookNode, updateWorkbookReferences, saveWorkbookFile, markClean]);
 
-  const saveManifest = useCallback(async (workbookId: string, file: ExcelFile) => {
-    console.log('[SaveManager] saveManifest:', workbookId);
-    const key = getManifestSessionKey(file);
+  const saveManifest = useCallback(async (tabId: string, workbookId: string, file: ExcelFile) => {
+    console.log('[SaveManager] saveManifest:', tabId, workbookId);
     
     await saveManifestHandler(workbookId, file);
     
-    // Clear dirty state AFTER successful save
-    markClean(key);
-    console.log('[SaveManager] Manifest saved successfully:', key);
-  }, [getManifestSessionKey, saveManifestHandler, markClean]);
+    // Clear dirty state AFTER successful save (use tabId)
+    markClean(tabId);
+    console.log('[SaveManager] Manifest saved successfully:', tabId);
+  }, [saveManifestHandler, markClean]);
 
-  const saveCode = useCallback(async (codeFile: GridparkCodeFile) => {
-    console.log('[SaveManager] saveCode:', codeFile.absolutePath);
-    const key = codeFile.absolutePath;
+  const saveCode = useCallback(async (tabId: string, codeFile: GridparkCodeFile) => {
+    console.log('[SaveManager] saveCode:', tabId, codeFile.absolutePath);
     
     await saveCodeHandler(codeFile);
     
-    // Clear dirty state AFTER successful save
-    markClean(key);
-    console.log('[SaveManager] Code saved successfully:', key);
+    // Clear dirty state AFTER successful save (use tabId)
+    markClean(tabId);
+    console.log('[SaveManager] Code saved successfully:', tabId);
   }, [saveCodeHandler, markClean]);
 
   // ============================================
@@ -168,15 +166,18 @@ export const useSaveManager = (params: SaveManagerParams, handlers: SaveHandlers
 
   const save = useCallback(async (tabId: string) => {
     const tab = openTabs.find(t => t.id === tabId);
-    if (!tab) return;
+    if (!tab) {
+      console.warn('[SaveManager] Tab not found:', tabId);
+      return;
+    }
 
     try {
       if (tab.kind === 'sheet') {
         await saveSheet(tabId);
       } else if (tab.kind === 'manifest') {
-        await saveManifest(tab.workbookId, tab.file);
+        await saveManifest(tabId, tab.workbookId, tab.file);
       } else if (tab.kind === 'code') {
-        await saveCode(tab.codeFile);
+        await saveCode(tabId, tab.codeFile);
       }
     } catch (error) {
       console.error('[SaveManager] Save failed:', error);
@@ -187,34 +188,17 @@ export const useSaveManager = (params: SaveManagerParams, handlers: SaveHandlers
   // Save all dirty files
   const saveAll = useCallback(async () => {
     console.log('[SaveManager] saveAll: saving', dirtyIds.length, 'files');
+    
+    // dirtyIds are all tabIds now
     const results = await Promise.allSettled(
-      dirtyIds.map(id => {
-        // Find tab by various ID types
-        const tab = openTabs.find(t => {
-          if (t.id === id) return true;
-          if (t.kind === 'manifest') {
-            return getManifestSessionKey(t.file) === id;
-          }
-          if (t.kind === 'code') {
-            return t.codeFile.absolutePath === id;
-          }
-          return false;
-        });
-
-        if (!tab) {
-          console.warn('[SaveManager] No tab found for dirty id:', id);
-          return Promise.resolve();
-        }
-
-        return save(tab.id);
-      })
+      dirtyIds.map(tabId => save(tabId))
     );
 
     const failed = results.filter(r => r.status === 'rejected');
     if (failed.length > 0) {
       console.error('[SaveManager] Some saves failed:', failed);
     }
-  }, [dirtyIds, openTabs, save, getManifestSessionKey]);
+  }, [dirtyIds, save]);
 
   return {
     // Dirty state
