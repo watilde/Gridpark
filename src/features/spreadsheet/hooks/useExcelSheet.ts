@@ -148,7 +148,6 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   // Convert sparse cell array to 2D array (for ExcelViewer compatibility)
   const data2D = useMemo(() => {
     if (!cells) {
-      console.log('[useExcelSheet] data2D: cells is null/undefined', { tabId });
       return [];
     }
     
@@ -163,17 +162,6 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     // Ensure minimum dimensions
     const rows = Math.max(minRows, actualMaxRow + 1);
     const cols = Math.max(minCols, actualMaxCol + 1);
-    
-    console.log('[useExcelSheet] data2D: building array', {
-      tabId,
-      cellsLength: cells.length,
-      actualMaxRow,
-      actualMaxCol,
-      rows,
-      cols,
-      metadataMaxRow: metadata?.maxRow,
-      metadataMaxCol: metadata?.maxCol,
-    });
     
     // Create empty 2D array
     const result: any[][] = Array(rows).fill(null).map(() => 
@@ -193,7 +181,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     });
     
     return result;
-  }, [cells, metadata?.maxRow, metadata?.maxCol, minRows, minCols, tabId]);
+  }, [cells, minRows, minCols]);
   
   // Convert cell array to map for fast lookup
   const cellMap = useMemo(() => {
@@ -311,14 +299,6 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     data: any[][], 
     options: { recordHistory?: boolean; markDirty?: boolean } = {}
   ) => {
-    console.log('[useExcelSheet] save2DArray called', {
-      tabId,
-      dataRows: data.length,
-      dataCols: data[0]?.length || 0,
-      recordHistory: options.recordHistory ?? true,
-      markDirty: options.markDirty ?? true,
-    });
-    
     const { recordHistory = true, markDirty: shouldMarkDirty = true } = options;
     
     // Calculate changes for history (only if recordHistory is true)
@@ -358,10 +338,6 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       
       // Record history if there are changes
       if (changes.length > 0) {
-        console.log('[useExcelSheet] Recording history for save2DArray', {
-          tabId,
-          changeCount: changes.length,
-        });
         undoRedo.pushHistory(changes);
       }
     }

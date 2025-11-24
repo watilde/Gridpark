@@ -260,23 +260,14 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
   // FIX: Pass data2D directly to sessionState to ensure changes are reflected
   // PROBLEM: Using data2DRef caused stale data - sessionState didn't update when data2D changed
   // SOLUTION: Include data2D in useMemo dependencies
-  const sessionState = useMemo(() => {
-    console.log('[ExcelViewerDexie] sessionState updated', {
-      tabId,
-      dataRows: data2D?.length || 0,
-      dataCols: data2D?.[0]?.length || 0,
-      isDirty,
-      cellCount: excelSheet.cellCount,
-    });
-    return {
-      data: data2D,
-      dirty: isDirty,
-      scrollTop: 0,
-      scrollLeft: 0,
-      selectedCell: null,
-      selectionRange: null,
-    };
-  }, [data2D, isDirty, tabId, excelSheet.cellCount]);
+  const sessionState = useMemo(() => ({
+    data: data2D,
+    dirty: isDirty,
+    scrollTop: 0,
+    scrollLeft: 0,
+    selectedCell: null,
+    selectionRange: null,
+  }), [data2D, isDirty]);
   
   // ============================================================================
   // Callbacks
