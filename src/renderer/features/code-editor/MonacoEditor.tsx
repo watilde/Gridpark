@@ -174,20 +174,24 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(({
   // Expose undo/redo methods via ref
   useImperativeHandle(ref, () => ({
     undo: () => {
+      console.log('[MonacoEditor] Undo called', { hasEditor: !!editorRef.current });
       editorRef.current?.trigger('keyboard', 'undo', null);
     },
     redo: () => {
+      console.log('[MonacoEditor] Redo called', { hasEditor: !!editorRef.current });
       editorRef.current?.trigger('keyboard', 'redo', null);
     },
     canUndo: () => {
       const model = editorRef.current?.getModel();
-      if (!model) return false;
-      return model.canUndo();
+      const result = model ? model.canUndo() : false;
+      console.log('[MonacoEditor] canUndo queried', { hasModel: !!model, result });
+      return result;
     },
     canRedo: () => {
       const model = editorRef.current?.getModel();
-      if (!model) return false;
-      return model.canRedo();
+      const result = model ? model.canRedo() : false;
+      console.log('[MonacoEditor] canRedo queried', { hasModel: !!model, result });
+      return result;
     },
     getEditor: () => editorRef.current,
   }), []);

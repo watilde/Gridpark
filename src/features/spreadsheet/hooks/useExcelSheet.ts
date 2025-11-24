@@ -333,21 +333,39 @@ export function useExcelSheet(params: UseExcelSheetParams) {
    * Undo last change
    */
   const undo = useCallback(async () => {
+    console.log('[useExcelSheet] Undo called', { 
+      tabId, 
+      canUndo: undoRedo.canUndo,
+      historySize: undoRedo.historySize,
+      currentIndex: undoRedo.currentIndex,
+    });
     const changes = undoRedo.undo();
     if (changes) {
+      console.log('[useExcelSheet] Applying undo changes', { changeCount: changes.length });
       await applyChanges(changes);
+    } else {
+      console.log('[useExcelSheet] No changes to undo');
     }
-  }, [undoRedo, applyChanges]);
+  }, [undoRedo, applyChanges, tabId]);
   
   /**
    * Redo previously undone change
    */
   const redo = useCallback(async () => {
+    console.log('[useExcelSheet] Redo called', { 
+      tabId, 
+      canRedo: undoRedo.canRedo,
+      historySize: undoRedo.historySize,
+      currentIndex: undoRedo.currentIndex,
+    });
     const changes = undoRedo.redo();
     if (changes) {
+      console.log('[useExcelSheet] Applying redo changes', { changeCount: changes.length });
       await applyChanges(changes);
+    } else {
+      console.log('[useExcelSheet] No changes to redo');
     }
-  }, [undoRedo, applyChanges]);
+  }, [undoRedo, applyChanges, tabId]);
   
   /**
    * Clear undo/redo history

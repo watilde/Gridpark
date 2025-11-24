@@ -122,7 +122,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     if (onUndo) {
       onUndo();
     } else {
-      console.log('[WorkspacePage] Executing undo');
+      console.log('[WorkspacePage] Executing undo', {
+        activeTabId: activeTab?.id,
+        activeTabKind: activeTab?.kind,
+        hasEditorPanelRef: !!editorPanelRef.current,
+      });
       editorPanelRef.current?.undo();
       // Update undo/redo state after operation
       setTimeout(() => {
@@ -130,13 +134,17 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         setCanRedo(editorPanelRef.current?.canRedo() ?? false);
       }, 0);
     }
-  }, [onUndo]);
+  }, [onUndo, activeTab]);
   
   const handleRedo = useCallback(() => {
     if (onRedo) {
       onRedo();
     } else {
-      console.log('[WorkspacePage] Executing redo');
+      console.log('[WorkspacePage] Executing redo', {
+        activeTabId: activeTab?.id,
+        activeTabKind: activeTab?.kind,
+        hasEditorPanelRef: !!editorPanelRef.current,
+      });
       editorPanelRef.current?.redo();
       // Update undo/redo state after operation
       setTimeout(() => {
@@ -144,7 +152,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         setCanRedo(editorPanelRef.current?.canRedo() ?? false);
       }, 0);
     }
-  }, [onRedo]);
+  }, [onRedo, activeTab]);
   
   const handleCellSelect = useCallback((pos: any) => {
     // TODO: Implement cell selection handling
@@ -232,8 +240,17 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   useEffect(() => {
     // Update undo/redo state when active tab changes
     const updateUndoRedoState = () => {
-      setCanUndo(editorPanelRef.current?.canUndo() ?? false);
-      setCanRedo(editorPanelRef.current?.canRedo() ?? false);
+      const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
+      const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
+      console.log('[WorkspacePage] Updating undo/redo state', {
+        activeTabId: activeTab?.id,
+        activeTabKind: activeTab?.kind,
+        canUndo: newCanUndo,
+        canRedo: newCanRedo,
+        hasEditorPanelRef: !!editorPanelRef.current,
+      });
+      setCanUndo(newCanUndo);
+      setCanRedo(newCanRedo);
     };
     
     updateUndoRedoState();
