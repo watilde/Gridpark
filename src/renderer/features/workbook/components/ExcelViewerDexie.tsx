@@ -65,13 +65,17 @@ export const ExcelViewerDexie: React.FC<ExcelViewerDexieProps> = ({
   
   const sheet = file?.sheets?.[sheetIndex];
   
+  // PERFORMANCE FIX: Reduce initial array size to prevent memory issues
+  // - Old: 1000×100 = 100,000 cells (caused DataCloneError in React DevTools)
+  // - New: 100×26 = 2,600 cells (reasonable default)
+  // - ExcelViewer will dynamically expand as user scrolls/edits
   const excelSheet = useExcelSheet({
     tabId,
     workbookId: file?.path || 'unknown',
     sheetName: sheet?.name || 'Sheet1',
     sheetIndex,
-    minRows: 1000,
-    minCols: 100,
+    minRows: 100,   // Reduced from 1000 (10x smaller)
+    minCols: 26,    // Reduced from 100 (A-Z columns)
   });
   
   const {

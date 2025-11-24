@@ -38,7 +38,7 @@ export interface UseExcelSheetParams {
   sheetName: string;       // Sheet name
   sheetIndex: number;      // Sheet position in workbook
   minRows?: number;        // Minimum rows to render (default: 100)
-  minCols?: number;        // Minimum columns to render (default: 100)
+  minCols?: number;        // Minimum columns to render (default: 26 = A-Z)
 }
 
 export interface CellUpdate {
@@ -65,8 +65,8 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     workbookId, 
     sheetName, 
     sheetIndex,
-    minRows = 100,
-    minCols = 100,
+    minRows = 100,   // Default: 100 rows (reasonable for most sheets)
+    minCols = 26,    // Default: 26 cols (A-Z, standard Excel columns)
   } = params;
   
   const dispatch = useAppDispatch();
