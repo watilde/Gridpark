@@ -280,12 +280,55 @@ export function useExcelSheet(params: UseExcelSheetParams) {
    * Converts 2D array to sparse matrix and saves to DB
    */
   const save2DArray = useCallback(async (data: any[][]) => {
+    // Calculate changes for history
+    const changes: CellChange[] = [];
+    
+    for (let row = 0; row < data.length; row++) {
+      for (let col = 0; col < data[row].length; col++) {
+        const newCell = data[row][col];
+        const oldCell = getCell(row, col);
+        
+        const oldData = oldCell ? {
+          value: oldCell.value,
+          type: oldCell.type,
+          formula: oldCell.formula,
+          style: oldCell.style,
+        } : { value: null, type: 'empty' };
+        
+        const newData = {
+          value: newCell?.value ?? null,
+          type: newCell?.type ?? 'empty',
+          formula: newCell?.formula,
+          style: newCell?.style,
+        };
+        
+        // Only record if cell actually changed
+        if (JSON.stringify(oldData) !== JSON.stringify(newData)) {
+          changes.push({
+            row,
+            col,
+            before: oldData,
+            after: newData,
+          });
+        }
+      }
+    }
+    
+    // Record history if there are changes
+    if (changes.length > 0) {
+      console.log('[useExcelSheet] Recording history for save2DArray', {
+        tabId,
+        changeCount: changes.length,
+      });
+      undoRedo.pushHistory(changes);
+    }
+    
     await db.save2DArrayAsCells(tabId, data);
     
     // Mark as dirty after initial save (user hasn't persisted to file yet)
     await db.markSheetDirty(tabId, true);
     dispatch(markDirty(tabId));
-  }, [tabId, dispatch]);
+  }, [tabId, dispatch, getCell, undoRedo]);
   
   /**
    * Load 2D array from DB (for compatibility with existing code)
