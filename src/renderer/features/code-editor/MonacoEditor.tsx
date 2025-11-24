@@ -11,12 +11,10 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 // Configure Monaco Editor to use local workers instead of CDN
 // Only load essential languages: JavaScript, TypeScript, JSON, CSS, HTML
-let monacoConfigured = false;
 
-const configureMonaco = () => {
-  if (monacoConfigured || typeof window === 'undefined') return;
-  
-  // @ts-expect-error - Monaco worker environment
+// Configure Monaco workers BEFORE anything else loads
+if (typeof window !== 'undefined') {
+  // @ts-expect-error - Monaco worker environment  
   self.MonacoEnvironment = {
     getWorker(_: unknown, label: string) {
       if (label === 'json') {
@@ -34,6 +32,26 @@ const configureMonaco = () => {
       return new editorWorker();
     },
   };
+}
+
+// Prevent @monaco-editor/react from using CDN
+loader.config({
+  paths: {
+    vs: 'monaco-editor/esm/vs',
+  },
+});
+
+// Initialize loader to prevent CDN usage
+let monacoConfigured = false;
+
+const configureMonaco = async () => {
+  if (monacoConfigured) return;
+  
+  // Import monaco-editor to bundle it locally
+  const monaco = await import('monaco-editor');
+  
+  // Configure loader with the imported monaco instance
+  loader.config({ monaco: monaco.default || monaco });
   
   monacoConfigured = true;
 };

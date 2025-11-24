@@ -41,9 +41,5 @@ export default defineConfig({
     include: [
       'monaco-editor/esm/vs/editor/editor.api',
     ],
-    exclude: [
-      // Exclude all language contributions except essential ones
-      'monaco-editor/esm/vs/basic-languages/!(javascript|typescript|css|html)/**',
-    ],
   },
 });
