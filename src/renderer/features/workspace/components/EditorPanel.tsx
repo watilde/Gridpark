@@ -150,19 +150,24 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   }
 
   if (activeTab.kind === "code") {
+    const isDirty = activeCodeSession
+      ? activeCodeSession.content !== activeCodeSession.originalContent
+      : false;
+    
     return (
       <CodeEditorPanel
         codeFile={activeTab.codeFile}
         content={activeCodeSession?.content ?? ""}
         loading={activeCodeSession ? activeCodeSession.loading : true}
         saving={activeCodeSession ? activeCodeSession.saving : false}
-        isDirty={
-          activeCodeSession
-            ? activeCodeSession.content !== activeCodeSession.originalContent
-            : false
-        }
+        isDirty={isDirty}
         error={activeCodeSession?.error}
-        onChange={(value) => onCodeChange(activeTab.codeFile, value)}
+        onChange={(value) => {
+          onCodeChange(activeTab.codeFile, value);
+          // Mark tab as dirty when code changes (similar to sheet's onDirtyChange)
+          const willBeDirty = value !== activeCodeSession?.originalContent;
+          onDirtyChange(willBeDirty);
+        }}
         onSave={() => onSaveCode(activeTab.codeFile)}
         onCloseTab={() => onCloseCodeTab(activeTab.id)}
       />
