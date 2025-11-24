@@ -53,7 +53,41 @@ interface ErrorMessage {
   error: string;
 }
 
-type WorkerResponse = ResultMessage | BatchResultMessage | ErrorMessage | { type: 'READY' };
+interface LoadSheetMessage {
+  type: 'LOAD_SHEET';
+  id: string;
+  tabId: string;
+}
+
+interface LoadSheetResponseMessage {
+  type: 'SHEET_LOADED';
+  id: string;
+  tabId: string;
+  sheetId: number;
+}
+
+interface GetDependenciesMessage {
+  type: 'GET_DEPENDENCIES';
+  id: string;
+  tabId: string;
+  cellRef: string;
+}
+
+interface DependenciesResponseMessage {
+  type: 'DEPENDENCIES';
+  id: string;
+  cellRef: string;
+  dependencies: string[];
+  dependents: string[];
+}
+
+type WorkerResponse = 
+  | ResultMessage 
+  | BatchResultMessage 
+  | ErrorMessage 
+  | LoadSheetResponseMessage
+  | DependenciesResponseMessage
+  | { type: 'READY' };
 
 interface PendingCalculation {
   resolve: (result: number | string) => void;
@@ -65,6 +99,16 @@ interface PendingBatchCalculation {
   reject: (error: Error) => void;
 }
 
+interface PendingSheetLoad {
+  resolve: (sheetId: number) => void;
+  reject: (error: Error) => void;
+}
+
+interface PendingDependencyRequest {
+  resolve: (data: { dependencies: string[]; dependents: string[] }) => void;
+  reject: (error: Error) => void;
+}
+
 // ============================================================================
 // Hook Implementation
 // ============================================================================
@@ -73,7 +117,10 @@ export function useFormulaWorker(tabId: string) {
   const workerRef = useRef<Worker | null>(null);
   const pendingCalculationsRef = useRef<Map<string, PendingCalculation>>(new Map());
   const pendingBatchCalculationsRef = useRef<Map<string, PendingBatchCalculation>>(new Map());
+  const pendingSheetLoadsRef = useRef<Map<string, PendingSheetLoad>>(new Map());
+  const pendingDependencyRequestsRef = useRef<Map<string, PendingDependencyRequest>>(new Map());
   const [isReady, setIsReady] = useState(false);
+  const [isSheetLoaded, setIsSheetLoaded] = useState(false);
   const [stats, setStats] = useState({
     totalCalculations: 0,
     totalDuration: 0,
@@ -139,6 +186,28 @@ export function useFormulaWorker(tabId: string) {
           averageDuration: (prev.totalDuration + duration) / (prev.totalCalculations + results.length),
         }));
         
+      } else if (message.type === 'SHEET_LOADED') {
+        const { id, tabId: loadedTabId, sheetId } = message;
+        console.log('[useFormulaWorker] Sheet loaded:', { tabId: loadedTabId, sheetId });
+        
+        const pending = pendingSheetLoadsRef.current.get(id);
+        if (pending) {
+          pending.resolve(sheetId);
+          pendingSheetLoadsRef.current.delete(id);
+        }
+        
+        setIsSheetLoaded(true);
+        
+      } else if (message.type === 'DEPENDENCIES') {
+        const { id, cellRef, dependencies, dependents } = message;
+        console.log('[useFormulaWorker] Dependencies:', { cellRef, dependencies, dependents });
+        
+        const pending = pendingDependencyRequestsRef.current.get(id);
+        if (pending) {
+          pending.resolve({ dependencies, dependents });
+          pendingDependencyRequestsRef.current.delete(id);
+        }
+        
       } else if (message.type === 'ERROR') {
         const { id, error } = message;
         console.error('[useFormulaWorker] Error:', error);
@@ -153,6 +222,18 @@ export function useFormulaWorker(tabId: string) {
         if (pendingBatch) {
           pendingBatch.reject(new Error(error));
           pendingBatchCalculationsRef.current.delete(id);
+        }
+        
+        const pendingLoad = pendingSheetLoadsRef.current.get(id);
+        if (pendingLoad) {
+          pendingLoad.reject(new Error(error));
+          pendingSheetLoadsRef.current.delete(id);
+        }
+        
+        const pendingDep = pendingDependencyRequestsRef.current.get(id);
+        if (pendingDep) {
+          pendingDep.reject(new Error(error));
+          pendingDependencyRequestsRef.current.delete(id);
         }
       }
     };
@@ -247,35 +328,126 @@ export function useFormulaWorker(tabId: string) {
   );
   
   // ============================================================================
+  // Load Sheet into HyperFormula (Phase 3)
+  // ============================================================================
+  
+  const loadSheet = useCallback((): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current || !isReady) {
+        reject(new Error('Worker not ready'));
+        return;
+      }
+      
+      const id = `load-${tabId}-${Date.now()}`;
+      
+      // Store pending request
+      pendingSheetLoadsRef.current.set(id, { resolve, reject });
+      
+      // Send message to worker
+      const message: LoadSheetMessage = {
+        type: 'LOAD_SHEET',
+        id,
+        tabId,
+      };
+      
+      workerRef.current.postMessage(message);
+      
+      // Timeout after 30 seconds
+      setTimeout(() => {
+        if (pendingSheetLoadsRef.current.has(id)) {
+          pendingSheetLoadsRef.current.delete(id);
+          reject(new Error('Sheet load timeout'));
+        }
+      }, 30000);
+    });
+  }, [tabId, isReady]);
+  
+  // ============================================================================
+  // Get Cell Dependencies (Phase 3)
+  // ============================================================================
+  
+  const getDependencies = useCallback((cellRef: string): Promise<{ dependencies: string[]; dependents: string[] }> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current || !isReady) {
+        reject(new Error('Worker not ready'));
+        return;
+      }
+      
+      const id = `deps-${cellRef}-${Date.now()}`;
+      
+      // Store pending request
+      pendingDependencyRequestsRef.current.set(id, { resolve, reject });
+      
+      // Send message to worker
+      const message: GetDependenciesMessage = {
+        type: 'GET_DEPENDENCIES',
+        id,
+        tabId,
+        cellRef,
+      };
+      
+      workerRef.current.postMessage(message);
+      
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        if (pendingDependencyRequestsRef.current.has(id)) {
+          pendingDependencyRequestsRef.current.delete(id);
+          reject(new Error('Dependency request timeout'));
+        }
+      }, 10000);
+    });
+  }, [tabId, isReady]);
+  
+  // ============================================================================
   // Return API
   // ============================================================================
   
   return {
+    // Core calculation API (Phase 2)
     calculate,
     calculateBatch,
+    
+    // Advanced features (Phase 3)
+    loadSheet,
+    getDependencies,
+    
+    // Status
     isReady,
+    isSheetLoaded,
     stats,
   };
 }
 
 /**
- * Example usage:
+ * Example usage (Phase 3 - HyperFormula):
  * 
- * const { calculate, calculateBatch, isReady, stats } = useFormulaWorker(tabId);
+ * const { calculate, calculateBatch, loadSheet, getDependencies, isReady, stats } = useFormulaWorker(tabId);
  * 
- * // Single calculation
+ * // Load sheet into HyperFormula (optional - auto-loads on first calculation)
+ * await loadSheet();
+ * 
+ * // Single calculation - Now supports 400+ Excel functions!
  * const sum = await calculate('=SUM(A1:A100)', 'B1');
- * console.log(sum); // 4500
+ * const vlookup = await calculate('=VLOOKUP(A1, B1:D10, 3, FALSE)', 'E1');
+ * const ifResult = await calculate('=IF(A1>10, "High", "Low")', 'F1');
+ * const sumif = await calculate('=SUMIF(A1:A10, ">5", B1:B10)', 'G1');
  * 
  * // Batch calculation (multiple formulas at once)
  * const results = await calculateBatch([
  *   { cellRef: 'B1', formula: '=SUM(A1:A100)' },
  *   { cellRef: 'B2', formula: '=AVERAGE(A1:A100)' },
- *   { cellRef: 'B3', formula: '=MAX(A1:A100)' },
+ *   { cellRef: 'B3', formula: '=VLOOKUP(A1, C1:E10, 2, FALSE)' },
+ *   { cellRef: 'B4', formula: '=IF(A1>10, "High", "Low")' },
  * ]);
  * console.log(results); // [{ cellRef: 'B1', result: 4500 }, ...]
  * 
+ * // Get dependencies for a cell (what it depends on and what depends on it)
+ * const { dependencies, dependents } = await getDependencies('B1');
+ * console.log('B1 depends on:', dependencies); // ['A1', 'A2', ..., 'A100']
+ * console.log('Cells that depend on B1:', dependents); // ['C1', 'D5', ...]
+ * 
  * // Check worker status
  * console.log('Worker ready:', isReady);
+ * console.log('Sheet loaded:', isSheetLoaded);
  * console.log('Average calculation time:', stats.averageDuration, 'ms');
  */

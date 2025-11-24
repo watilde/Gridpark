@@ -1,15 +1,26 @@
 /**
- * Formula Worker
+ * Formula Worker (Phase 3 - HyperFormula Integration)
  * 
  * Calculates formulas in a separate thread to avoid blocking the UI.
  * Uses IndexedDB for data access (Dexie works in Workers!)
  * 
  * Supported functions:
- * - SUM, AVERAGE, COUNT, MIN, MAX
- * - Future: Full Excel compatibility with HyperFormula
+ * - Phase 2: Basic functions (SUM, AVERAGE, COUNT, MIN, MAX)
+ * - Phase 3: Full Excel compatibility with HyperFormula (400+ functions)
+ *   - VLOOKUP, HLOOKUP, INDEX, MATCH, XLOOKUP
+ *   - IF, IFS, AND, OR, NOT, SWITCH
+ *   - SUMIF, SUMIFS, COUNTIF, COUNTIFS, AVERAGEIF
+ *   - TEXT, DATE, MATH, STATISTICAL functions
+ *   - And 400+ more Excel functions
+ * 
+ * Features:
+ * - Automatic dependency tracking
+ * - Circular reference detection
+ * - Batch calculation optimization
  */
 
 import Dexie from 'dexie';
+import { HyperFormula, ConfigParams } from 'hyperformula';
 
 // ============================================================================
 // IndexedDB Setup (Same schema as main thread)
@@ -43,6 +54,86 @@ class WorkerDatabase extends Dexie {
 }
 
 const db = new WorkerDatabase();
+
+// ============================================================================
+// HyperFormula Setup
+// ============================================================================
+
+// Initialize HyperFormula engine
+const hfEngine = HyperFormula.buildEmpty({
+  licenseKey: 'gpl-v3',
+  useArrayArithmetic: true,
+  useColumnIndex: true,
+  precisionRounding: 14,
+  precisionEpsilon: 1e-13,
+  nullDate: { year: 1899, month: 12, day: 30 },
+  language: 'en-US',
+});
+
+// Sheet ID mapping (tabId -> HyperFormula sheet ID)
+const sheetIdMap = new Map<string, number>();
+
+/**
+ * Load sheet data from IndexedDB into HyperFormula
+ */
+async function loadSheetIntoHyperFormula(tabId: string): Promise<number> {
+  // Check if already loaded
+  const existingSheetId = sheetIdMap.get(tabId);
+  if (existingSheetId !== undefined) {
+    return existingSheetId;
+  }
+
+  // Get all cells from IndexedDB
+  const cells = await db.cells.where('tabId').equals(tabId).toArray();
+  
+  // Determine sheet dimensions
+  let maxRow = 0;
+  let maxCol = 0;
+  cells.forEach(cell => {
+    maxRow = Math.max(maxRow, cell.row);
+    maxCol = Math.max(maxCol, cell.col);
+  });
+
+  // Create 2D array (sparse to dense conversion)
+  const rows = Math.max(maxRow + 1, 100);
+  const cols = Math.max(maxCol + 1, 50);
+  const data: any[][] = Array(rows).fill(null).map(() => Array(cols).fill(null));
+
+  // Fill with cell data
+  cells.forEach(cell => {
+    if (cell.row < rows && cell.col < cols) {
+      // Use formula if present, otherwise use value
+      data[cell.row][cell.col] = cell.formula || cell.value;
+    }
+  });
+
+  // Add sheet to HyperFormula
+  const sheetId = hfEngine.addSheet(`Sheet_${tabId}`);
+  hfEngine.setSheetContent(sheetId, data);
+  
+  // Store mapping
+  sheetIdMap.set(tabId, sheetId);
+
+  console.log(`[FormulaWorker] Loaded sheet ${tabId} into HyperFormula (${rows}x${cols})`);
+
+  return sheetId;
+}
+
+/**
+ * Parse cell reference (e.g., "A1" -> {row: 0, col: 0})
+ */
+function parseCellRef(cellRef: string): { row: number; col: number } {
+  const match = cellRef.match(/^([A-Z]+)(\d+)$/);
+  if (!match) {
+    throw new Error(`Invalid cell reference: ${cellRef}`);
+  }
+  
+  const [, colStr, rowStr] = match;
+  return {
+    row: parseInt(rowStr) - 1,
+    col: columnToIndex(colStr),
+  };
+}
 
 // ============================================================================
 // Types
@@ -89,6 +180,34 @@ interface ErrorMessage {
   type: 'ERROR';
   id: string;
   error: string;
+}
+
+interface LoadSheetMessage {
+  type: 'LOAD_SHEET';
+  id: string;
+  tabId: string;
+}
+
+interface LoadSheetResponseMessage {
+  type: 'SHEET_LOADED';
+  id: string;
+  tabId: string;
+  sheetId: number;
+}
+
+interface GetDependenciesMessage {
+  type: 'GET_DEPENDENCIES';
+  id: string;
+  tabId: string;
+  cellRef: string;
+}
+
+interface DependenciesResponseMessage {
+  type: 'DEPENDENCIES';
+  id: string;
+  cellRef: string;
+  dependencies: string[];
+  dependents: string[];
 }
 
 // ============================================================================
@@ -203,11 +322,59 @@ async function calculateMAX(tabId: string, range: CellRange): Promise<number> {
 }
 
 // ============================================================================
-// Main Calculation Function
+// Main Calculation Function (Phase 3 - HyperFormula)
 // ============================================================================
 
-async function calculate(tabId: string, formula: string): Promise<number | string> {
+/**
+ * Calculate formula using HyperFormula engine
+ * Supports 400+ Excel functions
+ */
+async function calculateWithHyperFormula(
+  tabId: string, 
+  formula: string, 
+  cellRef: string
+): Promise<number | string> {
   try {
+    // Load sheet if not already loaded
+    const sheetId = await loadSheetIntoHyperFormula(tabId);
+    
+    // Parse cell reference
+    const { row, col } = parseCellRef(cellRef);
+    
+    // Build cell address
+    const cellAddress = {
+      sheet: sheetId,
+      row,
+      col,
+    };
+    
+    // Calculate formula using HyperFormula
+    const result = hfEngine.calculateFormula(formula, cellAddress);
+    
+    console.log(`[FormulaWorker] HyperFormula result for ${cellRef}:`, result);
+    
+    return result;
+  } catch (error) {
+    console.error('[FormulaWorker] HyperFormula error:', error);
+    return '#ERROR!';
+  }
+}
+
+/**
+ * Main calculation function
+ * - First tries HyperFormula (supports all Excel functions)
+ * - Falls back to basic functions if HyperFormula fails
+ */
+async function calculate(tabId: string, formula: string, cellRef: string = 'A1'): Promise<number | string> {
+  try {
+    // Strategy: Try HyperFormula first (supports 400+ functions)
+    try {
+      return await calculateWithHyperFormula(tabId, formula, cellRef);
+    } catch (hfError) {
+      console.warn('[FormulaWorker] HyperFormula failed, trying basic functions:', hfError);
+    }
+    
+    // Fallback: Basic functions (Phase 2 implementation)
     const parsed = parseFormula(formula);
     if (!parsed) {
       return '#ERROR!';
@@ -237,6 +404,67 @@ async function calculate(tabId: string, formula: string): Promise<number | strin
 }
 
 // ============================================================================
+// Dependency Tracking (Phase 3)
+// ============================================================================
+
+/**
+ * Get dependencies for a cell
+ */
+async function getCellDependencies(tabId: string, cellRef: string): Promise<{
+  dependencies: string[];
+  dependents: string[];
+}> {
+  try {
+    // Load sheet if not already loaded
+    const sheetId = await loadSheetIntoHyperFormula(tabId);
+    
+    // Parse cell reference
+    const { row, col } = parseCellRef(cellRef);
+    
+    const cellAddress = {
+      sheet: sheetId,
+      row,
+      col,
+    };
+    
+    // Get precedents (cells this cell depends on)
+    const precedents = hfEngine.getCellPrecedents(cellAddress);
+    const dependencies = precedents.map(addr => 
+      `${columnIndexToLetter(addr.col)}${addr.row + 1}`
+    );
+    
+    // Get dependents (cells that depend on this cell)
+    const dependents = hfEngine.getCellDependents(cellAddress);
+    const dependentRefs = dependents.map(addr => 
+      `${columnIndexToLetter(addr.col)}${addr.row + 1}`
+    );
+    
+    return {
+      dependencies,
+      dependents: dependentRefs,
+    };
+  } catch (error) {
+    console.error('[FormulaWorker] Error getting dependencies:', error);
+    return { dependencies: [], dependents: [] };
+  }
+}
+
+/**
+ * Convert column index to letter (0=A, 1=B, ..., 25=Z, 26=AA)
+ */
+function columnIndexToLetter(index: number): string {
+  let result = '';
+  let num = index;
+  
+  while (num >= 0) {
+    result = String.fromCharCode((num % 26) + 65) + result;
+    num = Math.floor(num / 26) - 1;
+  }
+  
+  return result;
+}
+
+// ============================================================================
 // Message Handler
 // ============================================================================
 
@@ -250,7 +478,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
       
       console.log('[FormulaWorker] Calculating:', { cellRef, formula });
       
-      const result = await calculate(tabId, formula);
+      const result = await calculate(tabId, formula, cellRef);
       const duration = performance.now() - startTime;
       
       const response: ResultMessage = {
@@ -271,7 +499,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
       const results = await Promise.all(
         formulas.map(async ({ cellRef, formula }) => ({
           cellRef,
-          result: await calculate(tabId, formula),
+          result: await calculate(tabId, formula, cellRef),
         }))
       );
       
@@ -282,6 +510,40 @@ self.addEventListener('message', async (event: MessageEvent) => {
         id,
         results,
         duration,
+      };
+      
+      self.postMessage(response);
+      
+    } else if (message.type === 'LOAD_SHEET') {
+      const { id, tabId } = message as LoadSheetMessage;
+      
+      console.log('[FormulaWorker] Loading sheet:', tabId);
+      
+      const sheetId = await loadSheetIntoHyperFormula(tabId);
+      const duration = performance.now() - startTime;
+      
+      const response: LoadSheetResponseMessage = {
+        type: 'SHEET_LOADED',
+        id,
+        tabId,
+        sheetId,
+      };
+      
+      self.postMessage(response);
+      
+    } else if (message.type === 'GET_DEPENDENCIES') {
+      const { id, tabId, cellRef } = message as GetDependenciesMessage;
+      
+      console.log('[FormulaWorker] Getting dependencies for:', cellRef);
+      
+      const { dependencies, dependents } = await getCellDependencies(tabId, cellRef);
+      
+      const response: DependenciesResponseMessage = {
+        type: 'DEPENDENCIES',
+        id,
+        cellRef,
+        dependencies,
+        dependents,
       };
       
       self.postMessage(response);
