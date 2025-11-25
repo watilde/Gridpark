@@ -26,7 +26,7 @@ import { useManifestHandlers } from '../../../renderer/hooks/useManifestHandlers
 import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
 import { useSaveManager } from './useSaveManager';
 import { useAutoSave } from './useAutoSave';
-import { cloneManifest } from '../../../renderer/utils/sessionHelpers';
+import { cloneManifest, createDefaultManifest } from '../../../renderer/utils/sessionHelpers';
 import type { ExcelFile, GridparkCodeFile } from '../../../renderer/types/excel';
 import type {
   SearchNavigationCommand,
@@ -264,9 +264,9 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
       activeManifestSession?.data ??
       (activeTab.file.manifest
         ? cloneManifest(activeTab.file.manifest)
-        : createDefaultManifest(activeTab.file))
+        : createDefaultManifest(activeTab.file.name))
     );
-  }, [activeTab, activeManifestSession, createDefaultManifest]);
+  }, [activeTab, activeManifestSession]);
 
   const manifestIsDirty = useMemo(
     () => (activeManifestKey ? Boolean(manifestDirtyMap[activeManifestKey]) : false),
