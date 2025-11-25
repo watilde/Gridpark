@@ -28,7 +28,7 @@ export const themePresets: Record<ThemePresetId, ThemePreset> = {
 
 export const themePresetList = Object.values(themePresets);
 
-export const themeOptions = themePresetList.map((preset) => ({
+export const themeOptions = themePresetList.map(preset => ({
   id: preset.id,
   name: preset.name,
   description: preset.description,

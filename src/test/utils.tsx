@@ -4,16 +4,9 @@ import { CssVarsProvider } from '@mui/joy/styles';
 import { theme } from '../renderer/theme/theme';
 
 // Custom render function that includes Joy UI theme provider
-const customRender = (
-  ui: React.ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => {
+const customRender = (ui: React.ReactElement, options?: Omit<RenderOptions, 'wrapper'>) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
-    return (
-      <CssVarsProvider theme={theme}>
-        {children}
-      </CssVarsProvider>
-    );
+    return <CssVarsProvider theme={theme}>{children}</CssVarsProvider>;
   };
 
   return render(ui, { wrapper: Wrapper, ...options });
@@ -43,7 +36,7 @@ export const createMockAction = (id: string, overrides = {}) => ({
 });
 
 export const waitForElementToBeRemoved = async (element: HTMLElement) => {
-  return new Promise<void>((resolve) => {
+  return new Promise<void>(resolve => {
     const observer = new MutationObserver(() => {
       if (!document.contains(element)) {
         observer.disconnect();

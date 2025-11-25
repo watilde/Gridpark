@@ -1,6 +1,6 @@
 /**
  * Platform Detection Utilities
- * 
+ *
  * Provides helpers to detect if the app is running in Electron or Web,
  * and conditionally access platform-specific features.
  */
@@ -10,16 +10,13 @@
  */
 export const isElectron = (): boolean => {
   // Check multiple indicators for Electron
-  const hasProcessElectron =
-    typeof process !== "undefined" && (process as any).versions?.electron;
+  const hasProcessElectron = typeof process !== 'undefined' && (process as any).versions?.electron;
   return !!(
-    typeof window !== "undefined" &&
-    (
-      (window as any).electron ||
+    typeof window !== 'undefined' &&
+    ((window as any).electron ||
       (window as any).__IS_ELECTRON__ ||
       hasProcessElectron ||
-      navigator.userAgent.toLowerCase().indexOf("electron") > -1
-    )
+      navigator.userAgent.toLowerCase().indexOf('electron') > -1)
   );
 };
 
@@ -36,32 +33,32 @@ export const isWeb = (): boolean => {
 export const getPlatformCapabilities = () => {
   const electron = isElectron();
   const web = isWeb();
-  
+
   return {
     // File system access
     canAccessFileSystem: electron || 'showOpenFilePicker' in window,
-    
+
     // Native menus
     hasNativeMenus: electron,
-    
+
     // Window management
     canManageWindows: electron,
-    
+
     // System integration
     hasSystemIntegration: electron,
-    
+
     // Offline capability
     canWorkOffline: electron || 'serviceWorker' in navigator,
-    
+
     // Auto-updates
     canAutoUpdate: electron,
-    
+
     // Native notifications
     hasNativeNotifications: 'Notification' in window,
-    
+
     // Clipboard access
     canAccessClipboard: 'navigator' in window && 'clipboard' in navigator,
-    
+
     // Platform type
     platform: electron ? 'electron' : 'web',
   };
@@ -74,7 +71,7 @@ export const getElectronAPI = () => {
   if (!isElectron()) {
     return null;
   }
-  
+
   return (window as any).electron || {};
 };
 
@@ -94,24 +91,31 @@ export const whenWeb = <T>(callback: () => T): T | null => {
  */
 export const getFileOperations = () => {
   const electronAPI = getElectronAPI();
-  
+
   return {
     async openFile(options?: { extensions?: string[] }) {
       if (isElectron() && electronAPI?.fs) {
         return electronAPI.fs.readFile();
       }
-      
+
       // Web File System Access API fallback
       if ('showOpenFilePicker' in window) {
         try {
           const [fileHandle] = await (window as any).showOpenFilePicker({
-            types: options?.extensions ? [{
-              description: 'Files',
-              accept: options.extensions.reduce((acc, ext) => {
-                acc[`application/${ext}`] = [`.${ext}`];
-                return acc;
-              }, {} as Record<string, string[]>)
-            }] : undefined
+            types: options?.extensions
+              ? [
+                  {
+                    description: 'Files',
+                    accept: options.extensions.reduce(
+                      (acc, ext) => {
+                        acc[`application/${ext}`] = [`.${ext}`];
+                        return acc;
+                      },
+                      {} as Record<string, string[]>
+                    ),
+                  },
+                ]
+              : undefined,
           });
           return await fileHandle.getFile();
         } catch (error) {
@@ -119,32 +123,32 @@ export const getFileOperations = () => {
           return null;
         }
       }
-      
+
       // Legacy file input fallback
-      return new Promise<File | null>((resolve) => {
+      return new Promise<File | null>(resolve => {
         const input = document.createElement('input');
         input.type = 'file';
         if (options?.extensions) {
           input.accept = options.extensions.map(ext => `.${ext}`).join(',');
         }
-        input.onchange = (e) => {
+        input.onchange = e => {
           const file = (e.target as HTMLInputElement).files?.[0];
           resolve(file || null);
         };
         input.click();
       });
     },
-    
+
     async saveFile(content: string, filename?: string) {
       if (isElectron() && electronAPI?.fs) {
         return electronAPI.fs.writeFile(filename || 'untitled.xlsx', content);
       }
-      
+
       // Web File System Access API
       if ('showSaveFilePicker' in window) {
         try {
           const fileHandle = await (window as any).showSaveFilePicker({
-            suggestedName: filename || 'untitled.xlsx'
+            suggestedName: filename || 'untitled.xlsx',
           });
           const writable = await fileHandle.createWritable();
           await writable.write(content);
@@ -155,7 +159,7 @@ export const getFileOperations = () => {
           return false;
         }
       }
-      
+
       // Download fallback
       const blob = new Blob([content], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
@@ -165,6 +169,6 @@ export const getFileOperations = () => {
       a.click();
       URL.revokeObjectURL(url);
       return true;
-    }
+    },
   };
 };

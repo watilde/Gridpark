@@ -25,7 +25,7 @@ Supports interactive states, actions, and follows developer-first design princip
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    Story => (
       <div style={{ minWidth: '300px' }}>
         <Story />
       </div>
@@ -40,8 +40,8 @@ export const Default: Story = {
   args: {
     children: (
       <Typography>
-        This is a basic card with default styling. Perfect for organizing content 
-        into focused, scannable sections.
+        This is a basic card with default styling. Perfect for organizing content into focused,
+        scannable sections.
       </Typography>
     ),
   },
@@ -52,8 +52,8 @@ export const WithTitle: Story = {
     title: 'Function Library',
     children: (
       <Typography>
-        A collection of custom functions for data analysis and calculations.
-        Import or create your own functions to extend spreadsheet capabilities.
+        A collection of custom functions for data analysis and calculations. Import or create your
+        own functions to extend spreadsheet capabilities.
       </Typography>
     ),
   },
@@ -65,8 +65,8 @@ export const WithTitleAndSubtitle: Story = {
     subtitle: 'Compatible with Excel JavaScript API',
     children: (
       <Typography>
-        Use familiar Excel programming patterns with our compatible API.
-        Your existing knowledge transfers directly to Gridpark development.
+        Use familiar Excel programming patterns with our compatible API. Your existing knowledge
+        transfers directly to Gridpark development.
       </Typography>
     ),
   },
@@ -78,14 +78,18 @@ export const WithActions: Story = {
     subtitle: 'CALCULATE_ROI.js',
     children: (
       <Typography>
-        Calculates return on investment based on revenue, cost, and time period.
-        Supports multiple calculation methods and date ranges.
+        Calculates return on investment based on revenue, cost, and time period. Supports multiple
+        calculation methods and date ranges.
       </Typography>
     ),
     actions: (
       <>
-        <Button variant="soft" size="sm">Edit</Button>
-        <Button variant="solid" size="sm">Execute</Button>
+        <Button variant="soft" size="sm">
+          Edit
+        </Button>
+        <Button variant="solid" size="sm">
+          Execute
+        </Button>
       </>
     ),
   },
@@ -98,8 +102,8 @@ export const Interactive: Story = {
     interactive: true,
     children: (
       <Typography>
-        Connect to external APIs, databases, or file sources. 
-        Hover and click to see interactive feedback.
+        Connect to external APIs, databases, or file sources. Hover and click to see interactive
+        feedback.
       </Typography>
     ),
   },
@@ -126,52 +130,68 @@ export const Variants: Story = {
 
 export const DeveloperWorkflow: Story = {
   render: () => (
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: '16px',
-      minWidth: '600px'
-    }}>
-      <Card 
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '16px',
+        minWidth: '600px',
+      }}
+    >
+      <Card
         title="Spreadsheet Grid"
         subtitle="Excel-compatible interface"
         interactive={true}
-        actions={<Button size="sm" startIcon={<TableChart />}>Open</Button>}
+        actions={
+          <Button size="sm" startIcon={<TableChart />}>
+            Open
+          </Button>
+        }
       >
         <Typography>
           26-column × 1000-row grid with familiar Excel navigation and cell editing.
         </Typography>
       </Card>
 
-      <Card 
+      <Card
         title="Formula Editor"
         subtitle="Monaco-powered"
         interactive={true}
-        actions={<Button size="sm" startIcon={<Code />}>Edit</Button>}
+        actions={
+          <Button size="sm" startIcon={<Code />}>
+            Edit
+          </Button>
+        }
       >
         <Typography>
           VS Code-like editor for custom functions with syntax highlighting and autocomplete.
         </Typography>
       </Card>
 
-      <Card 
+      <Card
         title="Function Library"
         subtitle="Built-in + Custom"
-        actions={<Button size="sm" startIcon={<Functions />}>Browse</Button>}
+        actions={
+          <Button size="sm" startIcon={<Functions />}>
+            Browse
+          </Button>
+        }
       >
         <Typography>
           Excel functions plus your custom JavaScript functions in a unified library.
         </Typography>
       </Card>
 
-      <Card 
+      <Card
         title="Performance Monitor"
         subtitle="Real-time metrics"
-        actions={<Button size="sm" startIcon={<Speed />}>Monitor</Button>}
+        actions={
+          <Button size="sm" startIcon={<Speed />}>
+            Monitor
+          </Button>
+        }
       >
-        <Typography>
-          Track calculation performance and function execution times.
-        </Typography>
+        <Typography>Track calculation performance and function execution times.</Typography>
       </Card>
     </div>
   ),
@@ -186,39 +206,51 @@ export const DeveloperWorkflow: Story = {
 
 export const FeatureCards: Story = {
   render: () => (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: '12px',
-      minWidth: '400px'
-    }}>
-      <Card 
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        minWidth: '400px',
+      }}
+    >
+      <Card
         title="🚀 Excel JavaScript API"
         subtitle="v1.0.0 - Ready"
         variant="soft"
-        actions={<Button color="success" size="sm">Available</Button>}
+        actions={
+          <Button color="success" size="sm">
+            Available
+          </Button>
+        }
       >
         <Typography>
           Core Excel.run() pattern with Workbook, Worksheet, and Range objects.
         </Typography>
       </Card>
 
-      <Card 
+      <Card
         title="⚡ Custom Functions"
         subtitle="v2.0.0 - In Progress"
         variant="outlined"
-        actions={<Button color="primary" size="sm" loading>Building</Button>}
+        actions={
+          <Button color="primary" size="sm" loading>
+            Building
+          </Button>
+        }
       >
-        <Typography>
-          Excel Custom Functions API with @customfunction annotations.
-        </Typography>
+        <Typography>Excel Custom Functions API with @customfunction annotations.</Typography>
       </Card>
 
-      <Card 
+      <Card
         title="🔧 Hot Reload"
         subtitle="v3.0.0 - Planned"
         variant="plain"
-        actions={<Button variant="soft" size="sm" disabled>Planned</Button>}
+        actions={
+          <Button variant="soft" size="sm" disabled>
+            Planned
+          </Button>
+        }
       >
         <Typography>
           Instant function updates during development with preservation of sheet state.
@@ -229,7 +261,8 @@ export const FeatureCards: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Feature status cards with playful productivity elements like emojis and status indicators',
+        story:
+          'Feature status cards with playful productivity elements like emojis and status indicators',
       },
     },
   },

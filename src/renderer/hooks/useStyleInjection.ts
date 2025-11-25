@@ -1,7 +1,7 @@
-import { useEffect } from "react";
-import { WorkbookTab } from "../types/tabs";
-import { ManifestSession } from "./useFileSessions";
-import { ExcelFile } from "../types/excel";
+import { useEffect } from 'react';
+import { WorkbookTab } from '../types/tabs';
+import { ManifestSession } from './useFileSessions';
+import { ExcelFile } from '../types/excel';
 
 export interface StyleInjectionParams {
   activeTab: WorkbookTab | null;

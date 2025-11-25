@@ -19,7 +19,7 @@ const TreeContainer = styled(Box)(({ theme }) => ({
 }));
 
 const TreeItem = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'depth' && prop !== 'selected',
+  shouldForwardProp: prop => prop !== 'depth' && prop !== 'selected',
 })<{ depth: number; selected?: boolean }>(({ theme, depth, selected }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -31,9 +31,7 @@ const TreeItem = styled(Box, {
   color: selected ? theme.palette.primary.plainColor : theme.palette.text.primary,
   transition: 'background-color 0.2s',
   '&:hover': {
-    backgroundColor: selected 
-      ? theme.palette.primary.softBg 
-      : theme.palette.neutral.softHoverBg,
+    backgroundColor: selected ? theme.palette.primary.softBg : theme.palette.neutral.softHoverBg,
   },
 }));
 
@@ -99,7 +97,13 @@ interface TreeNodeProps {
   dirtyNodeIds?: Record<string, boolean>;
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNodeSelect, dirtyNodeIds }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({
+  node,
+  depth,
+  selectedNodeId,
+  onNodeSelect,
+  dirtyNodeIds,
+}) => {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = Boolean(node.children && node.children.length > 0);
   const isSelected = node.id === selectedNodeId;
@@ -121,7 +125,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
           <IconButton
             size="sm"
             variant="plain"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               setExpanded(!expanded);
             }}
@@ -131,19 +135,23 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
           </IconButton>
         )}
         <ItemIcon>
-          {node.type === 'folder'
-            ? expanded
-              ? <FolderOpenIcon fontSize="small" />
-              : <FolderIcon fontSize="small" />
-            : node.type === 'sheet'
-            ? <TableChartIcon fontSize="small" />
-            : node.type === 'manifest'
-            ? <DescriptionIcon fontSize="small" />
-            : node.codeFile?.role === 'main'
-            ? <FlashOnIcon fontSize="small" />
-            : node.codeFile?.role === 'style'
-            ? <PaletteIcon fontSize="small" />
-            : <InsertDriveFileIcon fontSize="small" />}
+          {node.type === 'folder' ? (
+            expanded ? (
+              <FolderOpenIcon fontSize="small" />
+            ) : (
+              <FolderIcon fontSize="small" />
+            )
+          ) : node.type === 'sheet' ? (
+            <TableChartIcon fontSize="small" />
+          ) : node.type === 'manifest' ? (
+            <DescriptionIcon fontSize="small" />
+          ) : node.codeFile?.role === 'main' ? (
+            <FlashOnIcon fontSize="small" />
+          ) : node.codeFile?.role === 'style' ? (
+            <PaletteIcon fontSize="small" />
+          ) : (
+            <InsertDriveFileIcon fontSize="small" />
+          )}
         </ItemIcon>
         <ItemLabel>
           <span>{node.name}</span>
@@ -152,7 +160,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
       </TreeItem>
       {hasChildren && expanded && (
         <Box>
-          {node.children!.map((child) => (
+          {node.children!.map(child => (
             <TreeNode
               key={child.id}
               node={child}
@@ -170,10 +178,17 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedNodeId, onNode
 
 /**
  * FileTree Component
- * 
+ *
  * Displays a hierarchical file tree for Excel files
  */
-export const FileTree: React.FC<FileTreeProps> = ({ files, selectedNodeId, onNodeSelect, title, fullHeight = true, dirtyNodeIds }) => {
+export const FileTree: React.FC<FileTreeProps> = ({
+  files,
+  selectedNodeId,
+  onNodeSelect,
+  title,
+  fullHeight = true,
+  dirtyNodeIds,
+}) => {
   return (
     <Sheet
       variant="plain"
@@ -189,7 +204,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ files, selectedNodeId, onNod
         </Box>
       )}
       <TreeContainer>
-        {files.map((node) => (
+        {files.map(node => (
           <TreeNode
             key={node.id}
             node={node}

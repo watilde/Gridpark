@@ -1,25 +1,25 @@
 /**
  * File Sessions (OPTIMIZED - Direct Dexie + File System)
- * 
+ *
  * NO MORE useState! Data flows:
  * - Sheet data: Dexie.js (use useExcelSheet hook)
  * - Manifest: File system (read/write on demand)
  * - Code: File system (read/write on demand)
- * 
+ *
  * This file provides:
  * - saveWorkbookFile: Writes Dexie data to .xlsx file
  * - Manifest operations: Direct file system access
  * - Code operations: Direct file system access
  */
 
-import { useCallback, useMemo, useState } from "react";
-import { ExcelFile, GridparkManifest, GridparkCodeFile } from "../types/excel";
-import { serializeExcelFile } from "../utils/excelUtils";
+import { useCallback, useMemo, useState } from 'react';
+import { ExcelFile, GridparkManifest, GridparkCodeFile } from '../types/excel';
+import { serializeExcelFile } from '../utils/excelUtils';
 import {
   cloneManifest,
   createDefaultManifest as createDefaultManifestHelper,
-} from "../utils/sessionHelpers";
-import { db } from "../../lib/db";
+} from '../utils/sessionHelpers';
+import { db } from '../../lib/db';
 
 // ============================================================================
 // Manifest Session Type
@@ -51,30 +51,30 @@ const isManifestSessionDirty = (session?: ManifestSession) => {
 export const useSaveWorkbook = () => {
   const saveWorkbookFile = useCallback(async (file: ExcelFile) => {
     if (!file.path) {
-      throw new Error("Cannot save workbook without a file path");
+      throw new Error('Cannot save workbook without a file path');
     }
-    
+
     const gridparkApi = window.electronAPI?.gridpark;
     if (!gridparkApi?.writeBinaryFile) {
-      throw new Error("Binary file saving is only available in the desktop app");
+      throw new Error('Binary file saving is only available in the desktop app');
     }
 
     try {
       console.log(`[useSaveWorkbook] Saving workbook: ${file.path}`);
-      
+
       // Load all sheets from Dexie
       const updatedSheets = await Promise.all(
         file.sheets.map(async (sheet: any, index: number) => {
           // Generate tabId (must match the ID used when opening the file)
           const tabId = `${file.path}-sheet-${index}`;
-          
+
           try {
             // Load 2D array from Dexie
             const data = await db.getCellsAs2DArray(tabId);
-            
+
             // Mark sheet as clean in DB
             await db.markSheetDirty(tabId, false);
-            
+
             return {
               ...sheet,
               data,
@@ -87,9 +87,9 @@ export const useSaveWorkbook = () => {
           }
         })
       );
-      
+
       const updatedFile = { ...file, sheets: updatedSheets };
-      
+
       // Serialize and write
       const buffer = serializeExcelFile(updatedFile);
       await gridparkApi.writeBinaryFile({
@@ -97,10 +97,10 @@ export const useSaveWorkbook = () => {
         rootDir: file.path,
         data: new Uint8Array(buffer),
       });
-      
+
       console.log(`[useSaveWorkbook] Successfully saved: ${file.path}`);
     } catch (error) {
-      console.error("[useSaveWorkbook] Failed to save workbook:", error);
+      console.error('[useSaveWorkbook] Failed to save workbook:', error);
       throw error;
     }
   }, []);
@@ -142,7 +142,7 @@ export const useManifestSessions = () => {
         ? cloneManifest(file.manifest)
         : createDefaultManifest(file);
 
-      setManifestSessions((prev) => {
+      setManifestSessions(prev => {
         const existing = prev[key];
         return {
           ...prev,
@@ -160,12 +160,12 @@ export const useManifestSessions = () => {
       try {
         const gridparkApi = window.electronAPI?.gridpark;
         if (!gridparkApi?.readFile) {
-          throw new Error("Manifest editing is only available in the desktop application");
+          throw new Error('Manifest editing is only available in the desktop application');
         }
-        
+
         const pkg = file.gridparkPackage;
         if (!pkg) {
-          throw new Error("This workbook is missing its Gridpark package metadata");
+          throw new Error('This workbook is missing its Gridpark package metadata');
         }
 
         const response = await gridparkApi.readFile({
@@ -173,8 +173,8 @@ export const useManifestSessions = () => {
           rootDir: pkg.rootDir,
         });
 
-        if (!response?.success || typeof response.content !== "string") {
-          throw new Error(response?.error ?? "Failed to load manifest");
+        if (!response?.success || typeof response.content !== 'string') {
+          throw new Error(response?.error ?? 'Failed to load manifest');
         }
 
         const parsed = JSON.parse(response.content) as GridparkManifest;
@@ -204,13 +204,13 @@ export const useManifestSessions = () => {
                 rootDir: pkg.rootDir,
               });
               if (sheetStyleResponse?.success) {
-                sheetCssContents[sheet.name] = sheetStyleResponse.content || "";
+                sheetCssContents[sheet.name] = sheetStyleResponse.content || '';
               }
             }
           }
         }
 
-        setManifestSessions((prev) => ({
+        setManifestSessions(prev => ({
           ...prev,
           [key]: {
             data: sanitized,
@@ -223,7 +223,7 @@ export const useManifestSessions = () => {
           },
         }));
       } catch (error) {
-        setManifestSessions((prev) => {
+        setManifestSessions(prev => {
           const existing = prev[key];
           return {
             ...prev,
@@ -244,13 +244,13 @@ export const useManifestSessions = () => {
   const ensureManifestSession = useCallback(
     (file: ExcelFile) => {
       const key = getManifestSessionKey(file);
-      setManifestSessions((prev) => {
+      setManifestSessions(prev => {
         if (prev[key]) return prev;
-        
+
         const fallbackManifest = file.manifest
           ? cloneManifest(file.manifest)
           : createDefaultManifest(file);
-          
+
         return {
           ...prev,
           [key]: {
@@ -300,12 +300,12 @@ export const useCodeSessions = () => {
 
   const readCodeFile = useCallback(async (codeFile: GridparkCodeFile) => {
     const key = getCodeSessionKey(codeFile);
-    
-    setCodeSessions((prev) => ({
+
+    setCodeSessions(prev => ({
       ...prev,
       [key]: {
-        content: prev[key]?.content ?? "",
-        originalContent: prev[key]?.originalContent ?? "",
+        content: prev[key]?.content ?? '',
+        originalContent: prev[key]?.originalContent ?? '',
         loading: true,
         saving: false,
         error: undefined,
@@ -315,7 +315,7 @@ export const useCodeSessions = () => {
     try {
       const gridparkApi = window.electronAPI?.gridpark;
       if (!gridparkApi?.readFile) {
-        throw new Error("Gridpark files can only be edited in the desktop application");
+        throw new Error('Gridpark files can only be edited in the desktop application');
       }
 
       const response = await gridparkApi.readFile({
@@ -324,12 +324,12 @@ export const useCodeSessions = () => {
       });
 
       if (!response?.success) {
-        throw new Error(response?.error ?? "Failed to load file");
+        throw new Error(response?.error ?? 'Failed to load file');
       }
 
-      const content = response.content ?? "";
-      
-      setCodeSessions((prev) => ({
+      const content = response.content ?? '';
+
+      setCodeSessions(prev => ({
         ...prev,
         [key]: {
           content,
@@ -341,11 +341,11 @@ export const useCodeSessions = () => {
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setCodeSessions((prev) => ({
+      setCodeSessions(prev => ({
         ...prev,
         [key]: {
-          content: prev[key]?.content ?? "",
-          originalContent: prev[key]?.originalContent ?? "",
+          content: prev[key]?.content ?? '',
+          originalContent: prev[key]?.originalContent ?? '',
           loading: false,
           saving: false,
           error: message,
@@ -357,14 +357,14 @@ export const useCodeSessions = () => {
   const ensureCodeSession = useCallback(
     (codeFile: GridparkCodeFile) => {
       const key = getCodeSessionKey(codeFile);
-      setCodeSessions((prev) => {
+      setCodeSessions(prev => {
         if (prev[key]) return prev;
-        
+
         return {
           ...prev,
           [key]: {
-            content: "",
-            originalContent: "",
+            content: '',
+            originalContent: '',
             loading: true,
             saving: false,
           },
@@ -377,10 +377,10 @@ export const useCodeSessions = () => {
 
   const handleCodeChange = useCallback((codeFile: GridparkCodeFile, value: string) => {
     const key = getCodeSessionKey(codeFile);
-    setCodeSessions((prev) => {
+    setCodeSessions(prev => {
       const current = prev[key] ?? {
-        content: "",
-        originalContent: "",
+        content: '',
+        originalContent: '',
         loading: false,
         saving: false,
       };
@@ -399,12 +399,12 @@ export const useCodeSessions = () => {
     async (codeFile: GridparkCodeFile) => {
       const key = getCodeSessionKey(codeFile);
       const session = codeSessions[key];
-      
+
       if (!session) {
-        throw new Error("No code session found for file");
+        throw new Error('No code session found for file');
       }
 
-      setCodeSessions((prev) => ({
+      setCodeSessions(prev => ({
         ...prev,
         [key]: { ...prev[key]!, saving: true, error: undefined },
       }));
@@ -412,7 +412,7 @@ export const useCodeSessions = () => {
       try {
         const gridparkApi = window.electronAPI?.gridpark;
         if (!gridparkApi?.writeFile) {
-          throw new Error("Code file editing is only available in the desktop application");
+          throw new Error('Code file editing is only available in the desktop application');
         }
 
         const response = await gridparkApi.writeFile({
@@ -422,10 +422,10 @@ export const useCodeSessions = () => {
         });
 
         if (!response?.success) {
-          throw new Error(response?.error ?? "Failed to save code file");
+          throw new Error(response?.error ?? 'Failed to save code file');
         }
 
-        setCodeSessions((prev) => ({
+        setCodeSessions(prev => ({
           ...prev,
           [key]: {
             ...prev[key]!,
@@ -436,7 +436,7 @@ export const useCodeSessions = () => {
         }));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        setCodeSessions((prev) => ({
+        setCodeSessions(prev => ({
           ...prev,
           [key]: { ...prev[key]!, saving: false, error: message },
         }));

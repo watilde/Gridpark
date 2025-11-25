@@ -1,5 +1,5 @@
-import { useImperativeHandle, useCallback, Ref } from "react";
-import type * as Monaco from "monaco-editor";
+import { useImperativeHandle, useCallback, Ref } from 'react';
+import type * as Monaco from 'monaco-editor';
 
 /**
  * Monaco Editor Ref API
@@ -104,7 +104,7 @@ export const useMonacoEditorRef = (
   }, [editorRef]);
 
   const getValue = useCallback(() => {
-    return editorRef.current?.getValue() ?? "";
+    return editorRef.current?.getValue() ?? '';
   }, [editorRef]);
 
   const setValue = useCallback(
@@ -121,7 +121,7 @@ export const useMonacoEditorRef = (
 
       const selection = editor.getSelection();
       if (selection) {
-        editor.executeEdits("", [
+        editor.executeEdits('', [
           {
             range: selection,
             text,
@@ -154,12 +154,12 @@ export const useMonacoEditorRef = (
 
   const getSelectedText = useCallback(() => {
     const editor = editorRef.current;
-    if (!editor) return "";
+    if (!editor) return '';
 
     const selection = editor.getSelection();
-    if (!selection) return "";
+    if (!selection) return '';
 
-    return editor.getModel()?.getValueInRange(selection) ?? "";
+    return editor.getModel()?.getValueInRange(selection) ?? '';
   }, [editorRef]);
 
   const replaceSelection = useCallback(
@@ -169,7 +169,7 @@ export const useMonacoEditorRef = (
 
       const selection = editor.getSelection();
       if (selection) {
-        editor.executeEdits("", [
+        editor.executeEdits('', [
           {
             range: selection,
             text,
@@ -181,23 +181,23 @@ export const useMonacoEditorRef = (
   );
 
   const formatDocument = useCallback(() => {
-    editorRef.current?.getAction("editor.action.formatDocument")?.run();
+    editorRef.current?.getAction('editor.action.formatDocument')?.run();
   }, [editorRef]);
 
   const save = useCallback(() => {
     if (onSave) {
       onSave();
     } else {
-      console.warn("No save handler provided to Monaco Editor");
+      console.warn('No save handler provided to Monaco Editor');
     }
   }, [onSave]);
 
   const undo = useCallback(() => {
-    editorRef.current?.trigger("keyboard", "undo", {});
+    editorRef.current?.trigger('keyboard', 'undo', {});
   }, [editorRef]);
 
   const redo = useCallback(() => {
-    editorRef.current?.trigger("keyboard", "redo", {});
+    editorRef.current?.trigger('keyboard', 'redo', {});
   }, [editorRef]);
 
   const find = useCallback(
@@ -205,7 +205,7 @@ export const useMonacoEditorRef = (
       const editor = editorRef.current;
       if (!editor) return;
 
-      const action = editor.getAction("actions.find");
+      const action = editor.getAction('actions.find');
       if (action) {
         action.run();
         // Note: Monaco's find widget will open, but we can't directly set the search text
@@ -220,7 +220,7 @@ export const useMonacoEditorRef = (
       const editor = editorRef.current;
       if (!editor) return;
 
-      const action = editor.getAction("editor.action.startFindReplaceAction");
+      const action = editor.getAction('editor.action.startFindReplaceAction');
       if (action) {
         action.run();
       }

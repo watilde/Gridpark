@@ -149,7 +149,12 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
             </Chip>
           )}
           {readOnlyPlatform && (
-            <Chip size="sm" variant="outlined" color="neutral" startDecorator={<InfoOutlinedIcon fontSize="small" />}>
+            <Chip
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              startDecorator={<InfoOutlinedIcon fontSize="small" />}
+            >
               Desktop save required
             </Chip>
           )}
@@ -175,11 +180,11 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
         </Stack>
       </Box>
 
-  {error && (
-    <Alert variant="soft" color="danger">
-      {error}
-    </Alert>
-  )}
+      {error && (
+        <Alert variant="soft" color="danger">
+          {error}
+        </Alert>
+      )}
 
       <Box
         sx={{
@@ -212,7 +217,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
               <FormLabel>Name</FormLabel>
               <Input
                 value={manifest.name}
-                onChange={(event) => updateManifest({ name: event.target.value })}
+                onChange={event => updateManifest({ name: event.target.value })}
                 disabled={disableInputs}
               />
             </FormControl>
@@ -220,7 +225,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
               <FormLabel>Version</FormLabel>
               <Input
                 value={manifest.version}
-                onChange={(event) => updateManifest({ version: event.target.value })}
+                onChange={event => updateManifest({ version: event.target.value })}
                 disabled={disableInputs}
               />
             </FormControl>
@@ -229,7 +234,9 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
               <Input
                 type="number"
                 value={manifest.apiVersion ?? ''}
-                onChange={(event) => updateManifest({ apiVersion: Number(event.target.value) || undefined })}
+                onChange={event =>
+                  updateManifest({ apiVersion: Number(event.target.value) || undefined })
+                }
                 disabled={disableInputs}
               />
             </FormControl>
@@ -238,7 +245,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
               <Textarea
                 minRows={3}
                 value={manifest.description ?? ''}
-                onChange={(event) => updateManifest({ description: event.target.value })}
+                onChange={event => updateManifest({ description: event.target.value })}
                 disabled={disableInputs}
               />
             </FormControl>
@@ -259,7 +266,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
               <FormLabel>Script</FormLabel>
               <Input
                 value={manifest.script ?? ''}
-                onChange={(event) => updateManifest({ script: event.target.value })}
+                onChange={event => updateManifest({ script: event.target.value })}
                 disabled={disableInputs}
               />
             </FormControl>
@@ -267,7 +274,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
               <FormLabel>Stylesheet</FormLabel>
               <Input
                 value={manifest.style ?? ''}
-                onChange={(event) => updateManifest({ style: event.target.value })}
+                onChange={event => updateManifest({ style: event.target.value })}
                 disabled={disableInputs}
               />
             </FormControl>
@@ -290,7 +297,9 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
                   <FormLabel>Filesystem Scope</FormLabel>
                   <Select
                     value={permissions.filesystem ?? 'workbook'}
-                    onChange={(_, value) => updatePermissions({ ...permissions, filesystem: value ?? undefined })}
+                    onChange={(_, value) =>
+                      updatePermissions({ ...permissions, filesystem: value ?? undefined })
+                    }
                     disabled={disableInputs}
                   >
                     <Option value="workbook">Workbook</Option>
@@ -314,7 +323,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Switch
                       checked={Boolean(permissions.network)}
-                      onChange={(event) =>
+                      onChange={event =>
                         updatePermissions({
                           ...permissions,
                           network: event.target.checked,
@@ -333,12 +342,12 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
                 <Box>
                   <FormLabel>Runtime Capabilities</FormLabel>
                   <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
-                    {runtimeOptions.map((option) => (
+                    {runtimeOptions.map(option => (
                       <Checkbox
                         key={option.value}
                         label={option.label}
                         checked={runtimeSet.has(option.value)}
-                        onChange={(event) => handleRuntimeToggle(option.value, event.target.checked)}
+                        onChange={event => handleRuntimeToggle(option.value, event.target.checked)}
                         disabled={disableInputs}
                         size="sm"
                       />
@@ -354,11 +363,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
             </Box>
           </Sheet>
         </Stack>
-        <Stack
-          direction={{ xs: 'column', lg: 'row' }}
-          spacing={2}
-          sx={{ flexShrink: 0 }}
-        >
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} sx={{ flexShrink: 0 }}>
           <Sheet
             variant="outlined"
             sx={{
@@ -392,7 +397,7 @@ export const ManifestEditorPanel: React.FC<ManifestEditorPanelProps> = ({
                 { label: 'Notifications', enabled: platformCapabilities.hasNativeNotifications },
                 { label: 'Clipboard access', enabled: platformCapabilities.canAccessClipboard },
                 { label: 'Offline support', enabled: platformCapabilities.canWorkOffline },
-              ].map((item) => (
+              ].map(item => (
                 <FormControl
                   key={item.label}
                   size="sm"

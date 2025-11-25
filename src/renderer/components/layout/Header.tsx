@@ -48,16 +48,16 @@ const Breadcrumb = styled('div')(({ theme }) => ({
   gap: '4px',
   fontSize: '14px',
   color: theme.palette.text.secondary,
-  
+
   '& .breadcrumb-item': {
     color: theme.palette.text.secondary,
   },
-  
+
   '& .breadcrumb-separator': {
     margin: '0 4px',
     color: theme.palette.text.tertiary,
   },
-  
+
   '& .breadcrumb-current': {
     color: theme.palette.text.primary,
     fontWeight: 500,
@@ -93,7 +93,7 @@ export interface HeaderProps {
 
 /**
  * Gridpark Header Component
- * 
+ *
  * Application header with logo, navigation, and actions:
  * - Code-first: Clean, developer-tool inspired layout
  * - Flexible: Configurable logo, breadcrumbs, and actions
@@ -110,19 +110,15 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const renderBreadcrumbs = () => {
     if (!breadcrumbs || breadcrumbs.length === 0) return null;
-    
+
     return (
       <Breadcrumb>
         {breadcrumbs.map((item, index) => (
           <React.Fragment key={index}>
-            <span 
-              className={item.current ? 'breadcrumb-current' : 'breadcrumb-item'}
-            >
+            <span className={item.current ? 'breadcrumb-current' : 'breadcrumb-item'}>
               {item.label}
             </span>
-            {index < breadcrumbs.length - 1 && (
-              <span className="breadcrumb-separator">/</span>
-            )}
+            {index < breadcrumbs.length - 1 && <span className="breadcrumb-separator">/</span>}
           </React.Fragment>
         ))}
       </Breadcrumb>
@@ -139,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Gridpark logo placeholder - could be actual logo */}
                 <Icon size="lg" color="primary">
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z"/>
+                    <path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z" />
                   </svg>
                 </Icon>
                 {title}
@@ -150,15 +146,9 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </HeaderLeft>
 
-      {centerContent && (
-        <HeaderCenter>
-          {centerContent}
-        </HeaderCenter>
-      )}
+      {centerContent && <HeaderCenter>{centerContent}</HeaderCenter>}
 
-      <HeaderRight>
-        {actions}
-      </HeaderRight>
+      <HeaderRight>{actions}</HeaderRight>
     </HeaderContainer>
   );
 };

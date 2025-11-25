@@ -6,10 +6,10 @@ import { resolve } from 'path';
 // Electron uses separate vite.*.config.ts files via Forge
 export default defineConfig({
   plugins: [react()],
-  
+
   // Entry point for web version
   root: './web',
-  
+
   // Build configuration
   build: {
     outDir: '../dist-web',
@@ -21,7 +21,7 @@ export default defineConfig({
       },
     },
   },
-  
+
   // Development server
   server: {
     port: 3000,
@@ -34,7 +34,7 @@ export default defineConfig({
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   },
-  
+
   // Path resolution (shared with Electron configs)
   resolve: {
     alias: {
@@ -43,21 +43,15 @@ export default defineConfig({
       '@ui': resolve(__dirname, './src/renderer/components/ui'),
     },
   },
-  
+
   // Environment variables
   define: {
     __IS_WEB__: true,
     __IS_ELECTRON__: false,
   },
-  
+
   // Optimize dependencies (shared between web and Electron)
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      '@mui/joy',
-      '@emotion/react',
-      '@emotion/styled',
-    ],
+    include: ['react', 'react-dom', '@mui/joy', '@emotion/react', '@emotion/styled'],
   },
 });

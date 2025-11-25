@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useThemePreset } from "../theme/ThemeProvider";
+import { useState } from 'react';
+import { useThemePreset } from '../theme/ThemeProvider';
 
 export const useSettings = () => {
   const { presetId, setPresetId, colorScheme, setColorScheme } = useThemePreset();

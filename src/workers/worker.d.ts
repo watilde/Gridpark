@@ -1,6 +1,6 @@
 /**
  * Worker Type Definitions
- * 
+ *
  * TypeScript declarations for Web Workers
  */
 

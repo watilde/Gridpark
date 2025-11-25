@@ -1,9 +1,9 @@
 /**
  * useVirtualScrollFormula Hook
- * 
+ *
  * Integrates formula calculation with virtual scrolling.
  * Only calculates formulas for visible cells to optimize performance.
- * 
+ *
  * Phase 4 Optimization:
  * - Lazy calculation (calculate only when scrolled into view)
  * - Prioritize visible cells
@@ -42,14 +42,8 @@ export function useVirtualScrollFormula({
   onFormulaResult,
   priorityMode = 'visible-first',
 }: UseVirtualScrollFormulaOptions) {
-  const {
-    calculate,
-    calculateBatch,
-    isReady,
-    isSheetLoaded,
-    stats,
-    cacheStats,
-  } = useFormulaWorker(tabId);
+  const { calculate, calculateBatch, isReady, isSheetLoaded, stats, cacheStats } =
+    useFormulaWorker(tabId);
 
   const [visibleResults, setVisibleResults] = useState<Record<string, number | string>>({});
   const [offScreenResults, setOffScreenResults] = useState<Record<string, number | string>>({});
@@ -61,14 +55,17 @@ export function useVirtualScrollFormula({
   /**
    * Check if a cell is within the visible range
    */
-  const isInVisibleRange = useCallback((row: number, col: number): boolean => {
-    return (
-      row >= visibleRange.startRow &&
-      row <= visibleRange.endRow &&
-      col >= visibleRange.startCol &&
-      col <= visibleRange.endCol
-    );
-  }, [visibleRange]);
+  const isInVisibleRange = useCallback(
+    (row: number, col: number): boolean => {
+      return (
+        row >= visibleRange.startRow &&
+        row <= visibleRange.endRow &&
+        col >= visibleRange.startCol &&
+        col <= visibleRange.endCol
+      );
+    },
+    [visibleRange]
+  );
 
   /**
    * Split formulas into visible and off-screen groups
@@ -221,16 +218,22 @@ export function useVirtualScrollFormula({
   /**
    * Get result for a specific cell
    */
-  const getResult = useCallback((cellRef: string): number | string | undefined => {
-    return visibleResults[cellRef] || offScreenResults[cellRef];
-  }, [visibleResults, offScreenResults]);
+  const getResult = useCallback(
+    (cellRef: string): number | string | undefined => {
+      return visibleResults[cellRef] || offScreenResults[cellRef];
+    },
+    [visibleResults, offScreenResults]
+  );
 
   /**
    * Check if a cell result is available
    */
-  const hasResult = useCallback((cellRef: string): boolean => {
-    return cellRef in visibleResults || cellRef in offScreenResults;
-  }, [visibleResults, offScreenResults]);
+  const hasResult = useCallback(
+    (cellRef: string): boolean => {
+      return cellRef in visibleResults || cellRef in offScreenResults;
+    },
+    [visibleResults, offScreenResults]
+  );
 
   /**
    * Get all results
@@ -263,18 +266,18 @@ export function useVirtualScrollFormula({
 
 /**
  * Example usage:
- * 
+ *
  * const formulas = [
  *   { row: 0, col: 1, cellRef: 'B1', formula: '=SUM(A1:A10)' },
  *   { row: 1, col: 1, cellRef: 'B2', formula: '=AVERAGE(A1:A10)' },
  *   // ... more formulas
  * ];
- * 
- * const { 
- *   getResult, 
- *   hasResult, 
+ *
+ * const {
+ *   getResult,
+ *   hasResult,
  *   isCalculating,
- *   recalculate 
+ *   recalculate
  * } = useVirtualScrollFormula({
  *   tabId: 'sheet1',
  *   visibleRange: { startRow: 0, endRow: 20, startCol: 0, endCol: 10 },
@@ -284,15 +287,15 @@ export function useVirtualScrollFormula({
  *   },
  *   priorityMode: 'visible-first', // Calculate visible cells first
  * });
- * 
+ *
  * // Get result for a cell
  * const b1Result = getResult('B1');
- * 
+ *
  * // Check if result is available
  * if (hasResult('B1')) {
  *   console.log('B1 calculated:', getResult('B1'));
  * }
- * 
+ *
  * // Manually trigger recalculation
  * recalculate();
  */

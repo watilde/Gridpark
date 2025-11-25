@@ -5,7 +5,7 @@ const IconWrapper = styled('span')(({ theme }) => ({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  
+
   // Size variants
   '&[data-size="xs"]': {
     fontSize: '12px',
@@ -59,14 +59,13 @@ const IconWrapper = styled('span')(({ theme }) => ({
     borderRadius: theme.radius.sm,
     padding: '2px',
     transition: 'all 0.15s ease',
-    
+
     '&:hover': {
-      backgroundColor: theme.palette.mode === 'dark' 
-        ? theme.palette.neutral[800] 
-        : theme.palette.neutral[100],
+      backgroundColor:
+        theme.palette.mode === 'dark' ? theme.palette.neutral[800] : theme.palette.neutral[100],
       transform: 'scale(1.1)',
     },
-    
+
     '&:active': {
       transform: 'scale(0.95)',
     },
@@ -112,7 +111,7 @@ export interface IconProps {
 
 /**
  * Gridpark Icon Component
- * 
+ *
  * Flexible icon wrapper with consistent sizing and theming:
  * - Code-first: Clean, predictable sizing system
  * - Immediate feedback: Interactive states with hover/active effects

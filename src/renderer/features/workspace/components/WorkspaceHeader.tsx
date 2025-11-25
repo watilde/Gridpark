@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { styled } from "@mui/joy/styles";
+import React, { useState } from 'react';
+import { styled } from '@mui/joy/styles';
 import {
   Undo as UndoIcon,
   Redo as RedoIcon,
   Save as SaveIcon,
   Search as SearchIcon,
   Settings as SettingsIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 import iconImage from '../../../assets/icon.png';
 
 interface HeaderProps {
@@ -71,11 +71,11 @@ const AppIconButton = styled('button')(({ theme }) => ({
   cursor: 'pointer',
   borderRadius: '4px',
   transition: 'background-color 0.15s ease',
-  
+
   '&:hover': {
     backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
   },
-  
+
   '& img': {
     width: '24px',
     height: '24px',
@@ -99,11 +99,11 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
   transition: 'background-color 0.15s ease',
   whiteSpace: 'nowrap',
   position: 'relative',
-  
+
   '&:hover': {
     backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
   },
-  
+
   '&::before': {
     content: '""',
     display: 'block',
@@ -114,7 +114,7 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
     transition: 'background-color 0.2s ease',
     flexShrink: 0,
   },
-  
+
   '&::after': {
     content: '""',
     display: 'block',
@@ -132,37 +132,51 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
 }));
 
 // Action button (Save, Undo, Redo)
-const ActionButton = styled('button')<{ disabled?: boolean; active?: boolean }>(({ theme, disabled, active }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '32px',
-  height: '32px',
-  padding: 0,
-  border: 'none',
-  backgroundColor: active ? (theme.palette.mode === 'dark' ? '#107c4122' : '#107c4111') : 'transparent',
-  color: disabled 
-    ? (theme.palette.mode === 'dark' ? '#555' : '#aaa')
-    : active 
-    ? '#107c41'
-    : (theme.palette.mode === 'dark' ? '#cccccc' : '#555555'),
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  borderRadius: '4px',
-  transition: 'all 0.15s ease',
-  opacity: disabled ? 0.4 : 1,
-  
-  '&:hover': {
-    backgroundColor: disabled 
-      ? 'transparent' 
+const ActionButton = styled('button')<{ disabled?: boolean; active?: boolean }>(
+  ({ theme, disabled, active }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '32px',
+    height: '32px',
+    padding: 0,
+    border: 'none',
+    backgroundColor: active
+      ? theme.palette.mode === 'dark'
+        ? '#107c4122'
+        : '#107c4111'
+      : 'transparent',
+    color: disabled
+      ? theme.palette.mode === 'dark'
+        ? '#555'
+        : '#aaa'
       : active
-      ? (theme.palette.mode === 'dark' ? '#107c4133' : '#107c4122')
-      : (theme.palette.mode === 'dark' ? '#333' : '#e5e5e5'),
-  },
-  
-  '& svg': {
-    fontSize: '18px',
-  },
-}));
+        ? '#107c41'
+        : theme.palette.mode === 'dark'
+          ? '#cccccc'
+          : '#555555',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    borderRadius: '4px',
+    transition: 'all 0.15s ease',
+    opacity: disabled ? 0.4 : 1,
+
+    '&:hover': {
+      backgroundColor: disabled
+        ? 'transparent'
+        : active
+          ? theme.palette.mode === 'dark'
+            ? '#107c4133'
+            : '#107c4122'
+          : theme.palette.mode === 'dark'
+            ? '#333'
+            : '#e5e5e5',
+    },
+
+    '& svg': {
+      fontSize: '18px',
+    },
+  })
+);
 
 // Search input container
 const SearchContainer = styled('div')({
@@ -184,11 +198,11 @@ const SearchInput = styled('input')(({ theme }) => ({
   fontFamily: theme.fontFamily.body,
   outline: 'none',
   transition: 'border-color 0.15s ease',
-  
+
   '&::placeholder': {
     color: theme.palette.mode === 'dark' ? '#666' : '#999',
   },
-  
+
   '&:focus': {
     borderColor: theme.palette.mode === 'dark' ? '#107c41' : '#107c41',
   },
@@ -204,7 +218,7 @@ const SearchIconOverlay = styled('div')(({ theme }) => ({
   pointerEvents: 'none',
   display: 'flex',
   alignItems: 'center',
-  
+
   '& svg': {
     fontSize: '16px',
   },
@@ -224,11 +238,11 @@ const SettingsButton = styled('button')(({ theme }) => ({
   cursor: 'pointer',
   borderRadius: '4px',
   transition: 'background-color 0.15s ease',
-  
+
   '&:hover': {
     backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
   },
-  
+
   '& svg': {
     fontSize: '20px',
   },
@@ -236,7 +250,7 @@ const SettingsButton = styled('button')(({ theme }) => ({
 
 /**
  * Excel-Style WorkspaceHeader Component
- * 
+ *
  * Minimalist header bar matching Excel's design:
  * - Left: Gridpark icon, AutoSave toggle, Save button, Undo, Redo
  * - Center: Search bar spanning across columns
@@ -258,8 +272,6 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
 }) => {
   const [localAutoSave, setLocalAutoSave] = useState(autoSaveEnabled);
 
-
-
   const handleAutoSaveToggle = () => {
     const newValue = !localAutoSave;
     setLocalAutoSave(newValue);
@@ -269,13 +281,10 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
   return (
     <HeaderContainer>
       <LeftSection>
-        <AppIconButton
-          onClick={() => console.log('Gridpark icon clicked')}
-          title="Gridpark"
-        >
+        <AppIconButton onClick={() => console.log('Gridpark icon clicked')} title="Gridpark">
           <img src={iconImage} alt="Gridpark" />
         </AppIconButton>
-        
+
         <AutoSaveToggle
           enabled={localAutoSave}
           onClick={handleAutoSaveToggle}
@@ -283,7 +292,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
         >
           AutoSave
         </AutoSaveToggle>
-        
+
         <ActionButton
           onClick={() => {
             console.log('[WorkspaceHeader] Save button clicked', { hasUnsavedChanges });
@@ -291,28 +300,20 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           }}
           disabled={!hasUnsavedChanges}
           active={hasUnsavedChanges}
-          title={hasUnsavedChanges ? "Save (Ctrl+S)" : "No changes to save"}
+          title={hasUnsavedChanges ? 'Save (Ctrl+S)' : 'No changes to save'}
         >
           <SaveIcon />
         </ActionButton>
-        
-        <ActionButton
-          onClick={onUndo}
-          disabled={!canUndo}
-          title="Undo (Cmd+Z)"
-        >
+
+        <ActionButton onClick={onUndo} disabled={!canUndo} title="Undo (Cmd+Z)">
           <UndoIcon />
         </ActionButton>
-        
-        <ActionButton
-          onClick={onRedo}
-          disabled={!canRedo}
-          title="Redo (Cmd+Shift+Z)"
-        >
+
+        <ActionButton onClick={onRedo} disabled={!canRedo} title="Redo (Cmd+Shift+Z)">
           <RedoIcon />
         </ActionButton>
       </LeftSection>
-      
+
       <CenterSection>
         <SearchContainer style={{ position: 'relative' }}>
           <SearchIconOverlay>
@@ -322,18 +323,15 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
             type="text"
             placeholder="Search"
             value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={e => onSearchChange(e.target.value)}
             spellCheck={false}
             autoComplete="off"
           />
         </SearchContainer>
       </CenterSection>
-      
+
       <RightSection>
-        <SettingsButton
-          onClick={onOpenSettings}
-          title="Settings"
-        >
+        <SettingsButton onClick={onOpenSettings} title="Settings">
           <SettingsIcon />
         </SettingsButton>
       </RightSection>

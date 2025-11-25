@@ -10,13 +10,13 @@ const GridparkButton = styled(JoyButton)(({ theme }) => ({
   textTransform: 'none',
   fontWeight: 500,
   transition: 'all 0.15s ease',
-  
+
   // Code-first experience: subtle hover effects
   '&:hover': {
     transform: 'translateY(-1px)',
     boxShadow: theme.shadow.sm,
   },
-  
+
   // Playful productivity: Active state feedback
   '&:active': {
     transform: 'translateY(0)',
@@ -24,13 +24,11 @@ const GridparkButton = styled(JoyButton)(({ theme }) => ({
 
   // Variant-specific styles
   '&.MuiButton-variantSoft': {
-    backgroundColor: theme.palette.mode === 'dark' 
-      ? theme.palette.neutral[800] 
-      : theme.palette.neutral[100],
+    backgroundColor:
+      theme.palette.mode === 'dark' ? theme.palette.neutral[800] : theme.palette.neutral[100],
     '&:hover': {
-      backgroundColor: theme.palette.mode === 'dark' 
-        ? theme.palette.neutral[700] 
-        : theme.palette.neutral[200],
+      backgroundColor:
+        theme.palette.mode === 'dark' ? theme.palette.neutral[700] : theme.palette.neutral[200],
     },
   },
 }));
@@ -64,7 +62,7 @@ export interface ButtonProps extends Omit<JoyButtonProps, 'variant'> {
 
 /**
  * Gridpark Button Component
- * 
+ *
  * Extends Joy UI Button with Gridpark design principles:
  * - Code-first experience with familiar interactions
  * - Immediate feedback on all states

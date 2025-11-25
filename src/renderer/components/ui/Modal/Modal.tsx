@@ -1,5 +1,12 @@
 import React from 'react';
-import { Modal as JoyModal, ModalDialog, DialogTitle, DialogContent, DialogActions, Divider } from '@mui/joy';
+import {
+  Modal as JoyModal,
+  ModalDialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+} from '@mui/joy';
 import type { ModalProps as JoyModalProps } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
 import { Close } from '@mui/icons-material';
@@ -10,7 +17,7 @@ const GridparkModalDialog = styled(ModalDialog)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   maxWidth: '90vw',
   maxHeight: '90vh',
-  
+
   // Code-first experience: keyboard focus management
   '&:focus': {
     outline: 'none',
@@ -22,7 +29,7 @@ const ModalHeader = styled('div')(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '20px 24px 0 24px',
-  
+
   '& .modal-title': {
     fontFamily: theme.fontFamily.body,
     fontSize: '20px',
@@ -78,7 +85,7 @@ export interface ModalProps extends Omit<JoyModalProps, 'children'> {
 
 /**
  * Gridpark Modal Component
- * 
+ *
  * Accessible modal dialog following Gridpark design principles:
  * - Code-first: Keyboard navigation and focus management
  * - Immediate feedback: Clear open/close states
@@ -113,15 +120,8 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <JoyModal
-      open={open}
-      onClose={handleClose}
-      {...props}
-    >
-      <GridparkModalDialog
-        variant="outlined"
-        sx={getSizeProps()}
-      >
+    <JoyModal open={open} onClose={handleClose} {...props}>
+      <GridparkModalDialog variant="outlined" sx={getSizeProps()}>
         {(title || showCloseButton) && (
           <>
             <ModalHeader>
@@ -143,16 +143,12 @@ export const Modal: React.FC<ModalProps> = ({
           </>
         )}
 
-        <ModalBody>
-          {children}
-        </ModalBody>
+        <ModalBody>{children}</ModalBody>
 
         {actions && (
           <>
             <Divider sx={{ mx: 0 }} />
-            <ModalFooter>
-              {actions}
-            </ModalFooter>
+            <ModalFooter>{actions}</ModalFooter>
           </>
         )}
       </GridparkModalDialog>

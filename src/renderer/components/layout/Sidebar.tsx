@@ -12,7 +12,7 @@ const SidebarContainer = styled('div')({
 
 const SidebarSection = styled('div')(({ theme }) => ({
   padding: '12px 16px',
-  
+
   '& .section-title': {
     fontSize: '12px',
     fontWeight: 600,
@@ -36,7 +36,7 @@ const MenuList = styled('ul')({
 
 const MenuItem = styled('li')<{ active?: boolean }>(({ theme, active }) => ({
   margin: '2px 0',
-  
+
   '& .menu-item': {
     display: 'flex',
     alignItems: 'center',
@@ -48,21 +48,21 @@ const MenuItem = styled('li')<{ active?: boolean }>(({ theme, active }) => ({
     fontSize: '14px',
     color: active ? theme.palette.primary.plainColor : theme.palette.text.primary,
     backgroundColor: active ? theme.palette.background.level2 : 'transparent',
-    
+
     '&:hover': {
-      backgroundColor: active 
-        ? theme.palette.background.level1 
+      backgroundColor: active
+        ? theme.palette.background.level1
         : theme.palette.neutral.plainHoverBg || theme.palette.neutral[100],
     },
-    
+
     '& .menu-icon': {
       opacity: active ? 1 : 0.7,
     },
-    
+
     '& .menu-label': {
       flex: 1,
     },
-    
+
     '& .menu-badge': {
       fontSize: '11px',
       padding: '2px 6px',
@@ -108,7 +108,7 @@ export interface SidebarProps {
 
 /**
  * Gridpark Sidebar Component
- * 
+ *
  * Navigation sidebar with sections and menu items:
  * - Code-first: IDE-inspired navigation structure
  * - Organized: Clear sections with visual separation
@@ -128,13 +128,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const renderMenuItem = (item: SidebarItem) => {
     const isActive = item.active || item.id === activeItemId;
-    
+
     return (
       <MenuItem key={item.id} active={isActive}>
-        <div 
-          className="menu-item"
-          onClick={() => handleItemClick(item)}
-        >
+        <div className="menu-item" onClick={() => handleItemClick(item)}>
           {item.icon && (
             <div className="menu-icon">
               <Icon size="sm" color={isActive ? 'primary' : 'neutral'}>
@@ -143,9 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           <span className="menu-label">{item.label}</span>
-          {item.badge && (
-            <span className="menu-badge">{item.badge}</span>
-          )}
+          {item.badge && <span className="menu-badge">{item.badge}</span>}
         </div>
       </MenuItem>
     );
@@ -155,9 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <React.Fragment key={section.title}>
       <SidebarSection>
         <div className="section-title">{section.title}</div>
-        <MenuList>
-          {section.items.map(renderMenuItem)}
-        </MenuList>
+        <MenuList>{section.items.map(renderMenuItem)}</MenuList>
       </SidebarSection>
       {index < (sections?.length || 0) - 1 && <Divider />}
     </React.Fragment>
@@ -165,13 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <SidebarContainer>
-      {children ? (
-        children
-      ) : (
-        <SidebarContent>
-          {sections?.map(renderSection)}
-        </SidebarContent>
-      )}
+      {children ? children : <SidebarContent>{sections?.map(renderSection)}</SidebarContent>}
     </SidebarContainer>
   );
 };

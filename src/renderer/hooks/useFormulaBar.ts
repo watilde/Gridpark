@@ -1,16 +1,21 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { FormulaCommitCommand, ActiveCellDetails } from "../features/workbook/components/ExcelViewer";
-import { defaultFormulaOptions, FormulaOption } from "../utils/formulaUtils";
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import {
+  FormulaCommitCommand,
+  ActiveCellDetails,
+} from '../features/workbook/components/ExcelViewer';
+import { defaultFormulaOptions, FormulaOption } from '../utils/formulaUtils';
 
 export const useFormulaBar = (activeTabKind?: string) => {
-  const [activeCellAddress, setActiveCellAddress] = useState<string>("");
-  const [formulaBarValue, setFormulaBarValue] = useState<string>("");
-  const [formulaBaselineValue, setFormulaBaselineValue] = useState<string>("");
-  const [formulaCommitCommand, setFormulaCommitCommand] = useState<FormulaCommitCommand | null>(null);
+  const [activeCellAddress, setActiveCellAddress] = useState<string>('');
+  const [formulaBarValue, setFormulaBarValue] = useState<string>('');
+  const [formulaBaselineValue, setFormulaBaselineValue] = useState<string>('');
+  const [formulaCommitCommand, setFormulaCommitCommand] = useState<FormulaCommitCommand | null>(
+    null
+  );
   const formulaCommitCounter = useRef(0);
-  
+
   const [formulaMenuOpen, setFormulaMenuOpen] = useState(false);
-  const [formulaSearchQuery, setFormulaSearchQuery] = useState("");
+  const [formulaSearchQuery, setFormulaSearchQuery] = useState('');
   const [formulaMenuPosition, setFormulaMenuPosition] = useState<{
     top: number;
     left: number;
@@ -21,21 +26,16 @@ export const useFormulaBar = (activeTabKind?: string) => {
   const formulaBarContainerRef = useRef<HTMLDivElement | null>(null);
   const formulaSearchInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleActiveCellDetails = useCallback(
-    (details: ActiveCellDetails) => {
-      setActiveCellAddress(details.address);
-      const value = details.formula ?? details.displayValue ?? "";
-      setFormulaBaselineValue(value);
-      setFormulaBarValue(value);
-    },
-    [],
-  );
+  const handleActiveCellDetails = useCallback((details: ActiveCellDetails) => {
+    setActiveCellAddress(details.address);
+    const value = details.formula ?? details.displayValue ?? '';
+    setFormulaBaselineValue(value);
+    setFormulaBarValue(value);
+  }, []);
 
-  const formulaBarDisabled = activeTabKind !== "sheet" || !activeCellAddress.trim();
+  const formulaBarDisabled = activeTabKind !== 'sheet' || !activeCellAddress.trim();
 
-  const handleFormulaInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFormulaInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormulaBarValue(event.target.value);
   };
 
@@ -55,10 +55,10 @@ export const useFormulaBar = (activeTabKind?: string) => {
   }, [formulaBaselineValue]);
 
   const handleFormulaKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       event.preventDefault();
       handleFormulaCommit();
-    } else if (event.key === "Escape") {
+    } else if (event.key === 'Escape') {
       event.preventDefault();
       handleFormulaCancel();
     }
@@ -72,16 +72,11 @@ export const useFormulaBar = (activeTabKind?: string) => {
       handleFormulaCommit();
     }, 600);
     return () => clearTimeout(timeoutId);
-  }, [
-    formulaBarDisabled,
-    formulaBarValue,
-    formulaBaselineValue,
-    handleFormulaCommit,
-  ]);
+  }, [formulaBarDisabled, formulaBarValue, formulaBaselineValue, handleFormulaCommit]);
 
   const filteredFormulaOptions = useMemo(() => {
     const query = formulaSearchQuery.trim().toLowerCase();
-    const options = defaultFormulaOptions.filter((option) => {
+    const options = defaultFormulaOptions.filter(option => {
       if (!query) return true;
       return (
         option.label.toLowerCase().includes(query) ||
@@ -96,7 +91,7 @@ export const useFormulaBar = (activeTabKind?: string) => {
         acc[option.category].push(option);
         return acc;
       },
-      {} as Record<string, FormulaOption[]>,
+      {} as Record<string, FormulaOption[]>
     );
     return Object.entries(grouped)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -105,10 +100,10 @@ export const useFormulaBar = (activeTabKind?: string) => {
 
   const handleFormulaFxToggle = () => {
     if (formulaBarDisabled) return;
-    setFormulaMenuOpen((prev) => {
+    setFormulaMenuOpen(prev => {
       const next = !prev;
       if (next) {
-        setFormulaSearchQuery("");
+        setFormulaSearchQuery('');
       } else {
         setFormulaMenuPosition(null);
       }
@@ -116,21 +111,18 @@ export const useFormulaBar = (activeTabKind?: string) => {
     });
   };
 
-  const handleFormulaOptionSelect = useCallback(
-    (option: FormulaOption) => {
-      setFormulaBarValue(option.template);
-      setFormulaMenuOpen(false);
-      requestAnimationFrame(() => {
-        const input = formulaInputRef.current;
-        if (input) {
-          input.focus();
-          const length = option.template.length;
-          input.setSelectionRange(length, length);
-        }
-      });
-    },
-    [],
-  );
+  const handleFormulaOptionSelect = useCallback((option: FormulaOption) => {
+    setFormulaBarValue(option.template);
+    setFormulaMenuOpen(false);
+    requestAnimationFrame(() => {
+      const input = formulaInputRef.current;
+      if (input) {
+        input.focus();
+        const length = option.template.length;
+        input.setSelectionRange(length, length);
+      }
+    });
+  }, []);
 
   return {
     activeCellAddress,

@@ -11,17 +11,17 @@ const ToolbarContainer = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.background.surface,
   borderBottom: `1px solid ${theme.palette.divider}`,
   minHeight: '48px',
-  
+
   // Code-first experience: compact but accessible
   '& .MuiIconButton-root': {
     width: '32px',
     height: '32px',
     borderRadius: theme.radius.sm,
-    
+
     '&:hover': {
       backgroundColor: theme.palette.background.level1,
     },
-    
+
     '&:focus-visible': {
       outline: `2px solid ${theme.palette.primary[400]}`,
       outlineOffset: '2px',
@@ -87,7 +87,7 @@ export interface ToolbarProps {
 
 /**
  * Gridpark Toolbar Component
- * 
+ *
  * A flexible toolbar component with Gridpark design principles:
  * - Code-first experience with compact, accessible buttons
  * - Immediate feedback with hover and focus states
@@ -104,7 +104,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     const button = (
       <IconButton
         key={action.id}
-        variant={action.active ? 'soft' : (action.variant || 'plain')}
+        variant={action.active ? 'soft' : action.variant || 'plain'}
         color={action.active ? 'primary' : 'neutral'}
         disabled={action.disabled}
         onClick={action.onClick}
@@ -134,30 +134,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <ToolbarContainer>
       {/* Render individual actions */}
-      {actions.length > 0 && (
-        <ToolbarGroup>
-          {actions.map(renderAction)}
-        </ToolbarGroup>
-      )}
+      {actions.length > 0 && <ToolbarGroup>{actions.map(renderAction)}</ToolbarGroup>}
 
       {/* Render grouped actions */}
       {groups.map((group, groupIndex) => (
         <React.Fragment key={`group-${groupIndex}`}>
-          {(actions.length > 0 || groupIndex > 0) && (
-            <Divider orientation="vertical" />
-          )}
-          <ToolbarGroup>
-            {group.map(renderAction)}
-          </ToolbarGroup>
+          {(actions.length > 0 || groupIndex > 0) && <Divider orientation="vertical" />}
+          <ToolbarGroup>{group.map(renderAction)}</ToolbarGroup>
         </React.Fragment>
       ))}
 
       {/* Render custom content */}
       {children && (
         <>
-          {(actions.length > 0 || groups.length > 0) && (
-            <Divider orientation="vertical" />
-          )}
+          {(actions.length > 0 || groups.length > 0) && <Divider orientation="vertical" />}
           {children}
         </>
       )}

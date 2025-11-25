@@ -2,7 +2,7 @@
 
 export type ParsedGridSelector = {
   sheetName?: string; // e.g., "MyData" or "Active"
-  elementType?: "Sheet" | "Cell" | "Range" | "Col" | "Row";
+  elementType?: 'Sheet' | 'Cell' | 'Range' | 'Col' | 'Row';
   identifier?: string; // e.g., "A1", "A1:B2", "A", "1"
   conditions?: Array<{
     attribute: string; // e.g., "value", "type", "formula"
@@ -39,16 +39,16 @@ export const parseGridSelector = (selector: string): ParsedGridSelector => {
 
   // Separate pseudo-selectors from main part
   const pseudoSelectorRegex = /(:[a-zA-Z0-9_-]+)/g; // Captures :active, :dirty etc.
-  let pseudoSelectors: string[] = [];
-  mainPart = mainPart.replace(pseudoSelectorRegex, (match) => {
+  const pseudoSelectors: string[] = [];
+  mainPart = mainPart.replace(pseudoSelectorRegex, match => {
     pseudoSelectors.push(match);
     return ''; // Remove from mainPart for further parsing
   });
 
   // Separate attribute conditions from main part
   const attributeConditionRegex = /(\[[^\]]+\])/g; // Captures [value="Total"] etc.
-  let attributeConditionsString: string = '';
-  mainPart = mainPart.replace(attributeConditionRegex, (match) => {
+  let attributeConditionsString = '';
+  mainPart = mainPart.replace(attributeConditionRegex, match => {
     attributeConditionsString += match;
     return ''; // Remove from mainPart for further parsing
   });
@@ -90,7 +90,8 @@ export const parseGridSelector = (selector: string): ParsedGridSelector => {
  */
 const parseAttributeConditions = (conditionsString: string): ParsedGridSelector['conditions'] => {
   const conditions: ParsedGridSelector['conditions'] = [];
-  const conditionRegex = /\[(?<attribute>[^=<>~^$*]+)(?<operator>=|\|=|\^=|\$=|\*=|\~=)?(?:"(?<value>[^"]*)"|(?<numberValue>\d+(?:\.\d+)?))?\]/g;
+  const conditionRegex =
+    /\[(?<attribute>[^=<>~^$*]+)(?<operator>=|\|=|\^=|\$=|\*=|\~=)?(?:"(?<value>[^"]*)"|(?<numberValue>\d+(?:\.\d+)?))?\]/g;
 
   let match;
   while ((match = conditionRegex.exec(conditionsString)) !== null) {
@@ -106,16 +107,16 @@ const parseAttributeConditions = (conditionsString: string): ParsedGridSelector[
     if (attribute && conditionValue !== undefined) {
       conditions.push({
         attribute,
-        operator: operator || "=",
+        operator: operator || '=',
         value: conditionValue,
       });
     } else if (attribute && !operator && conditionValue === undefined) {
-        // Handle boolean attributes like [active] (though spec uses [active="true"])
-        conditions.push({
-            attribute,
-            operator: "=",
-            value: "true",
-        });
+      // Handle boolean attributes like [active] (though spec uses [active="true"])
+      conditions.push({
+        attribute,
+        operator: '=',
+        value: 'true',
+      });
     }
   }
   return conditions;

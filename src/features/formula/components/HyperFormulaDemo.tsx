@@ -1,6 +1,6 @@
 /**
  * HyperFormula Demo Component (Phase 3)
- * 
+ *
  * Demonstrates the full power of HyperFormula integration:
  * - 400+ Excel functions (VLOOKUP, IF, SUMIF, etc.)
  * - Dependency tracking
@@ -9,13 +9,13 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Card, 
-  Chip, 
-  Stack, 
+import {
+  Box,
+  Button,
+  Typography,
+  Card,
+  Chip,
+  Stack,
   Select,
   Option,
   Alert,
@@ -37,20 +37,28 @@ const EXAMPLE_FORMULAS = {
     { label: 'SUMIF', formula: '=SUMIF(A1:A10, ">5", B1:B10)', description: 'Conditional sum' },
     { label: 'ROUND', formula: '=ROUND(A1, 2)', description: 'Round to 2 decimals' },
   ],
-  'Logical': [
+  Logical: [
     { label: 'IF', formula: '=IF(A1>10, "High", "Low")', description: 'Simple condition' },
     { label: 'AND', formula: '=AND(A1>5, A1<10)', description: 'Multiple conditions' },
     { label: 'OR', formula: '=OR(A1>10, B1>10)', description: 'Either condition' },
     { label: 'NOT', formula: '=NOT(A1>10)', description: 'Negate condition' },
-    { label: 'IFS', formula: '=IFS(A1>10, "High", A1>5, "Med", TRUE, "Low")', description: 'Multiple IF' },
+    {
+      label: 'IFS',
+      formula: '=IFS(A1>10, "High", A1>5, "Med", TRUE, "Low")',
+      description: 'Multiple IF',
+    },
   ],
-  'Lookup': [
+  Lookup: [
     { label: 'VLOOKUP', formula: '=VLOOKUP(A1, B1:D10, 3, FALSE)', description: 'Vertical lookup' },
-    { label: 'HLOOKUP', formula: '=HLOOKUP(A1, B1:E5, 3, FALSE)', description: 'Horizontal lookup' },
+    {
+      label: 'HLOOKUP',
+      formula: '=HLOOKUP(A1, B1:E5, 3, FALSE)',
+      description: 'Horizontal lookup',
+    },
     { label: 'INDEX', formula: '=INDEX(A1:C10, 5, 2)', description: 'Get value by position' },
     { label: 'MATCH', formula: '=MATCH(A1, B1:B10, 0)', description: 'Find position' },
   ],
-  'Statistical': [
+  Statistical: [
     { label: 'COUNT', formula: '=COUNT(A1:A100)', description: 'Count numbers' },
     { label: 'COUNTA', formula: '=COUNTA(A1:A100)', description: 'Count non-empty' },
     { label: 'COUNTIF', formula: '=COUNTIF(A1:A10, ">5")', description: 'Conditional count' },
@@ -58,7 +66,7 @@ const EXAMPLE_FORMULAS = {
     { label: 'MAX', formula: '=MAX(A1:A100)', description: 'Maximum value' },
     { label: 'MEDIAN', formula: '=MEDIAN(A1:A100)', description: 'Middle value' },
   ],
-  'Text': [
+  Text: [
     { label: 'CONCATENATE', formula: '=CONCATENATE(A1, " ", B1)', description: 'Join text' },
     { label: 'LEFT', formula: '=LEFT(A1, 5)', description: 'First 5 characters' },
     { label: 'RIGHT', formula: '=RIGHT(A1, 5)', description: 'Last 5 characters' },
@@ -76,21 +84,19 @@ const EXAMPLE_FORMULAS = {
 
 export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Math & Trig');
-  const [selectedFormula, setSelectedFormula] = useState<string>(EXAMPLE_FORMULAS['Math & Trig'][0].formula);
+  const [selectedFormula, setSelectedFormula] = useState<string>(
+    EXAMPLE_FORMULAS['Math & Trig'][0].formula
+  );
   const [result, setResult] = useState<string>('');
   const [calculationTime, setCalculationTime] = useState<number>(0);
-  const [dependencies, setDependencies] = useState<{ dependencies: string[]; dependents: string[] } | null>(null);
+  const [dependencies, setDependencies] = useState<{
+    dependencies: string[];
+    dependents: string[];
+  } | null>(null);
   const [error, setError] = useState<string>('');
 
-  const { 
-    calculate, 
-    calculateBatch, 
-    loadSheet, 
-    getDependencies, 
-    isReady, 
-    isSheetLoaded,
-    stats 
-  } = useFormulaWorker(tabId);
+  const { calculate, calculateBatch, loadSheet, getDependencies, isReady, isSheetLoaded, stats } =
+    useFormulaWorker(tabId);
 
   // Load sheet on mount
   useEffect(() => {
@@ -106,12 +112,12 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
     setError('');
     setResult('');
     setDependencies(null);
-    
+
     const startTime = performance.now();
     try {
       const calcResult = await calculate(selectedFormula, 'DEMO1');
       const endTime = performance.now();
-      
+
       setResult(String(calcResult));
       setCalculationTime(endTime - startTime);
     } catch (err) {
@@ -134,7 +140,7 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
   const handleBatchCalculate = useCallback(async () => {
     setError('');
     setResult('');
-    
+
     const formulas = EXAMPLE_FORMULAS[selectedCategory as keyof typeof EXAMPLE_FORMULAS];
     const batchFormulas = formulas.map((f, idx) => ({
       cellRef: `DEMO${idx}`,
@@ -145,11 +151,9 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
     try {
       const results = await calculateBatch(batchFormulas);
       const endTime = performance.now();
-      
-      const resultsText = results.map((r, idx) => 
-        `${formulas[idx].label}: ${r.result}`
-      ).join('\n');
-      
+
+      const resultsText = results.map((r, idx) => `${formulas[idx].label}: ${r.result}`).join('\n');
+
       setResult(resultsText);
       setCalculationTime(endTime - startTime);
     } catch (err) {
@@ -165,14 +169,14 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
       <Typography level="h2" sx={{ mb: 2 }}>
         🎉 Phase 3: HyperFormula Integration
       </Typography>
-      
+
       <Alert color="success" sx={{ mb: 3 }}>
         <Typography level="title-md" sx={{ mb: 1 }}>
           400+ Excel Functions Now Supported!
         </Typography>
         <Typography level="body-sm">
-          Full Excel compatibility with VLOOKUP, IF, SUMIF, INDEX/MATCH, and hundreds more.
-          Includes dependency tracking and circular reference detection.
+          Full Excel compatibility with VLOOKUP, IF, SUMIF, INDEX/MATCH, and hundreds more. Includes
+          dependency tracking and circular reference detection.
         </Typography>
       </Alert>
 
@@ -187,12 +191,8 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
             Sheet {isSheetLoaded ? 'Loaded' : 'Not Loaded'}
           </Chip>
           <Divider orientation="vertical" />
-          <Typography level="body-sm">
-            Total: {stats.totalCalculations} calculations
-          </Typography>
-          <Typography level="body-sm">
-            Avg: {stats.averageDuration.toFixed(2)}ms
-          </Typography>
+          <Typography level="body-sm">Total: {stats.totalCalculations} calculations</Typography>
+          <Typography level="body-sm">Avg: {stats.averageDuration.toFixed(2)}ms</Typography>
         </Stack>
       </Card>
 
@@ -203,19 +203,23 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
             <Typography level="title-md" sx={{ mb: 2 }}>
               Select Function Category
             </Typography>
-            
+
             <Select
               value={selectedCategory}
               onChange={(_, value) => {
                 if (value) {
                   setSelectedCategory(value);
-                  setSelectedFormula(EXAMPLE_FORMULAS[value as keyof typeof EXAMPLE_FORMULAS][0].formula);
+                  setSelectedFormula(
+                    EXAMPLE_FORMULAS[value as keyof typeof EXAMPLE_FORMULAS][0].formula
+                  );
                 }
               }}
               sx={{ mb: 2 }}
             >
               {categories.map(cat => (
-                <Option key={cat} value={cat}>{cat}</Option>
+                <Option key={cat} value={cat}>
+                  {cat}
+                </Option>
               ))}
             </Select>
 
@@ -224,7 +228,7 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
             <Typography level="title-sm" sx={{ mb: 1 }}>
               Available Functions:
             </Typography>
-            
+
             <List size="sm">
               {currentFormulas.map((f, idx) => (
                 <ListItem
@@ -244,8 +248,8 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
                     <Typography level="body-xs" color="neutral">
                       {f.description}
                     </Typography>
-                    <Typography 
-                      level="body-xs" 
+                    <Typography
+                      level="body-xs"
                       sx={{ fontFamily: 'monospace', color: 'primary.plainColor' }}
                     >
                       {f.formula}
@@ -273,11 +277,11 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
             <Typography level="title-md" sx={{ mb: 2 }}>
               Selected Formula
             </Typography>
-            
-            <Box 
-              sx={{ 
-                p: 2, 
-                bgcolor: 'background.level2', 
+
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: 'background.level2',
                 borderRadius: 'sm',
                 fontFamily: 'monospace',
                 fontSize: '1.1em',
@@ -312,10 +316,10 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
               <Typography level="title-sm" sx={{ mb: 1 }}>
                 Result:
               </Typography>
-              <Typography 
-                level="body-lg" 
-                sx={{ 
-                  fontFamily: 'monospace', 
+              <Typography
+                level="body-lg"
+                sx={{
+                  fontFamily: 'monospace',
                   whiteSpace: 'pre-wrap',
                   fontWeight: 'bold',
                 }}
@@ -341,13 +345,13 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
               <Typography level="title-sm" sx={{ mb: 1 }}>
                 📊 Dependency Analysis
               </Typography>
-              
+
               <Box sx={{ mb: 2 }}>
                 <Typography level="body-sm" fontWeight="bold">
                   This cell depends on:
                 </Typography>
                 <Typography level="body-xs" sx={{ fontFamily: 'monospace' }}>
-                  {dependencies.dependencies.length > 0 
+                  {dependencies.dependencies.length > 0
                     ? dependencies.dependencies.join(', ')
                     : 'No dependencies'}
                 </Typography>
@@ -358,7 +362,7 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
                   Cells that depend on this:
                 </Typography>
                 <Typography level="body-xs" sx={{ fontFamily: 'monospace' }}>
-                  {dependencies.dependents.length > 0 
+                  {dependencies.dependents.length > 0
                     ? dependencies.dependents.join(', ')
                     : 'No dependents'}
                 </Typography>
@@ -369,8 +373,8 @@ export const HyperFormulaDemo: React.FC<HyperFormulaDemoProps> = ({ tabId }) => 
           {/* Info Box */}
           <Card sx={{ p: 2, bgcolor: 'primary.softBg' }}>
             <Typography level="body-sm">
-              <strong>💡 Tip:</strong> All calculations run in a Web Worker, 
-              so the UI never freezes even with complex formulas!
+              <strong>💡 Tip:</strong> All calculations run in a Web Worker, so the UI never freezes
+              even with complex formulas!
             </Typography>
           </Card>
         </Box>

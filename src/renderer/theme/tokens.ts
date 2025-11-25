@@ -8,11 +8,11 @@ export const colors = {
     navy: '#1C2541',
   },
   neutral: {
-    offWhite:  '#F9F8FF',
+    offWhite: '#F9F8FF',
     softBlack: '#121826',
-    grayL:     '#E1E4EB',
-    grayM:     '#A0A6B8',
-    grayD:     '#3E475A',
+    grayL: '#E1E4EB',
+    grayM: '#A0A6B8',
+    grayD: '#3E475A',
   },
   accent: {
     neonGreen: {

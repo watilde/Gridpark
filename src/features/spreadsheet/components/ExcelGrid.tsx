@@ -1,6 +1,6 @@
 /**
  * ExcelGrid Component
- * 
+ *
  * Example component demonstrating how to use the new state layer:
  * - Uses useExcelSheet hook for all data operations
  * - Automatic dirty state tracking
@@ -19,14 +19,11 @@ interface ExcelGridProps {
 }
 
 export const ExcelGrid: React.FC<ExcelGridProps> = ({ workbookId, sheetName, tabId }) => {
-  const {
-    cells,
-    getCell,
-    updateCell,
-    isDirty,
-    markSaved,
-    isLoading,
-  } = useExcelSheet({ workbookId, sheetName, tabId });
+  const { cells, getCell, updateCell, isDirty, markSaved, isLoading } = useExcelSheet({
+    workbookId,
+    sheetName,
+    tabId,
+  });
 
   const [editRow, setEditRow] = useState<number>(0);
   const [editCol, setEditCol] = useState<number>(0);
@@ -57,9 +54,7 @@ export const ExcelGrid: React.FC<ExcelGridProps> = ({ workbookId, sheetName, tab
       </Typography>
 
       <Box sx={{ mb: 2 }}>
-        <Typography variant="body2">
-          Total cells: {cells.length}
-        </Typography>
+        <Typography variant="body2">Total cells: {cells.length}</Typography>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
@@ -68,20 +63,20 @@ export const ExcelGrid: React.FC<ExcelGridProps> = ({ workbookId, sheetName, tab
           type="number"
           size="small"
           value={editRow}
-          onChange={(e) => setEditRow(Number(e.target.value))}
+          onChange={e => setEditRow(Number(e.target.value))}
         />
         <TextField
           label="Col"
           type="number"
           size="small"
           value={editCol}
-          onChange={(e) => setEditCol(Number(e.target.value))}
+          onChange={e => setEditCol(Number(e.target.value))}
         />
         <TextField
           label="Value"
           size="small"
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={e => setEditValue(e.target.value)}
         />
         <Button variant="contained" onClick={handleCellEdit}>
           Update Cell

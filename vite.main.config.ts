@@ -20,7 +20,7 @@ export default defineConfig({
     emptyOutDir: false,
     sourcemap: true,
   },
-  
+
   // Resolve configuration
   resolve: {
     alias: {

@@ -69,17 +69,9 @@ export const WithHelperText: Story = {
 export const ValidationStates: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '300px' }}>
-      <Input 
-        label="Valid Input"
-        value="SUM(A1:B10)"
-        success="Formula syntax is correct"
-      />
-      <Input 
-        label="Invalid Input" 
-        value="SUM(A1:B10"
-        error="Missing closing parenthesis"
-      />
-      <Input 
+      <Input label="Valid Input" value="SUM(A1:B10)" success="Formula syntax is correct" />
+      <Input label="Invalid Input" value="SUM(A1:B10" error="Missing closing parenthesis" />
+      <Input
         label="Normal Input"
         placeholder="Enter formula..."
         helperText="Use Excel-compatible syntax"
@@ -91,20 +83,20 @@ export const ValidationStates: Story = {
 export const CodeMode: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '400px' }}>
-      <Input 
+      <Input
         label="Formula Input"
         code={true}
         value="=SUM(FILTER(A1:A100, B1:B100>50))"
         placeholder="Enter Excel formula..."
         helperText="Monospace font for better readability"
       />
-      <Input 
+      <Input
         label="JavaScript Code"
         code={true}
         placeholder="function calculate(data) { return data.sum(); }"
         helperText="Custom function implementation"
       />
-      <Input 
+      <Input
         label="Regular Text"
         code={false}
         placeholder="Enter description..."
@@ -137,18 +129,18 @@ export const Variants: Story = {
 export const WithIcons: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '300px' }}>
-      <Input 
+      <Input
         startDecorator={<Search />}
         placeholder="Search functions..."
         label="Function Search"
       />
-      <Input 
+      <Input
         startDecorator={<Lock />}
         type="password"
         placeholder="Enter API key..."
         label="API Authentication"
       />
-      <Input 
+      <Input
         startDecorator={<Code />}
         code={true}
         placeholder="Enter formula..."
@@ -161,19 +153,14 @@ export const WithIcons: Story = {
 export const DeveloperWorkflow: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '400px' }}>
-      <Input 
-        label="Cell Reference"
-        value="A1:B10"
-        code={true}
-        success="Valid range selected"
-      />
-      <Input 
+      <Input label="Cell Reference" value="A1:B10" code={true} success="Valid range selected" />
+      <Input
         label="Function Parameters"
         code={true}
         placeholder="value, criteria, sum_range"
         helperText="Comma-separated parameter names"
       />
-      <Input 
+      <Input
         label="Description"
         placeholder="Calculates weighted average of values..."
         helperText="User-friendly function description"
@@ -192,13 +179,13 @@ export const DeveloperWorkflow: Story = {
 export const FormulaBuilder: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '500px' }}>
-      <Input 
+      <Input
         label="Excel Formula"
         code={true}
         value={'=SUMIFS(D:D, A:A, "Product A", B:B, ">100")'}
         success="✅ Formula validated successfully"
       />
-      <Input 
+      <Input
         label="Custom Function Call"
         code={true}
         placeholder="GRIDPARK.CALCULATE_ROI(revenue, cost, time_period)"

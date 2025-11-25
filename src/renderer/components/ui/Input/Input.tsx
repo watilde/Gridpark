@@ -6,7 +6,7 @@ import { styled } from '@mui/joy/styles';
 const GridparkInput = styled(JoyInput)(({ theme }) => ({
   fontFamily: theme.fontFamily.body,
   borderRadius: theme.radius.sm,
-  
+
   // Code-first experience: monospace for formula/code inputs
   '&[data-code="true"]': {
     fontFamily: '"JetBrains Mono", monospace',
@@ -72,7 +72,7 @@ export interface InputProps extends Omit<JoyInputProps, 'color' | 'error'> {
 
 /**
  * Gridpark Input Component
- * 
+ *
  * Extends Joy UI Input with Gridpark design principles:
  * - Code-first experience with monospace option for formulas
  * - Immediate feedback with clear focus and validation states
@@ -101,11 +101,7 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <FormControl error={!!error}>
-      {label && (
-        <FormLabel htmlFor={inputId}>
-          {label}
-        </FormLabel>
-      )}
+      {label && <FormLabel htmlFor={inputId}>{label}</FormLabel>}
       <GridparkInput
         id={inputId}
         variant={variant}
@@ -116,9 +112,7 @@ export const Input: React.FC<InputProps> = ({
         {...props}
       />
       {displayHelperText && (
-        <FormHelperText id={helperTextId}>
-          {error || success || helperText}
-        </FormHelperText>
+        <FormHelperText id={helperTextId}>{error || success || helperText}</FormHelperText>
       )}
     </FormControl>
   );

@@ -47,20 +47,14 @@ const readStoragePreset = (): ThemePresetId => {
 
 const readStorageColorScheme = (): ColorSchemePreference => {
   if (typeof window === 'undefined') return 'system';
-  const stored = window.localStorage?.getItem(MODE_STORAGE_KEY) as
-    | ColorSchemePreference
-    | null;
+  const stored = window.localStorage?.getItem(MODE_STORAGE_KEY) as ColorSchemePreference | null;
   if (stored === 'light' || stored === 'dark' || stored === 'system') {
     return stored;
   }
   return 'system';
 };
 
-const ColorSchemeSync = ({
-  preference,
-}: {
-  preference: ColorSchemePreference;
-}): null => {
+const ColorSchemeSync = ({ preference }: { preference: ColorSchemePreference }): null => {
   const { setMode } = useColorScheme();
   useEffect(() => {
     setMode(preference);
@@ -70,9 +64,8 @@ const ColorSchemeSync = ({
 
 export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const [presetId, setPresetIdState] = useState<ThemePresetId>(readStoragePreset);
-  const [colorScheme, setColorSchemeState] = useState<ColorSchemePreference>(
-    readStorageColorScheme,
-  );
+  const [colorScheme, setColorSchemeState] =
+    useState<ColorSchemePreference>(readStorageColorScheme);
 
   const setPresetId = useCallback((next: ThemePresetId) => {
     setPresetIdState(next);
@@ -92,7 +85,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Elemen
   const theme = useMemo(() => createThemeFromPreset(preset), [preset]);
 
   useEffect(() => {
-    const unsubscribe = window.electronAPI?.onThemePresetChange?.((next) => {
+    const unsubscribe = window.electronAPI?.onThemePresetChange?.(next => {
       if (next && themePresets[next as ThemePresetId]) {
         setPresetId(next as ThemePresetId);
       }
@@ -111,7 +104,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Elemen
       colorScheme,
       setColorScheme,
     }),
-    [presetId, preset, setPresetId, colorScheme, setColorScheme],
+    [presetId, preset, setPresetId, colorScheme, setColorScheme]
   );
 
   return (

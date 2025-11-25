@@ -1,9 +1,9 @@
 /**
  * useFormulaCalculation Hook
- * 
+ *
  * Simple formula calculation using IndexedDB
  * Supports basic functions: SUM, AVERAGE, COUNT, MIN, MAX
- * 
+ *
  * Future: Integrate with HyperFormula for full Excel compatibility
  */
 
@@ -25,9 +25,9 @@ function parseRangeReference(ref: string): CellRange {
   if (!match) {
     throw new Error(`Invalid range reference: ${ref}`);
   }
-  
+
   const [, startCol, startRow, endCol, endRow] = match;
-  
+
   return {
     startRow: parseInt(startRow) - 1,
     startCol: columnToIndex(startCol),
@@ -52,13 +52,13 @@ function columnToIndex(col: string): number {
  */
 function parseFormula(formula: string): { function: string; range: CellRange } | null {
   if (!formula.startsWith('=')) return null;
-  
+
   const match = formula.match(/^=([A-Z]+)\(([A-Z0-9:]+)\)$/);
   if (!match) return null;
-  
+
   const [, func, rangeRef] = match;
   const range = parseRangeReference(rangeRef);
-  
+
   return { function: func, range };
 }
 
@@ -69,106 +69,123 @@ export function useFormulaCalculation(tabId: string) {
   /**
    * Get cells in range from IndexedDB
    */
-  const getCellsInRange = useCallback(async (range: CellRange) => {
-    const cells = await db.cells
-      .where('[tabId+row]')
-      .between([tabId, range.startRow], [tabId, range.endRow])
-      .and(cell => cell.col >= range.startCol && cell.col <= range.endCol)
-      .toArray();
-    
-    return cells;
-  }, [tabId]);
-  
+  const getCellsInRange = useCallback(
+    async (range: CellRange) => {
+      const cells = await db.cells
+        .where('[tabId+row]')
+        .between([tabId, range.startRow], [tabId, range.endRow])
+        .and(cell => cell.col >= range.startCol && cell.col <= range.endCol)
+        .toArray();
+
+      return cells;
+    },
+    [tabId]
+  );
+
   /**
    * Calculate SUM
    */
-  const calculateSUM = useCallback(async (range: CellRange): Promise<number> => {
-    const cells = await getCellsInRange(range);
-    return cells.reduce((sum, cell) => {
-      const value = Number(cell.value);
-      return sum + (isNaN(value) ? 0 : value);
-    }, 0);
-  }, [getCellsInRange]);
-  
+  const calculateSUM = useCallback(
+    async (range: CellRange): Promise<number> => {
+      const cells = await getCellsInRange(range);
+      return cells.reduce((sum, cell) => {
+        const value = Number(cell.value);
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0);
+    },
+    [getCellsInRange]
+  );
+
   /**
    * Calculate AVERAGE
    */
-  const calculateAVERAGE = useCallback(async (range: CellRange): Promise<number> => {
-    const cells = await getCellsInRange(range);
-    const numericCells = cells.filter(cell => !isNaN(Number(cell.value)));
-    
-    if (numericCells.length === 0) return 0;
-    
-    const sum = numericCells.reduce((acc, cell) => acc + Number(cell.value), 0);
-    return sum / numericCells.length;
-  }, [getCellsInRange]);
-  
+  const calculateAVERAGE = useCallback(
+    async (range: CellRange): Promise<number> => {
+      const cells = await getCellsInRange(range);
+      const numericCells = cells.filter(cell => !isNaN(Number(cell.value)));
+
+      if (numericCells.length === 0) return 0;
+
+      const sum = numericCells.reduce((acc, cell) => acc + Number(cell.value), 0);
+      return sum / numericCells.length;
+    },
+    [getCellsInRange]
+  );
+
   /**
    * Calculate COUNT
    */
-  const calculateCOUNT = useCallback(async (range: CellRange): Promise<number> => {
-    const cells = await getCellsInRange(range);
-    return cells.filter(cell => cell.value != null && cell.value !== '').length;
-  }, [getCellsInRange]);
-  
+  const calculateCOUNT = useCallback(
+    async (range: CellRange): Promise<number> => {
+      const cells = await getCellsInRange(range);
+      return cells.filter(cell => cell.value != null && cell.value !== '').length;
+    },
+    [getCellsInRange]
+  );
+
   /**
    * Calculate MIN
    */
-  const calculateMIN = useCallback(async (range: CellRange): Promise<number> => {
-    const cells = await getCellsInRange(range);
-    const numericValues = cells
-      .map(cell => Number(cell.value))
-      .filter(val => !isNaN(val));
-    
-    return numericValues.length > 0 ? Math.min(...numericValues) : 0;
-  }, [getCellsInRange]);
-  
+  const calculateMIN = useCallback(
+    async (range: CellRange): Promise<number> => {
+      const cells = await getCellsInRange(range);
+      const numericValues = cells.map(cell => Number(cell.value)).filter(val => !isNaN(val));
+
+      return numericValues.length > 0 ? Math.min(...numericValues) : 0;
+    },
+    [getCellsInRange]
+  );
+
   /**
    * Calculate MAX
    */
-  const calculateMAX = useCallback(async (range: CellRange): Promise<number> => {
-    const cells = await getCellsInRange(range);
-    const numericValues = cells
-      .map(cell => Number(cell.value))
-      .filter(val => !isNaN(val));
-    
-    return numericValues.length > 0 ? Math.max(...numericValues) : 0;
-  }, [getCellsInRange]);
-  
+  const calculateMAX = useCallback(
+    async (range: CellRange): Promise<number> => {
+      const cells = await getCellsInRange(range);
+      const numericValues = cells.map(cell => Number(cell.value)).filter(val => !isNaN(val));
+
+      return numericValues.length > 0 ? Math.max(...numericValues) : 0;
+    },
+    [getCellsInRange]
+  );
+
   /**
    * Calculate formula
    * Example: "=SUM(A1:D10)" -> 150
    */
-  const calculate = useCallback(async (formula: string): Promise<number | string> => {
-    try {
-      const parsed = parseFormula(formula);
-      if (!parsed) {
+  const calculate = useCallback(
+    async (formula: string): Promise<number | string> => {
+      try {
+        const parsed = parseFormula(formula);
+        if (!parsed) {
+          return '#ERROR!';
+        }
+
+        const { function: func, range } = parsed;
+
+        switch (func) {
+          case 'SUM':
+            return await calculateSUM(range);
+          case 'AVERAGE':
+          case 'AVG':
+            return await calculateAVERAGE(range);
+          case 'COUNT':
+            return await calculateCOUNT(range);
+          case 'MIN':
+            return await calculateMIN(range);
+          case 'MAX':
+            return await calculateMAX(range);
+          default:
+            return '#NAME?'; // Unknown function
+        }
+      } catch (error) {
+        console.error('[useFormulaCalculation] Error:', error);
         return '#ERROR!';
       }
-      
-      const { function: func, range } = parsed;
-      
-      switch (func) {
-        case 'SUM':
-          return await calculateSUM(range);
-        case 'AVERAGE':
-        case 'AVG':
-          return await calculateAVERAGE(range);
-        case 'COUNT':
-          return await calculateCOUNT(range);
-        case 'MIN':
-          return await calculateMIN(range);
-        case 'MAX':
-          return await calculateMAX(range);
-        default:
-          return '#NAME?'; // Unknown function
-      }
-    } catch (error) {
-      console.error('[useFormulaCalculation] Error:', error);
-      return '#ERROR!';
-    }
-  }, [calculateSUM, calculateAVERAGE, calculateCOUNT, calculateMIN, calculateMAX]);
-  
+    },
+    [calculateSUM, calculateAVERAGE, calculateCOUNT, calculateMIN, calculateMAX]
+  );
+
   return {
     calculate,
     calculateSUM,
@@ -181,13 +198,13 @@ export function useFormulaCalculation(tabId: string) {
 
 /**
  * Example usage:
- * 
+ *
  * const { calculate } = useFormulaCalculation(tabId);
- * 
+ *
  * // Calculate SUM
  * const sum = await calculate('=SUM(A1:A100)');
  * console.log(sum); // 4500
- * 
+ *
  * // Calculate AVERAGE
  * const avg = await calculate('=AVERAGE(B1:B10)');
  * console.log(avg); // 75.5

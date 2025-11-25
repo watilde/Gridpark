@@ -1,6 +1,6 @@
 /**
  * Data Migration Utilities
- * 
+ *
  * Handles migration from legacy useState storage to Dexie.js:
  * - Converts 2D arrays to sparse matrix
  * - Initializes sheet metadata
@@ -43,7 +43,7 @@ export async function migrateLegacySheetSession(
   }
 ): Promise<{ cellCount: number }> {
   console.log(`[Migration] Migrating sheet session: ${tabId}`);
-  
+
   try {
     // 1. Create sheet metadata
     await db.upsertSheetMetadata({
@@ -56,15 +56,15 @@ export async function migrateLegacySheetSession(
       cellCount: 0,
       dirty: session.dirty,
     });
-    
+
     // 2. Convert 2D array to sparse format and save
     await db.save2DArrayAsCells(tabId, session.data);
-    
+
     // 3. Get cell count
     const cells = await db.getCellsForSheet(tabId);
-    
+
     console.log(`[Migration] Successfully migrated ${cells.length} cells for ${tabId}`);
-    
+
     return { cellCount: cells.length };
   } catch (error) {
     console.error(`[Migration] Failed to migrate ${tabId}:`, error);
@@ -77,11 +77,14 @@ export async function migrateLegacySheetSession(
  */
 export async function migrateLegacySheetSessions(
   sessions: Record<string, LegacySheetSession>,
-  metadataMap: Record<string, {
-    workbookId: string;
-    sheetName: string;
-    sheetIndex: number;
-  }>
+  metadataMap: Record<
+    string,
+    {
+      workbookId: string;
+      sheetName: string;
+      sheetIndex: number;
+    }
+  >
 ): Promise<MigrationResult> {
   const result: MigrationResult = {
     success: true,
@@ -89,13 +92,13 @@ export async function migrateLegacySheetSessions(
     cellsMigrated: 0,
     errors: [],
   };
-  
+
   console.log(`[Migration] Starting migration of ${Object.keys(sessions).length} sheet sessions`);
-  
+
   for (const [tabId, session] of Object.entries(sessions)) {
     try {
       const metadata = metadataMap[tabId];
-      
+
       if (!metadata) {
         console.warn(`[Migration] No metadata found for ${tabId}, skipping`);
         result.errors.push({
@@ -104,9 +107,9 @@ export async function migrateLegacySheetSessions(
         });
         continue;
       }
-      
+
       const { cellCount } = await migrateLegacySheetSession(tabId, session, metadata);
-      
+
       result.tabsProcessed++;
       result.cellsMigrated += cellCount;
     } catch (error) {
@@ -117,9 +120,11 @@ export async function migrateLegacySheetSessions(
       });
     }
   }
-  
-  console.log(`[Migration] Completed. Processed: ${result.tabsProcessed}, Cells: ${result.cellsMigrated}, Errors: ${result.errors.length}`);
-  
+
+  console.log(
+    `[Migration] Completed. Processed: ${result.tabsProcessed}, Cells: ${result.cellsMigrated}, Errors: ${result.errors.length}`
+  );
+
   return result;
 }
 
@@ -154,7 +159,7 @@ export async function initializeSheetFromFile(
   sheetData: any[][]
 ): Promise<void> {
   console.log(`[Migration] Initializing new sheet: ${tabId}`);
-  
+
   // Create metadata
   await db.upsertSheetMetadata({
     tabId,
@@ -166,10 +171,10 @@ export async function initializeSheetFromFile(
     cellCount: 0,
     dirty: false,
   });
-  
+
   // Save data
   await db.save2DArrayAsCells(tabId, sheetData);
-  
+
   console.log(`[Migration] Sheet initialized: ${tabId}`);
 }
 
@@ -178,12 +183,12 @@ export async function initializeSheetFromFile(
  */
 export async function clearAllMigrationData(): Promise<void> {
   console.log('[Migration] Clearing all migration data...');
-  
+
   await db.transaction('rw', [db.sheetMetadata, db.cells], async () => {
     await db.sheetMetadata.clear();
     await db.cells.clear();
   });
-  
+
   console.log('[Migration] Migration data cleared');
 }
 
@@ -191,15 +196,12 @@ export async function clearAllMigrationData(): Promise<void> {
  * Get migration statistics
  */
 export async function getMigrationStats() {
-  const [sheetCount, cellCount] = await Promise.all([
-    db.sheetMetadata.count(),
-    db.cells.count(),
-  ]);
-  
+  const [sheetCount, cellCount] = await Promise.all([db.sheetMetadata.count(), db.cells.count()]);
+
   const sheets = await db.sheetMetadata.toArray();
   const dirtySheets = sheets.filter(s => s.dirty).length;
   const totalCells = sheets.reduce((sum, s) => sum + s.cellCount, 0);
-  
+
   return {
     sheetsInDB: sheetCount,
     cellsInDB: cellCount,

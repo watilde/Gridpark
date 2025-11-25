@@ -1,7 +1,7 @@
-import { useCallback } from "react";
-import { ExcelFile, GridparkManifest } from "../types/excel";
-import { ManifestSession } from "./useFileSessions";
-import { cloneManifest } from "../utils/sessionHelpers";
+import { useCallback } from 'react';
+import { ExcelFile, GridparkManifest } from '../types/excel';
+import { ManifestSession } from './useFileSessions';
+import { cloneManifest } from '../utils/sessionHelpers';
 
 export interface ManifestHandlersParams {
   manifestSessions: Record<string, ManifestSession>;
@@ -31,7 +31,7 @@ export const useManifestHandlers = ({
       const key = getManifestSessionKey(file);
       const sanitized = cloneManifest(nextManifest);
 
-      setManifestSessions((prev) => {
+      setManifestSessions(prev => {
         const existing = prev[key];
         if (existing) {
           return {
@@ -59,7 +59,7 @@ export const useManifestHandlers = ({
         updateWorkbookReferences(workbookId, updatedFile);
       }
     },
-    [getManifestSessionKey, updateWorkbookReferences, setManifestSessions],
+    [getManifestSessionKey, updateWorkbookReferences, setManifestSessions]
   );
 
   /**
@@ -74,7 +74,7 @@ export const useManifestHandlers = ({
         return;
       }
 
-      setManifestSessions((prev) => ({
+      setManifestSessions(prev => ({
         ...prev,
         [key]: { ...prev[key]!, saving: true, error: undefined },
       }));
@@ -82,11 +82,11 @@ export const useManifestHandlers = ({
       try {
         const gridparkApi = window.electronAPI?.gridpark;
         if (!gridparkApi?.writeFile) {
-          throw new Error("Manifest editing is only available in the desktop application.");
+          throw new Error('Manifest editing is only available in the desktop application.');
         }
         const pkg = file.gridparkPackage;
         if (!pkg) {
-          throw new Error("Missing Gridpark package metadata.");
+          throw new Error('Missing Gridpark package metadata.');
         }
 
         const content = JSON.stringify(session.data, null, 2);
@@ -96,12 +96,12 @@ export const useManifestHandlers = ({
           content,
         });
         if (!response?.success) {
-          throw new Error(response?.error ?? "Failed to save manifest.");
+          throw new Error(response?.error ?? 'Failed to save manifest.');
         }
 
         const updatedManifest = cloneManifest(session.data);
         const updatedFile = { ...file, manifest: updatedManifest };
-        setManifestSessions((prev) => ({
+        setManifestSessions(prev => ({
           ...prev,
           [key]: {
             ...prev[key]!,
@@ -112,7 +112,7 @@ export const useManifestHandlers = ({
         }));
         updateWorkbookReferences(workbookId, updatedFile);
       } catch (error) {
-        setManifestSessions((prev) => ({
+        setManifestSessions(prev => ({
           ...prev,
           [key]: {
             ...prev[key]!,
@@ -128,7 +128,7 @@ export const useManifestHandlers = ({
       readManifestFile,
       setManifestSessions,
       updateWorkbookReferences,
-    ],
+    ]
   );
 
   return {

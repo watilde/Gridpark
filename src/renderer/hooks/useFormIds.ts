@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId } from 'react';
 
 /**
  * Hook to generate SSR-safe unique IDs for form elements
@@ -57,9 +57,9 @@ export const useFormIds = (prefix?: string) => {
 
       return {
         id: prefixedId,
-        "aria-labelledby": hasLabel ? `${prefixedId}-label` : undefined,
-        "aria-describedby": describedBy.length > 0 ? describedBy.join(" ") : undefined,
-        "aria-invalid": hasError ? true : undefined,
+        'aria-labelledby': hasLabel ? `${prefixedId}-label` : undefined,
+        'aria-describedby': describedBy.length > 0 ? describedBy.join(' ') : undefined,
+        'aria-invalid': hasError ? true : undefined,
       };
     },
   };
@@ -88,7 +88,7 @@ export const useTabIds = (prefix?: string) => {
      */
     getTabAriaProps: (index: number) => ({
       id: `${prefixedId}-tab-${index}`,
-      "aria-controls": `${prefixedId}-tabpanel-${index}`,
+      'aria-controls': `${prefixedId}-tabpanel-${index}`,
     }),
 
     /**
@@ -96,8 +96,8 @@ export const useTabIds = (prefix?: string) => {
      */
     getTabPanelAriaProps: (index: number) => ({
       id: `${prefixedId}-tabpanel-${index}`,
-      "aria-labelledby": `${prefixedId}-tab-${index}`,
-      role: "tabpanel",
+      'aria-labelledby': `${prefixedId}-tab-${index}`,
+      role: 'tabpanel',
     }),
   };
 };
@@ -125,8 +125,8 @@ export const useListIds = (prefix?: string) => {
      */
     getListAriaProps: (label?: string) => ({
       id: prefixedId,
-      role: "list",
-      "aria-label": label,
+      role: 'list',
+      'aria-label': label,
     }),
 
     /**
@@ -134,7 +134,7 @@ export const useListIds = (prefix?: string) => {
      */
     getListItemAriaProps: (index: number) => ({
       id: `${prefixedId}-item-${index}`,
-      role: "listitem",
+      role: 'listitem',
     }),
   };
 };
@@ -167,10 +167,10 @@ export const useModalIds = (prefix?: string) => {
      */
     getModalAriaProps: () => ({
       id: prefixedId,
-      role: "dialog",
-      "aria-modal": true,
-      "aria-labelledby": `${prefixedId}-title`,
-      "aria-describedby": `${prefixedId}-description`,
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-labelledby': `${prefixedId}-title`,
+      'aria-describedby': `${prefixedId}-description`,
     }),
   };
 };
@@ -203,9 +203,9 @@ export const useMenuIds = (prefix?: string) => {
      */
     getButtonAriaProps: (isOpen: boolean) => ({
       id: `${prefixedId}-button`,
-      "aria-haspopup": true,
-      "aria-expanded": isOpen,
-      "aria-controls": isOpen ? `${prefixedId}-menu` : undefined,
+      'aria-haspopup': true,
+      'aria-expanded': isOpen,
+      'aria-controls': isOpen ? `${prefixedId}-menu` : undefined,
     }),
 
     /**
@@ -213,8 +213,8 @@ export const useMenuIds = (prefix?: string) => {
      */
     getMenuAriaProps: () => ({
       id: `${prefixedId}-menu`,
-      role: "menu",
-      "aria-labelledby": `${prefixedId}-button`,
+      role: 'menu',
+      'aria-labelledby': `${prefixedId}-button`,
     }),
   };
 };

@@ -40,7 +40,7 @@ export type ThemePreset = {
 };
 
 export const createScheme = (
-  scheme: ThemeScheme,
+  scheme: ThemeScheme
 ): CssVarsThemeOptions['colorSchemes']['light'] => ({
   palette: {
     primary: {

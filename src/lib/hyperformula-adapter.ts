@@ -1,15 +1,15 @@
 /**
  * HyperFormula Adapter
- * 
+ *
  * Bridges HyperFormula calculation engine with Dexie.js IndexedDB storage.
- * 
+ *
  * Features:
  * - Excel-compatible formula calculation (400+ functions)
  * - Dependency graph for automatic recalculation
  * - Circular reference detection
  * - Efficient sparse matrix integration
  * - Support for VLOOKUP, IF, SUMIF, INDEX/MATCH, and more
- * 
+ *
  * Usage:
  * ```typescript
  * const adapter = new HyperFormulaAdapter(db);
@@ -148,7 +148,7 @@ export class HyperFormulaAdapter {
    */
   calculateFormula(formula: string, row: number, col: number, tabId: string): CalculationResult {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       return {
         value: '#REF!',
@@ -183,7 +183,7 @@ export class HyperFormulaAdapter {
    */
   getCellValue(tabId: string, row: number, col: number): any {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       return null;
     }
@@ -202,7 +202,7 @@ export class HyperFormulaAdapter {
    */
   getCellFormula(tabId: string, row: number, col: number): string | undefined {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       return undefined;
     }
@@ -222,7 +222,7 @@ export class HyperFormulaAdapter {
    */
   setCellContent(tabId: string, row: number, col: number, content: any): void {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       throw new Error('Sheet not loaded');
     }
@@ -239,9 +239,12 @@ export class HyperFormulaAdapter {
   /**
    * Batch set cell contents (more efficient than individual sets)
    */
-  batchSetCellContents(tabId: string, updates: Array<{ row: number; col: number; content: any }>): void {
+  batchSetCellContents(
+    tabId: string,
+    updates: Array<{ row: number; col: number; content: any }>
+  ): void {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       throw new Error('Sheet not loaded');
     }
@@ -267,7 +270,7 @@ export class HyperFormulaAdapter {
    */
   getDependentCells(tabId: string, row: number, col: number): DependencyInfo[] {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       return [];
     }
@@ -292,7 +295,7 @@ export class HyperFormulaAdapter {
    */
   getCellDependencies(tabId: string, row: number, col: number): string[] {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       return [];
     }
@@ -314,14 +317,14 @@ export class HyperFormulaAdapter {
    */
   hasCircularReferences(tabId: string): boolean {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       return false;
     }
 
     // Check for errors in the sheet
     const sheetErrors = this.engine.getSheetSerialized(sheetId);
-    
+
     // Look for circular reference errors
     for (const row of sheetErrors) {
       for (const cell of row) {
@@ -345,7 +348,7 @@ export class HyperFormulaAdapter {
    */
   async syncToDatabase(tabId: string): Promise<void> {
     const sheetId = this.sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       throw new Error('Sheet not loaded');
     }
@@ -362,7 +365,7 @@ export class HyperFormulaAdapter {
 
         // Handle formula cells
         const formula = this.getCellFormula(tabId, rowIndex, colIndex);
-        
+
         return {
           value: cell,
           type: this.detectCellType(cell, formula),
@@ -416,7 +419,7 @@ export class HyperFormulaAdapter {
     const sheetName = this.engine.getSheetName(address.sheet);
     const col = this.columnIndexToLetter(address.col);
     const row = address.row + 1; // HyperFormula uses 0-based, Excel uses 1-based
-    
+
     return `${sheetName}!${col}${row}`;
   }
 
@@ -426,12 +429,12 @@ export class HyperFormulaAdapter {
   private columnIndexToLetter(index: number): string {
     let result = '';
     let num = index;
-    
+
     while (num >= 0) {
       result = String.fromCharCode((num % 26) + 65) + result;
       num = Math.floor(num / 26) - 1;
     }
-    
+
     return result;
   }
 
@@ -467,7 +470,7 @@ export class HyperFormulaAdapter {
     Array.from(this.sheetIdMap.keys()).forEach(tabId => {
       this.unloadSheet(tabId);
     });
-    
+
     this.sheetIdMap.clear();
     this.reverseSheetIdMap.clear();
   }
@@ -480,6 +483,9 @@ export class HyperFormulaAdapter {
 /**
  * Create a new HyperFormulaAdapter instance
  */
-export function createHyperFormulaAdapter(db: AppDatabase, config?: Partial<ConfigParams>): HyperFormulaAdapter {
+export function createHyperFormulaAdapter(
+  db: AppDatabase,
+  config?: Partial<ConfigParams>
+): HyperFormulaAdapter {
   return new HyperFormulaAdapter(db, config);
 }

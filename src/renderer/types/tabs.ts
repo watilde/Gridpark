@@ -1,7 +1,7 @@
-import { ExcelFile, GridparkCodeFile } from "./excel";
+import { ExcelFile, GridparkCodeFile } from './excel';
 
 export type SheetTab = {
-  kind: "sheet";
+  kind: 'sheet';
   id: string;
   workbookId: string;
   treeNodeId: string;
@@ -12,7 +12,7 @@ export type SheetTab = {
 };
 
 export type ManifestTab = {
-  kind: "manifest";
+  kind: 'manifest';
   id: string;
   workbookId: string;
   treeNodeId: string;
@@ -21,7 +21,7 @@ export type ManifestTab = {
 };
 
 export type CodeTab = {
-  kind: "code";
+  kind: 'code';
   id: string;
   workbookId: string;
   treeNodeId: string;

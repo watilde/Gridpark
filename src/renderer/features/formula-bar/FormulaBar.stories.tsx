@@ -33,7 +33,7 @@ Features real-time validation, function suggestions, and familiar Excel-like int
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    Story => (
       <div style={{ width: '800px' }}>
         <Story />
       </div>
@@ -52,31 +52,31 @@ const mockValidateFormula = (formula: string) => {
 
   // Simple validation examples
   if (formula === '=SUM(A1:A10)') {
-    return { 
+    return {
       isValid: true,
-      suggestions: ['=SUM(A1:B10)', '=AVERAGE(A1:A10)', '=COUNT(A1:A10)']
+      suggestions: ['=SUM(A1:B10)', '=AVERAGE(A1:A10)', '=COUNT(A1:A10)'],
     };
   }
-  
+
   if (formula.includes('SUM(') && !formula.includes(')')) {
-    return { 
-      isValid: false, 
+    return {
+      isValid: false,
       error: 'Missing closing parenthesis',
-      suggestions: ['=SUM(A1:A10)', '=SUM(B1:B5)']
+      suggestions: ['=SUM(A1:A10)', '=SUM(B1:B5)'],
     };
   }
 
   if (formula.includes('VLOOKUP')) {
     return {
       isValid: true,
-      suggestions: ['=VLOOKUP(A1,B:D,2,FALSE)', '=VLOOKUP(A1,Table1,3,TRUE)']
+      suggestions: ['=VLOOKUP(A1,B:D,2,FALSE)', '=VLOOKUP(A1,Table1,3,TRUE)'],
     };
   }
 
   if (formula.startsWith('=') && formula.length > 1) {
     return {
       isValid: true,
-      suggestions: ['=SUM()', '=AVERAGE()', '=COUNT()', '=IF()', '=VLOOKUP()']
+      suggestions: ['=SUM()', '=AVERAGE()', '=COUNT()', '=IF()', '=VLOOKUP()'],
     };
   }
 
@@ -109,13 +109,14 @@ export const WithFormula: Story = {
 export const WithValidation: Story = {
   args: {
     cellReference: 'D3',
-    value: '=SUM(A1:A10',  // Missing closing parenthesis
+    value: '=SUM(A1:A10', // Missing closing parenthesis
     onValidateFormula: mockValidateFormula,
   },
   parameters: {
     docs: {
       description: {
-        story: 'Formula bar showing validation error for malformed formula (missing closing parenthesis).',
+        story:
+          'Formula bar showing validation error for malformed formula (missing closing parenthesis).',
       },
     },
   },
@@ -159,9 +160,9 @@ export const InteractiveDemo: Story = {
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
               Cell Reference:
             </label>
-            <select 
-              value={cellRef} 
-              onChange={(e) => setCellRef(e.target.value)}
+            <select
+              value={cellRef}
+              onChange={e => setCellRef(e.target.value)}
               style={{ padding: '4px 8px', borderRadius: '4px' }}
             >
               <option value="A1">A1</option>
@@ -185,12 +186,15 @@ export const InteractiveDemo: Story = {
           <Card title="Execution Log" variant="soft">
             <div style={{ maxHeight: '150px', overflow: 'auto' }}>
               {log.map((entry, index) => (
-                <div key={index} style={{ 
-                  fontSize: '12px', 
-                  fontFamily: 'JetBrains Mono, monospace',
-                  marginBottom: '4px',
-                  color: '#666'
-                }}>
+                <div
+                  key={index}
+                  style={{
+                    fontSize: '12px',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    marginBottom: '4px',
+                    color: '#666',
+                  }}
+                >
                   {entry}
                 </div>
               ))}
@@ -203,7 +207,8 @@ export const InteractiveDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Interactive demo with cell selection and execution logging. Try different formulas and see real-time validation.',
+        story:
+          'Interactive demo with cell selection and execution logging. Try different formulas and see real-time validation.',
       },
     },
   },
@@ -247,7 +252,8 @@ export const ExcelFormulas: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Collection of common Excel formulas showing various function types and syntax patterns.',
+        story:
+          'Collection of common Excel formulas showing various function types and syntax patterns.',
       },
     },
   },
@@ -256,10 +262,7 @@ export const ExcelFormulas: Story = {
 export const DeveloperWorkflow: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <Card 
-        title="Custom Function Development" 
-        subtitle="Formula bar in developer context"
-      >
+      <Card title="Custom Function Development" subtitle="Formula bar in developer context">
         <div style={{ fontSize: '14px', marginBottom: '12px' }}>
           Testing custom GRIDPARK functions with familiar Excel syntax:
         </div>
@@ -268,33 +271,33 @@ export const DeveloperWorkflow: Story = {
       <FormulaBar
         cellReference="A1"
         value="=GRIDPARK.CALCULATE_ROI(B1,C1,D1)"
-        onValidateFormula={(formula) => ({
+        onValidateFormula={formula => ({
           isValid: true,
           suggestions: [
             '=GRIDPARK.CALCULATE_ROI(revenue, cost, period)',
             '=GRIDPARK.FETCH_API_DATA(endpoint)',
-            '=GRIDPARK.TRANSFORM_JSON(data, path)'
-          ]
+            '=GRIDPARK.TRANSFORM_JSON(data, path)',
+          ],
         })}
       />
 
       <FormulaBar
         cellReference="A2"
         value="=GRIDPARK.FETCH_API"
-        onValidateFormula={(formula) => ({
+        onValidateFormula={formula => ({
           isValid: false,
           error: 'Incomplete function call',
           suggestions: [
             '=GRIDPARK.FETCH_API_DATA("https://api.example.com/data")',
-            '=GRIDPARK.FETCH_API_AUTH("endpoint", "token")'
-          ]
+            '=GRIDPARK.FETCH_API_AUTH("endpoint", "token")',
+          ],
         })}
       />
 
       <Card variant="soft">
         <div style={{ fontSize: '12px' }}>
-          <strong>💡 Developer Tip:</strong> Custom functions use the GRIDPARK namespace 
-          and support the same parameter patterns as Excel Custom Functions.
+          <strong>💡 Developer Tip:</strong> Custom functions use the GRIDPARK namespace and support
+          the same parameter patterns as Excel Custom Functions.
         </div>
       </Card>
     </div>
@@ -302,7 +305,8 @@ export const DeveloperWorkflow: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Formula bar in developer context with custom GRIDPARK functions and development-focused suggestions.',
+        story:
+          'Formula bar in developer context with custom GRIDPARK functions and development-focused suggestions.',
       },
     },
   },

@@ -5,14 +5,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onFilesOpened: (callback: (payload: { files: unknown; directoryName?: string }) => void) => {
     const handler = (
       _event: Electron.IpcRendererEvent,
-      payload: { files: unknown; directoryName?: string },
+      payload: { files: unknown; directoryName?: string }
     ) => callback(payload);
     ipcRenderer.on('app:files-opened', handler);
     return () => ipcRenderer.removeListener('app:files-opened', handler);
   },
   onThemePresetChange: (callback: (presetId: string) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, presetId: string) =>
-      callback(presetId);
+    const handler = (_event: Electron.IpcRendererEvent, presetId: string) => callback(presetId);
     ipcRenderer.on('settings:theme', handler);
     return () => ipcRenderer.removeListener('settings:theme', handler);
   },

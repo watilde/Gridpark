@@ -7,7 +7,7 @@ import { ExcelFile, ExcelSheet, CellData } from '../types/excel';
 export const parseExcelFile = (arrayBuffer: ArrayBuffer, fileName: string): ExcelFile => {
   const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
-  const sheets: ExcelSheet[] = workbook.SheetNames.map((sheetName) => {
+  const sheets: ExcelSheet[] = workbook.SheetNames.map(sheetName => {
     const worksheet = workbook.Sheets[sheetName];
     const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
 
@@ -28,7 +28,7 @@ export const parseExcelFile = (arrayBuffer: ArrayBuffer, fileName: string): Exce
             type: 'empty',
           });
         } else {
-          let cellData: CellData = {
+          const cellData: CellData = {
             value: cell.v,
             type: 'string',
           };
@@ -159,7 +159,7 @@ export const loadExcelFile = async (file: File): Promise<ExcelFile> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = e => {
       try {
         const arrayBuffer = e.target?.result as ArrayBuffer;
         const excelFile = parseExcelFile(arrayBuffer, file.name);
@@ -193,17 +193,13 @@ const normalizeCellValue = (cell: CellData): any => {
 
 export const serializeExcelFile = (file: ExcelFile): ArrayBuffer => {
   const workbook = XLSX.utils.book_new();
-  file.sheets.forEach((sheet) => {
+  file.sheets.forEach(sheet => {
     const data =
       sheet.data.length > 0
-        ? sheet.data.map((row) => row.map((cell) => normalizeCellValue(cell)))
+        ? sheet.data.map(row => row.map(cell => normalizeCellValue(cell)))
         : [[]];
     const worksheet = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      sheet.name || 'Sheet',
-    );
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name || 'Sheet');
   });
   return XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
 };

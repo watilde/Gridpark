@@ -1,0 +1,11 @@
+node_modules
+dist
+out
+.webpack
+.vite
+docs
+docs-md
+coverage
+storybook-static
+*.log
+package-lock.json

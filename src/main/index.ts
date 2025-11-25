@@ -1,38 +1,16 @@
-import {
-  app,
-  BrowserWindow,
-  ipcMain,
-  Menu,
-  dialog,
-  nativeImage,
-} from "electron";
-import type { AboutPanelOptionsOptions } from "electron";
-import {
-  join,
-  basename,
-  extname,
-  dirname,
-  normalize,
-  relative,
-  isAbsolute,
-} from "path";
-import {
-  readFileSync,
-  readdirSync,
-  statSync,
-  existsSync,
-  mkdirSync,
-  writeFileSync,
-} from "fs";
-import { parseExcelFile } from "../renderer/utils/excelUtils";
+import { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } from 'electron';
+import type { AboutPanelOptionsOptions } from 'electron';
+import { join, basename, extname, dirname, normalize, relative, isAbsolute } from 'path';
+import { readFileSync, readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'fs';
+import { parseExcelFile } from '../renderer/utils/excelUtils';
 import {
   ExcelFile,
   GridparkManifest,
   GridparkPackage,
   GridparkCodeFile,
   GridparkCodeLanguage,
-} from "../renderer/types/excel";
-import { themeOptions, DEFAULT_THEME_ID } from "../renderer/theme/theme";
+} from '../renderer/types/excel';
+import { themeOptions, DEFAULT_THEME_ID } from '../renderer/theme/theme';
 
 // Injected by Electron Forge's Vite plugin at build time.
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -48,31 +26,29 @@ if (process.platform === 'win32') {
   }
 }
 
-app.setName("Gridpark");
+app.setName('Gridpark');
 
-const WINDOW_TITLE_FALLBACK = "Gridpark";
+const WINDOW_TITLE_FALLBACK = 'Gridpark';
 
-const GRIDPARK_DIRNAME = ".gridpark";
+const GRIDPARK_DIRNAME = '.gridpark';
 const resolveAssetPath = (...paths: string[]) => {
   if (app.isPackaged) {
     return join(process.resourcesPath, ...paths);
   }
-  return join(__dirname, "../../", ...paths);
+  return join(__dirname, '../../', ...paths);
 };
 const getIconFileNames = () => {
-  if (process.platform === "darwin") {
-    return ["assets/icon.icns", "assets/icon.png"];
+  if (process.platform === 'darwin') {
+    return ['assets/icon.icns', 'assets/icon.png'];
   }
-  if (process.platform === "win32") {
-    return ["assets/icon.ico", "assets/icon.png"];
+  if (process.platform === 'win32') {
+    return ['assets/icon.ico', 'assets/icon.png'];
   }
-  return ["assets/icon.png"];
+  return ['assets/icon.png'];
 };
 
 const resolveIconAsset = () => {
-  const resolvedFiles = getIconFileNames().map((file) =>
-    resolveAssetPath(file),
-  );
+  const resolvedFiles = getIconFileNames().map(file => resolveAssetPath(file));
 
   for (const iconPath of resolvedFiles) {
     if (!existsSync(iconPath)) continue;
@@ -88,9 +64,7 @@ const resolveIconAsset = () => {
 
   if (resolvedFiles.length > 0) {
     const fallbackPath = resolvedFiles[resolvedFiles.length - 1];
-    console.warn(
-      "No platform icon could be loaded; falling back to last candidate.",
-    );
+    console.warn('No platform icon could be loaded; falling back to last candidate.');
     return { iconImage: undefined, iconPath: fallbackPath };
   }
 
@@ -99,52 +73,49 @@ const resolveIconAsset = () => {
 
 const { iconImage: ICON_IMAGE, iconPath: ICON_PATH } = resolveIconAsset();
 
-const getWorkbookName = (filePath: string) =>
-  basename(filePath, extname(filePath));
+const getWorkbookName = (filePath: string) => basename(filePath, extname(filePath));
 
 const getGridparkRoot = (filePath: string) =>
   join(dirname(filePath), GRIDPARK_DIRNAME, getWorkbookName(filePath));
 
 const normalizeRelativePath = (relativePath: string) =>
-  relativePath.replace(/^[./\\]+/, "").replace(/\\/g, "/");
+  relativePath.replace(/^[./\\]+/, '').replace(/\\/g, '/');
 
-const detectLanguageFromExtension = (
-  fileName: string,
-): GridparkCodeLanguage => {
-  if (fileName.endsWith(".css")) return "css";
-  if (fileName.endsWith(".json")) return "json";
-  if (fileName.endsWith(".txt")) return "text";
-  return "javascript";
+const detectLanguageFromExtension = (fileName: string): GridparkCodeLanguage => {
+  if (fileName.endsWith('.css')) return 'css';
+  if (fileName.endsWith('.json')) return 'json';
+  if (fileName.endsWith('.txt')) return 'text';
+  return 'javascript';
 };
 
 const ensurePathInsideRoot = (targetPath: string, rootDir: string) => {
   const normalizedRoot = normalize(rootDir);
   const normalizedTarget = normalize(targetPath);
   const rel = relative(normalizedRoot, normalizedTarget);
-  return rel !== "" ? !rel.startsWith("..") && !isAbsolute(rel) : true;
+  return rel !== '' ? !rel.startsWith('..') && !isAbsolute(rel) : true;
 };
 
 const createGridparkPackage = (
   filePath: string,
-  manifest?: GridparkManifest,
+  manifest?: GridparkManifest
 ): GridparkPackage | undefined => {
   if (!manifest) return undefined;
   const rootDir = getGridparkRoot(filePath);
   const files: GridparkCodeFile[] = [];
-  const manifestPath = join(rootDir, "manifest.json");
+  const manifestPath = join(rootDir, 'manifest.json');
 
   const pushFile = (
-    scope: GridparkCodeFile["scope"],
-    role: GridparkCodeFile["role"],
+    scope: GridparkCodeFile['scope'],
+    role: GridparkCodeFile['role'],
     relativePath: string,
-    sheetName?: string,
+    sheetName?: string
   ) => {
     if (!relativePath) return;
     const sanitizedRelative = normalizeRelativePath(relativePath);
     const absolutePath = normalize(join(rootDir, sanitizedRelative));
     files.push({
-      id: `${scope}-${role}-${sheetName || "root"}-${sanitizedRelative}`,
-      name: sanitizedRelative.split("/").pop() || sanitizedRelative,
+      id: `${scope}-${role}-${sheetName || 'root'}-${sanitizedRelative}`,
+      name: sanitizedRelative.split('/').pop() || sanitizedRelative,
       relativePath: sanitizedRelative,
       absolutePath,
       rootDir,
@@ -157,15 +128,15 @@ const createGridparkPackage = (
   };
 
   if (manifest.script) {
-    pushFile("workbook", "main", manifest.script);
+    pushFile('workbook', 'main', manifest.script);
   }
   if (manifest.style) {
-    pushFile("workbook", "style", manifest.style);
+    pushFile('workbook', 'style', manifest.style);
   }
 
-  Object.values(manifest.sheets ?? {}).forEach((sheet) => {
-    if (sheet.script) pushFile("sheet", "main", sheet.script, sheet.name);
-    if (sheet.style) pushFile("sheet", "style", sheet.style, sheet.name);
+  Object.values(manifest.sheets ?? {}).forEach(sheet => {
+    if (sheet.script) pushFile('sheet', 'main', sheet.script, sheet.name);
+    if (sheet.style) pushFile('sheet', 'style', sheet.style, sheet.name);
   });
 
   return { rootDir, manifestPath, files };
@@ -178,7 +149,7 @@ const createMainWindow = (): void => {
     minWidth: 720,
     minHeight: 480,
     webPreferences: {
-      preload: join(__dirname, "preload.js"),
+      preload: join(__dirname, 'preload.js'),
     },
     title: WINDOW_TITLE_FALLBACK,
     icon: ICON_IMAGE ?? ICON_PATH,
@@ -186,19 +157,19 @@ const createMainWindow = (): void => {
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-    } else {
-      const rendererIndex = join(app.getAppPath(), ".vite", "renderer", "index.html");
-      window.loadFile(rendererIndex);
-    }
+  } else {
+    const rendererIndex = join(app.getAppPath(), '.vite', 'renderer', 'index.html');
+    window.loadFile(rendererIndex);
+  }
 
-  if (process.env.NODE_ENV === "development") {
-    window.webContents.openDevTools({ mode: "detach" });
+  if (process.env.NODE_ENV === 'development') {
+    window.webContents.openDevTools({ mode: 'detach' });
   }
   setupMenu(window);
 };
 
 app.whenReady().then(() => {
-  if (process.platform === "darwin" && app.dock && (ICON_IMAGE || ICON_PATH)) {
+  if (process.platform === 'darwin' && app.dock && (ICON_IMAGE || ICON_PATH)) {
     app.dock.setIcon(ICON_IMAGE ?? ICON_PATH);
   }
   const aboutPanelOptions: AboutPanelOptionsOptions = {
@@ -214,21 +185,21 @@ app.whenReady().then(() => {
   createMainWindow();
 });
 
-app.on("activate", () => {
+app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createMainWindow();
   }
 });
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 // Add additional listeners and IPC setup here as the app grows.
 
-ipcMain.on("app:set-title", (event, title: string) => {
+ipcMain.on('app:set-title', (event, title: string) => {
   const senderWindow = BrowserWindow.fromWebContents(event.sender);
   if (senderWindow) {
     senderWindow.setTitle(title || WINDOW_TITLE_FALLBACK);
@@ -243,64 +214,58 @@ type GridparkFilePayload = {
 type GridparkWritePayload = GridparkFilePayload & { content: string };
 type GridparkBinaryWritePayload = GridparkFilePayload & { data: Uint8Array };
 
-ipcMain.handle(
-  "gridpark:read-file",
-  async (_event, payload: GridparkFilePayload) => {
-    try {
-      if (!payload?.path || !payload?.rootDir) {
-        return { success: false, error: "Invalid file payload." };
-      }
-      if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
-        return { success: false, error: "Access denied for requested file." };
-      }
-      if (!existsSync(payload.path)) {
-        return { success: true, content: "" };
-      }
-      const content = readFileSync(payload.path, "utf-8");
-      return { success: true, content };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
+ipcMain.handle('gridpark:read-file', async (_event, payload: GridparkFilePayload) => {
+  try {
+    if (!payload?.path || !payload?.rootDir) {
+      return { success: false, error: 'Invalid file payload.' };
     }
-  },
-);
+    if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
+      return { success: false, error: 'Access denied for requested file.' };
+    }
+    if (!existsSync(payload.path)) {
+      return { success: true, content: '' };
+    }
+    const content = readFileSync(payload.path, 'utf-8');
+    return { success: true, content };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+ipcMain.handle('gridpark:write-file', async (_event, payload: GridparkWritePayload) => {
+  try {
+    if (!payload?.path || !payload?.rootDir) {
+      return { success: false, error: 'Invalid file payload.' };
+    }
+    if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
+      return { success: false, error: 'Access denied for requested file.' };
+    }
+    const targetDir = dirname(payload.path);
+    if (!existsSync(targetDir)) {
+      mkdirSync(targetDir, { recursive: true });
+    }
+    writeFileSync(payload.path, payload.content ?? '', 'utf-8');
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
 
 ipcMain.handle(
-  "gridpark:write-file",
-  async (_event, payload: GridparkWritePayload) => {
-    try {
-      if (!payload?.path || !payload?.rootDir) {
-        return { success: false, error: "Invalid file payload." };
-      }
-      if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
-        return { success: false, error: "Access denied for requested file." };
-      }
-      const targetDir = dirname(payload.path);
-      if (!existsSync(targetDir)) {
-        mkdirSync(targetDir, { recursive: true });
-      }
-      writeFileSync(payload.path, payload.content ?? "", "utf-8");
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  },
-);
-
-ipcMain.handle(
-  "gridpark:write-binary-file",
+  'gridpark:write-binary-file',
   async (_event, payload: GridparkBinaryWritePayload) => {
     try {
       if (!payload?.path || !payload?.rootDir || !payload?.data) {
-        return { success: false, error: "Invalid file payload." };
+        return { success: false, error: 'Invalid file payload.' };
       }
       if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
-        return { success: false, error: "Access denied for requested file." };
+        return { success: false, error: 'Access denied for requested file.' };
       }
       const targetDir = dirname(payload.path);
       if (!existsSync(targetDir)) {
@@ -315,19 +280,17 @@ ipcMain.handle(
         error: error instanceof Error ? error.message : String(error),
       };
     }
-  },
+  }
 );
 
-const loadManifestForFile = (
-  filePath: string,
-): GridparkManifest | undefined => {
+const loadManifestForFile = (filePath: string): GridparkManifest | undefined => {
   try {
-    const manifestPath = join(getGridparkRoot(filePath), "manifest.json");
+    const manifestPath = join(getGridparkRoot(filePath), 'manifest.json');
     if (!existsSync(manifestPath)) return undefined;
-    const raw = readFileSync(manifestPath, "utf-8");
+    const raw = readFileSync(manifestPath, 'utf-8');
     return JSON.parse(raw);
   } catch (error) {
-    console.warn("Failed to load manifest for", filePath, error);
+    console.warn('Failed to load manifest for', filePath, error);
     return undefined;
   }
 };
@@ -335,13 +298,13 @@ const loadManifestForFile = (
 const slugify = (value: string) =>
   value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "") || "sheet";
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || 'sheet';
 
 const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
   try {
     const manifestDir = getGridparkRoot(filePath);
-    const manifestPath = join(manifestDir, "manifest.json");
+    const manifestPath = join(manifestDir, 'manifest.json');
     if (existsSync(manifestPath)) {
       return;
     }
@@ -349,10 +312,7 @@ const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
       mkdirSync(manifestDir, { recursive: true });
     }
 
-    const sheets: Record<
-      string,
-      { name: string; main: string; style: string }
-    > = {};
+    const sheets: Record<string, { name: string; main: string; style: string }> = {};
     workbook.sheets.forEach((sheet, index) => {
       const slug = slugify(sheet.name);
       const key = `sheet-${index + 1}`;
@@ -365,23 +325,23 @@ const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
 
     const manifest = {
       name: workbook.name || workbookName,
-      version: "1.0.0",
-      description: "",
+      version: '1.0.0',
+      description: '',
       apiVersion: 1,
-      script: "script.js",
-      style: "style.css",
+      script: 'script.js',
+      style: 'style.css',
       sheets,
       permissions: {
-        filesystem: "workbook",
+        filesystem: 'workbook',
         network: false,
         runtime: [],
       },
     };
 
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-    console.log("Generated manifest for", workbookName);
+    console.log('Generated manifest for', workbookName);
   } catch (error) {
-    console.warn("Failed to ensure manifest for", filePath, error);
+    console.warn('Failed to ensure manifest for', filePath, error);
   }
 };
 
@@ -390,7 +350,7 @@ const loadExcelFileFromPath = (filePath: string): ExcelFile | null => {
     const buffer = readFileSync(filePath);
     const arrayBuffer = buffer.buffer.slice(
       buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength,
+      buffer.byteOffset + buffer.byteLength
     );
     const workbook = parseExcelFile(arrayBuffer, basename(filePath));
     ensureManifestForFile(filePath, workbook);
@@ -398,23 +358,23 @@ const loadExcelFileFromPath = (filePath: string): ExcelFile | null => {
     const gridparkPackage = createGridparkPackage(filePath, manifest);
     return { ...workbook, path: filePath, manifest, gridparkPackage };
   } catch (error) {
-    console.error("Failed to load Excel file:", filePath, error);
+    console.error('Failed to load Excel file:', filePath, error);
     return null;
   }
 };
 
 const sendFilesToRenderer = (
   window: BrowserWindow,
-  payload: { files: ExcelFile[]; directoryName?: string },
+  payload: { files: ExcelFile[]; directoryName?: string }
 ) => {
   if (!payload.files.length) return;
-  window.webContents.send("app:files-opened", payload);
+  window.webContents.send('app:files-opened', payload);
 };
 
 const handleOpenFiles = async (window: BrowserWindow) => {
   const { canceled, filePaths } = await dialog.showOpenDialog(window, {
-    properties: ["openFile", "multiSelections"],
-    filters: [{ name: "Excel Files", extensions: ["xlsx", "xls"] }],
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
   });
   if (canceled || !filePaths.length) return;
   const files = filePaths
@@ -425,19 +385,16 @@ const handleOpenFiles = async (window: BrowserWindow) => {
 
 const handleOpenFolder = async (window: BrowserWindow) => {
   const { canceled, filePaths } = await dialog.showOpenDialog(window, {
-    properties: ["openDirectory"],
+    properties: ['openDirectory'],
   });
   if (canceled || !filePaths.length) return;
   const folderPath = filePaths[0];
   const excelPaths = readdirSync(folderPath)
-    .map((entry) => join(folderPath, entry))
-    .filter((fullPath) => {
+    .map(entry => join(folderPath, entry))
+    .filter(fullPath => {
       try {
         const stats = statSync(fullPath);
-        return (
-          stats.isFile() &&
-          [".xlsx", ".xls"].includes(extname(fullPath).toLowerCase())
-        );
+        return stats.isFile() && ['.xlsx', '.xls'].includes(extname(fullPath).toLowerCase());
       } catch {
         return false;
       }
@@ -449,58 +406,56 @@ const handleOpenFolder = async (window: BrowserWindow) => {
 };
 
 const setupMenu = (window: BrowserWindow) => {
-  const isMac = process.platform === "darwin";
-  const themeSubmenu: Electron.MenuItemConstructorOptions[] = themeOptions.map(
-    (option) => ({
-      label: option.name,
-      type: "radio",
-      checked: option.id === DEFAULT_THEME_ID,
-      click: () => window.webContents.send("settings:theme", option.id),
-    }),
-  );
+  const isMac = process.platform === 'darwin';
+  const themeSubmenu: Electron.MenuItemConstructorOptions[] = themeOptions.map(option => ({
+    label: option.name,
+    type: 'radio',
+    checked: option.id === DEFAULT_THEME_ID,
+    click: () => window.webContents.send('settings:theme', option.id),
+  }));
   const template: Electron.MenuItemConstructorOptions[] = [
     ...(isMac
       ? [
           {
-            label: "Gridpark",
+            label: 'Gridpark',
             submenu: [
-              { role: "about" },
-              { type: "separator" },
+              { role: 'about' },
+              { type: 'separator' },
               {
-                label: "Settings",
+                label: 'Settings',
                 submenu: [
                   {
-                    label: "Themes",
+                    label: 'Themes',
                     submenu: themeSubmenu,
                   },
                 ],
               },
-              { type: "separator" },
-              { role: "quit" },
+              { type: 'separator' },
+              { role: 'quit' },
             ],
           },
         ]
       : []),
     {
-      label: "File",
+      label: 'File',
       submenu: [
         {
-          label: "Open File…",
-          accelerator: "CmdOrCtrl+O",
+          label: 'Open File…',
+          accelerator: 'CmdOrCtrl+O',
           click: () => handleOpenFiles(window),
         },
         {
-          label: "Open Folder…",
-          accelerator: "CmdOrCtrl+Shift+O",
+          label: 'Open Folder…',
+          accelerator: 'CmdOrCtrl+Shift+O',
           click: () => handleOpenFolder(window),
         },
-        { type: "separator" },
-        isMac ? { role: "close" } : { role: "quit" },
+        { type: 'separator' },
+        isMac ? { role: 'close' } : { role: 'quit' },
       ],
     },
-    { role: "editMenu" as const },
-    { role: "viewMenu" as const },
-    { role: "windowMenu" as const },
+    { role: 'editMenu' as const },
+    { role: 'viewMenu' as const },
+    { role: 'windowMenu' as const },
   ];
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);

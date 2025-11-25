@@ -30,7 +30,7 @@ Designed for developer-first experience with immediate feedback and playful prod
       description: 'Visual style variant',
     },
     size: {
-      control: 'select', 
+      control: 'select',
       options: ['sm', 'md', 'lg'],
       description: 'Button size',
     },
@@ -99,7 +99,9 @@ export const WithIcons: Story = {
       <div style={{ display: 'flex', gap: '12px' }}>
         <Button startIcon={<PlayArrow />}>Run Function</Button>
         <Button endIcon={<Code />}>Edit Code</Button>
-        <Button startIcon={<Settings />} endIcon={<Code />}>Configure</Button>
+        <Button startIcon={<Settings />} endIcon={<Code />}>
+          Configure
+        </Button>
       </div>
     </div>
   ),
@@ -111,7 +113,9 @@ export const States: Story = {
       <Button>Default</Button>
       <Button loading>Loading</Button>
       <Button disabled>Disabled</Button>
-      <Button loading disabled>Loading + Disabled</Button>
+      <Button loading disabled>
+        Loading + Disabled
+      </Button>
     </div>
   ),
 };
@@ -121,14 +125,24 @@ export const DeveloperWorkflow: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
       <div style={{ display: 'flex', gap: '8px' }}>
-        <Button startIcon={<PlayArrow />} color="success">Execute</Button>
-        <Button startIcon={<Stop />} variant="soft" color="danger">Stop</Button>
+        <Button startIcon={<PlayArrow />} color="success">
+          Execute
+        </Button>
+        <Button startIcon={<Stop />} variant="soft" color="danger">
+          Stop
+        </Button>
         <Button variant="outlined">Debug</Button>
       </div>
       <div style={{ display: 'flex', gap: '8px' }}>
-        <Button variant="soft" size="sm">Save</Button>
-        <Button variant="soft" size="sm">Load</Button>
-        <Button variant="soft" size="sm">Export</Button>
+        <Button variant="soft" size="sm">
+          Save
+        </Button>
+        <Button variant="soft" size="sm">
+          Load
+        </Button>
+        <Button variant="soft" size="sm">
+          Export
+        </Button>
       </div>
     </div>
   ),
@@ -144,7 +158,9 @@ export const DeveloperWorkflow: Story = {
 export const PlayfulFeedback: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: '12px' }}>
-      <Button color="success" variant="soft">✨ Formula Works!</Button>
+      <Button color="success" variant="soft">
+        ✨ Formula Works!
+      </Button>
       <Button color="warning">⚡ Optimizing...</Button>
       <Button color="primary">🚀 Deploy</Button>
     </div>

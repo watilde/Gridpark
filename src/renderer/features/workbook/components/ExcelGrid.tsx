@@ -1,71 +1,103 @@
 import React from 'react';
-import { styled } from "@mui/joy/styles";
-import { Sheet, Box } from "@mui/joy";
-import { excelPalette } from "./theme";
-import { VirtualizedGrid, VirtualizedGridRef } from "./VirtualizedGrid";
-import { CellItem, CellItemData } from "./CellRenderer";
+import { styled } from '@mui/joy/styles';
+import { Sheet, Box } from '@mui/joy';
+import { excelPalette } from './theme';
+import { VirtualizedGrid, VirtualizedGridRef } from './VirtualizedGrid';
+import { CellItem, CellItemData } from './CellRenderer';
 
 const ViewerContainer = styled(Sheet)({
-  display: "flex",
-  flexDirection: "column",
-  height: "100%",
-  overflow: "hidden",
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
+  overflow: 'hidden',
   backgroundColor: excelPalette.gridBackground,
   borderRadius: 0,
 });
 
 const GridContainer = styled(Box)({
   flex: 1,
-  overflow: "hidden",
-  position: "relative",
+  overflow: 'hidden',
+  position: 'relative',
   backgroundColor: excelPalette.gridBackground,
 });
 
-const HeaderCell = styled("div", {
-  shouldForwardProp: (prop) => prop !== "isActive" && prop !== "isSelected",
-})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, isSelected }) => ({
-  backgroundColor: isActive 
-    ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
-    : (theme.palette.mode === 'dark' ? '#1e1e1e' : '#f0f0f0'),
-  border: `1px solid ${theme.palette.mode === 'dark' ? '#444' : '#d0d0d0'}`,
-  color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
-  fontWeight: 600,
-  fontSize: "12px",
-  textAlign: "center",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  boxSizing: "border-box",
-  transition: 'background-color 0.15s ease',
-  '&:hover': {
-    backgroundColor: isActive
-      ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
-      : (theme.palette.mode === 'dark' ? '#2a2a2a' : '#e5e5e5'),
-  },
-})) as React.ComponentType<React.HTMLAttributes<HTMLDivElement> & { 'data-col-id'?: string; 'data-col-index'?: number; className?: string; isActive?: boolean; isSelected?: boolean }>;
-
-const RowHeaderCell = styled("div", {
-  shouldForwardProp: (prop) => prop !== "isActive" && prop !== "isSelected",
+const HeaderCell = styled('div', {
+  shouldForwardProp: prop => prop !== 'isActive' && prop !== 'isSelected',
 })<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, isSelected }) => ({
   backgroundColor: isActive
-    ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
-    : (theme.palette.mode === 'dark' ? '#1e1e1e' : '#f0f0f0'),
+    ? theme.palette.mode === 'dark'
+      ? '#2d5a7b'
+      : '#cfe2f3'
+    : theme.palette.mode === 'dark'
+      ? '#1e1e1e'
+      : '#f0f0f0',
   border: `1px solid ${theme.palette.mode === 'dark' ? '#444' : '#d0d0d0'}`,
   color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
   fontWeight: 600,
-  fontSize: "12px",
-  textAlign: "center",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  boxSizing: "border-box",
+  fontSize: '12px',
+  textAlign: 'center',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxSizing: 'border-box',
   transition: 'background-color 0.15s ease',
   '&:hover': {
     backgroundColor: isActive
-      ? (theme.palette.mode === 'dark' ? '#2d5a7b' : '#cfe2f3')
-      : (theme.palette.mode === 'dark' ? '#2a2a2a' : '#e5e5e5'),
+      ? theme.palette.mode === 'dark'
+        ? '#2d5a7b'
+        : '#cfe2f3'
+      : theme.palette.mode === 'dark'
+        ? '#2a2a2a'
+        : '#e5e5e5',
   },
-})) as React.ComponentType<React.HTMLAttributes<HTMLDivElement> & { 'data-row-num'?: number; 'data-row-index'?: number; className?: string; isActive?: boolean; isSelected?: boolean }>;
+})) as React.ComponentType<
+  React.HTMLAttributes<HTMLDivElement> & {
+    'data-col-id'?: string;
+    'data-col-index'?: number;
+    className?: string;
+    isActive?: boolean;
+    isSelected?: boolean;
+  }
+>;
+
+const RowHeaderCell = styled('div', {
+  shouldForwardProp: prop => prop !== 'isActive' && prop !== 'isSelected',
+})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, isSelected }) => ({
+  backgroundColor: isActive
+    ? theme.palette.mode === 'dark'
+      ? '#2d5a7b'
+      : '#cfe2f3'
+    : theme.palette.mode === 'dark'
+      ? '#1e1e1e'
+      : '#f0f0f0',
+  border: `1px solid ${theme.palette.mode === 'dark' ? '#444' : '#d0d0d0'}`,
+  color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
+  fontWeight: 600,
+  fontSize: '12px',
+  textAlign: 'center',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxSizing: 'border-box',
+  transition: 'background-color 0.15s ease',
+  '&:hover': {
+    backgroundColor: isActive
+      ? theme.palette.mode === 'dark'
+        ? '#2d5a7b'
+        : '#cfe2f3'
+      : theme.palette.mode === 'dark'
+        ? '#2a2a2a'
+        : '#e5e5e5',
+  },
+})) as React.ComponentType<
+  React.HTMLAttributes<HTMLDivElement> & {
+    'data-row-num'?: number;
+    'data-row-index'?: number;
+    className?: string;
+    isActive?: boolean;
+    isSelected?: boolean;
+  }
+>;
 
 interface ExcelGridProps {
   currentSheetName: string;
@@ -100,66 +132,88 @@ export const ExcelGrid: React.FC<ExcelGridProps> = ({
 }) => {
   const gridRef = React.useRef<VirtualizedGridRef>(null);
 
-  const renderColumnHeader = ({ columnIndex, style }: { columnIndex: number; style: React.CSSProperties }) => {
-    const isColumnSelected = itemData.selectionRange && columnIndex >= itemData.selectionRange.startCol && columnIndex <= itemData.selectionRange.endCol;
+  const renderColumnHeader = ({
+    columnIndex,
+    style,
+  }: {
+    columnIndex: number;
+    style: React.CSSProperties;
+  }) => {
+    const isColumnSelected =
+      itemData.selectionRange &&
+      columnIndex >= itemData.selectionRange.startCol &&
+      columnIndex <= itemData.selectionRange.endCol;
     const isColumnActive = itemData.selectedCell && itemData.selectedCell.col === columnIndex;
     return (
-        <HeaderCell
-          style={{ ...style, cursor: "pointer" }}
-          onClick={() => handleColumnHeaderClick(columnIndex)}
-          className="col"
-          data-col-id={getColumnLabel(columnIndex)}
-          data-col-index={columnIndex}
-          data-selected={isColumnSelected ? "true" : undefined}
-          data-active={isColumnActive ? "true" : undefined}
-          isActive={isColumnActive}
-          isSelected={isColumnSelected}
-        >
-            {getColumnLabel(columnIndex)}
-        </HeaderCell>
+      <HeaderCell
+        style={{ ...style, cursor: 'pointer' }}
+        onClick={() => handleColumnHeaderClick(columnIndex)}
+        className="col"
+        data-col-id={getColumnLabel(columnIndex)}
+        data-col-index={columnIndex}
+        data-selected={isColumnSelected ? 'true' : undefined}
+        data-active={isColumnActive ? 'true' : undefined}
+        isActive={isColumnActive}
+        isSelected={isColumnSelected}
+      >
+        {getColumnLabel(columnIndex)}
+      </HeaderCell>
     );
   };
 
-  const renderRowHeader = ({ rowIndex, style }: { rowIndex: number; style: React.CSSProperties }) => {
-    const isRowSelected = itemData.selectionRange && rowIndex >= itemData.selectionRange.startRow && rowIndex <= itemData.selectionRange.endRow;
+  const renderRowHeader = ({
+    rowIndex,
+    style,
+  }: {
+    rowIndex: number;
+    style: React.CSSProperties;
+  }) => {
+    const isRowSelected =
+      itemData.selectionRange &&
+      rowIndex >= itemData.selectionRange.startRow &&
+      rowIndex <= itemData.selectionRange.endRow;
     const isRowActive = itemData.selectedCell && itemData.selectedCell.row === rowIndex;
     return (
-        <RowHeaderCell
-          style={{ ...style, cursor: "pointer" }}
-          onClick={() => handleRowHeaderClick(rowIndex)}
-          className="row"
-          data-row-num={rowIndex + 1}
-          data-row-index={rowIndex}
-          data-selected={isRowSelected ? "true" : undefined}
-          data-active={isRowActive ? "true" : undefined}
-          isActive={isRowActive}
-          isSelected={isRowSelected}
-        >
-            {rowIndex + 1}
-        </RowHeaderCell>
+      <RowHeaderCell
+        style={{ ...style, cursor: 'pointer' }}
+        onClick={() => handleRowHeaderClick(rowIndex)}
+        className="row"
+        data-row-num={rowIndex + 1}
+        data-row-index={rowIndex}
+        data-selected={isRowSelected ? 'true' : undefined}
+        data-active={isRowActive ? 'true' : undefined}
+        isActive={isRowActive}
+        isSelected={isRowSelected}
+      >
+        {rowIndex + 1}
+      </RowHeaderCell>
     );
   };
 
   return (
     <ViewerContainer variant="plain">
       <GridContainer>
-          <Box className="sheet" data-sheet-name={currentSheetName} sx={{ height: '100%', width: '100%' }}>
-              <VirtualizedGrid
-                  ref={gridRef}
-                  columnCount={renderColCount}
-                  rowCount={renderRowCount}
-                  columnWidth={getColumnWidth}
-                  rowHeight={getRowHeight}
-                  renderCell={CellItem}
-                  itemData={itemData}
-                  renderColumnHeader={renderColumnHeader}
-                  renderRowHeader={renderRowHeader}
-                  headerHeight={headerHeight}
-                  rowHeaderWidth={rowHeaderWidth}
-                  onScroll={handleScroll}
-                  onCornerHeaderClick={handleSelectAll}
-              />
-          </Box>
+        <Box
+          className="sheet"
+          data-sheet-name={currentSheetName}
+          sx={{ height: '100%', width: '100%' }}
+        >
+          <VirtualizedGrid
+            ref={gridRef}
+            columnCount={renderColCount}
+            rowCount={renderRowCount}
+            columnWidth={getColumnWidth}
+            rowHeight={getRowHeight}
+            renderCell={CellItem}
+            itemData={itemData}
+            renderColumnHeader={renderColumnHeader}
+            renderRowHeader={renderRowHeader}
+            headerHeight={headerHeight}
+            rowHeaderWidth={rowHeaderWidth}
+            onScroll={handleScroll}
+            onCornerHeaderClick={handleSelectAll}
+          />
+        </Box>
       </GridContainer>
     </ViewerContainer>
   );

@@ -3,7 +3,7 @@ import { styled } from '@mui/joy/styles';
 import { Sheet } from '@mui/joy';
 
 const LayoutContainer = styled('div', {
-  shouldForwardProp: (prop) => prop !== 'fullHeight',
+  shouldForwardProp: prop => prop !== 'fullHeight',
 })<{ fullHeight: boolean }>(({ theme, fullHeight }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -94,7 +94,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     <LayoutContainer className={className} fullHeight={fullHeight}>
       {/* Header spans full width at the top */}
       {header && <HeaderBar>{header}</HeaderBar>}
-      
+
       {/* Body contains sidebar and main content side by side */}
       <BodyContainer>
         {!hideSidebar && sidebar && <Sidebar variant="outlined">{sidebar}</Sidebar>}
@@ -111,7 +111,7 @@ AppLayout.displayName = 'GridparkAppLayout';
 
 /**
  * Excel-style layout with full-width header:
- * 
+ *
  * ┌─────────────────────────────────────────┐
  * │          Full Width Header              │
  * ├──────────┬──────────────────────────────┤

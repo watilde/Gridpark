@@ -19,7 +19,7 @@ import { execSync } from 'node:child_process';
 const originalMake = MakerDMG.prototype.make;
 MakerDMG.prototype.make = async function (...args) {
   console.log('[DMG] Starting DMG creation with improved error handling...');
-  
+
   // 既存のマウントポイントをクリーンアップ
   try {
     const volumes = execSync('ls /Volumes', { encoding: 'utf8' });
@@ -38,21 +38,23 @@ MakerDMG.prototype.make = async function (...args) {
   } catch (error: any) {
     console.warn('[DMG] Error checking volumes:', error.message);
   }
-  
+
   try {
     const result = await originalMake.apply(this, args);
     console.log('[DMG] DMG creation completed successfully');
     return result;
   } catch (error: any) {
     console.error('[DMG] DMG creation failed:', error.message);
-    
+
     // クリーンアップを試みる
     try {
-      execSync('hdiutil detach "/Volumes/Gridpark" -force 2>/dev/null || true', { encoding: 'utf8' });
+      execSync('hdiutil detach "/Volumes/Gridpark" -force 2>/dev/null || true', {
+        encoding: 'utf8',
+      });
     } catch {
       // Ignore cleanup errors
     }
-    
+
     throw error;
   }
 };
@@ -78,19 +80,19 @@ const config: ForgeConfig = {
       name: '@electron-forge/maker-dmg',
       platforms: ['darwin'],
       config: {
-        name: 'Gridpark',      // ★ DMGファイル名
-        title: 'Gridpark',     // ★ Volume名を固定
-        overwrite: true,       // ★ CIビルドの競合防止
-        format: 'ULFO',        // ★ Apple Silicon に最適（既定値より安定）
+        name: 'Gridpark', // ★ DMGファイル名
+        title: 'Gridpark', // ★ Volume名を固定
+        overwrite: true, // ★ CIビルドの競合防止
+        format: 'ULFO', // ★ Apple Silicon に最適（既定値より安定）
         // ★ GitHub Actions環境での安定性向上
         additionalDMGOptions: {
           window: {
             size: {
               width: 540,
-              height: 380
-            }
-          }
-        }
+              height: 380,
+            },
+          },
+        },
       },
     },
     {

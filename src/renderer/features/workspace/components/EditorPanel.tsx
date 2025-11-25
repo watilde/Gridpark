@@ -1,19 +1,28 @@
-import React, { forwardRef, useRef, useImperativeHandle } from "react";
-import { Sheet, Typography, Box } from "@mui/joy";
+import React, { forwardRef, useRef, useImperativeHandle } from 'react';
+import { Sheet, Typography, Box } from '@mui/joy';
 import {
   SheetSessionState,
   SearchNavigationCommand,
   ReplaceCommand,
   FormulaCommitCommand,
   ActiveCellDetails,
-} from "../../workbook/components/ExcelViewer";
-import { ExcelViewerDexie, ExcelViewerDexieHandle } from "../../workbook/components/ExcelViewerDexie";
-import { CodeEditorPanel, CodeEditorPanelHandle } from "../../code-editor/CodeEditorPanel";
-import { ManifestEditorPanel } from "../../manifest-editor/ManifestEditorPanel";
-import { FormulaBar } from "../../formula-bar/FormulaBar";
-import { WorkbookTab } from "../../../types/tabs";
-import { ExcelFile, CellPosition, CellRange, GridparkManifest, GridparkCodeFile } from "../../../types/excel";
-import { ManifestSession } from "../../../hooks/useFileSessions";
+} from '../../workbook/components/ExcelViewer';
+import {
+  ExcelViewerDexie,
+  ExcelViewerDexieHandle,
+} from '../../workbook/components/ExcelViewerDexie';
+import { CodeEditorPanel, CodeEditorPanelHandle } from '../../code-editor/CodeEditorPanel';
+import { ManifestEditorPanel } from '../../manifest-editor/ManifestEditorPanel';
+import { FormulaBar } from '../../formula-bar/FormulaBar';
+import { WorkbookTab } from '../../../types/tabs';
+import {
+  ExcelFile,
+  CellPosition,
+  CellRange,
+  GridparkManifest,
+  GridparkCodeFile,
+} from '../../../types/excel';
+import { ManifestSession } from '../../../hooks/useFileSessions';
 
 interface EditorPanelProps {
   activeTab: WorkbookTab | null;
@@ -76,167 +85,176 @@ export interface EditorPanelHandle {
   canRedo: () => boolean;
 }
 
-export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(({
-  activeTab,
-  activeSheetSession, // DEPRECATED: unused
-  activeCodeSession,
-  activeManifestSession,
-  manifestEditorData,
-  manifestIsDirty,
-  canEditManifest,
-  platformCapabilities,
-  onSessionChange, // DEPRECATED: unused
-  onSaveSession, // DEPRECATED: unused
-  onDirtyChange,
-  onCellSelect,
-  onRangeSelect,
-  onActiveCellDetails,
-  onManifestChange,
-  onSaveManifest,
-  onReloadManifest,
-  onCodeChange,
-  onSaveCode,
-  onCloseCodeTab,
-  sheetSearchQuery,
-  searchNavigation,
-  replaceCommand,
-  formulaCommitCommand,
-  formulaBarState,
-}, ref) => {
-  const codeEditorRef = useRef<CodeEditorPanelHandle>(null);
-  const sheetViewerRef = useRef<ExcelViewerDexieHandle>(null);
+export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
+  (
+    {
+      activeTab,
+      activeSheetSession, // DEPRECATED: unused
+      activeCodeSession,
+      activeManifestSession,
+      manifestEditorData,
+      manifestIsDirty,
+      canEditManifest,
+      platformCapabilities,
+      onSessionChange, // DEPRECATED: unused
+      onSaveSession, // DEPRECATED: unused
+      onDirtyChange,
+      onCellSelect,
+      onRangeSelect,
+      onActiveCellDetails,
+      onManifestChange,
+      onSaveManifest,
+      onReloadManifest,
+      onCodeChange,
+      onSaveCode,
+      onCloseCodeTab,
+      sheetSearchQuery,
+      searchNavigation,
+      replaceCommand,
+      formulaCommitCommand,
+      formulaBarState,
+    },
+    ref
+  ) => {
+    const codeEditorRef = useRef<CodeEditorPanelHandle>(null);
+    const sheetViewerRef = useRef<ExcelViewerDexieHandle>(null);
 
-  // Expose undo/redo methods via ref
-  // Supports both code editor and sheet viewer
-  useImperativeHandle(ref, () => ({
-    undo: () => {
-      if (activeTab?.kind === 'code') {
-        codeEditorRef.current?.undo();
-      } else if (activeTab?.kind === 'sheet') {
-        sheetViewerRef.current?.undo();
-      }
-    },
-    redo: () => {
-      if (activeTab?.kind === 'code') {
-        codeEditorRef.current?.redo();
-      } else if (activeTab?.kind === 'sheet') {
-        sheetViewerRef.current?.redo();
-      }
-    },
-    canUndo: () => {
-      // No logging here - called every 200ms
-      if (activeTab?.kind === 'code') {
-        return codeEditorRef.current?.canUndo() ?? false;
-      } else if (activeTab?.kind === 'sheet') {
-        return sheetViewerRef.current?.canUndo() ?? false;
-      }
-      return false;
-    },
-    canRedo: () => {
-      // No logging here - called every 200ms
-      if (activeTab?.kind === 'code') {
-        return codeEditorRef.current?.canRedo() ?? false;
-      } else if (activeTab?.kind === 'sheet') {
-        return sheetViewerRef.current?.canRedo() ?? false;
-      }
-      return false;
-    },
-  }), [activeTab]);
-  if (!activeTab) {
-    return (
-      <Sheet
-        variant="outlined"
-        sx={{
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 0,
-        }}
-      >
-        <Typography level="body-md" sx={{ color: "neutral.500" }}>
-          Open a sheet, manifest, or code file from the file tree.
-        </Typography>
-      </Sheet>
+    // Expose undo/redo methods via ref
+    // Supports both code editor and sheet viewer
+    useImperativeHandle(
+      ref,
+      () => ({
+        undo: () => {
+          if (activeTab?.kind === 'code') {
+            codeEditorRef.current?.undo();
+          } else if (activeTab?.kind === 'sheet') {
+            sheetViewerRef.current?.undo();
+          }
+        },
+        redo: () => {
+          if (activeTab?.kind === 'code') {
+            codeEditorRef.current?.redo();
+          } else if (activeTab?.kind === 'sheet') {
+            sheetViewerRef.current?.redo();
+          }
+        },
+        canUndo: () => {
+          // No logging here - called every 200ms
+          if (activeTab?.kind === 'code') {
+            return codeEditorRef.current?.canUndo() ?? false;
+          } else if (activeTab?.kind === 'sheet') {
+            return sheetViewerRef.current?.canUndo() ?? false;
+          }
+          return false;
+        },
+        canRedo: () => {
+          // No logging here - called every 200ms
+          if (activeTab?.kind === 'code') {
+            return codeEditorRef.current?.canRedo() ?? false;
+          } else if (activeTab?.kind === 'sheet') {
+            return sheetViewerRef.current?.canRedo() ?? false;
+          }
+          return false;
+        },
+      }),
+      [activeTab]
     );
-  }
+    if (!activeTab) {
+      return (
+        <Sheet
+          variant="outlined"
+          sx={{
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 0,
+          }}
+        >
+          <Typography level="body-md" sx={{ color: 'neutral.500' }}>
+            Open a sheet, manifest, or code file from the file tree.
+          </Typography>
+        </Sheet>
+      );
+    }
 
-  if (activeTab.kind === "sheet") {
-    return (
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <FormulaBar formulaBarState={formulaBarState} />
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          <ExcelViewerDexie
-            ref={sheetViewerRef}
-            tabId={activeTab.id}
-            file={activeTab.file}
-            sheetIndex={activeTab.sheetIndex}
-            onDirtyChange={onDirtyChange}
-            onCellSelect={onCellSelect}
-            onRangeSelect={onRangeSelect}
-            searchQuery={sheetSearchQuery}
-            searchNavigation={searchNavigation}
-            replaceCommand={replaceCommand}
-            formulaCommit={formulaCommitCommand}
-            onActiveCellDetails={onActiveCellDetails}
-          />
+    if (activeTab.kind === 'sheet') {
+      return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <FormulaBar formulaBarState={formulaBarState} />
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <ExcelViewerDexie
+              ref={sheetViewerRef}
+              tabId={activeTab.id}
+              file={activeTab.file}
+              sheetIndex={activeTab.sheetIndex}
+              onDirtyChange={onDirtyChange}
+              onCellSelect={onCellSelect}
+              onRangeSelect={onRangeSelect}
+              searchQuery={sheetSearchQuery}
+              searchNavigation={searchNavigation}
+              replaceCommand={replaceCommand}
+              formulaCommit={formulaCommitCommand}
+              onActiveCellDetails={onActiveCellDetails}
+            />
+          </Box>
         </Box>
-      </Box>
-    );
-  }
+      );
+    }
 
-  if (activeTab.kind === "manifest" && manifestEditorData) {
-    return (
-      <ManifestEditorPanel
-        manifest={manifestEditorData}
-        loading={Boolean(activeManifestSession?.loading) && !manifestIsDirty}
-        saving={Boolean(activeManifestSession?.saving)}
-        isDirty={manifestIsDirty}
-        error={activeManifestSession?.error}
-        editable={canEditManifest}
-        platformCapabilities={{
-          platform: platformCapabilities.platform as "electron" | "web",
-          canAccessFileSystem: platformCapabilities.canAccessFileSystem,
-          canWorkOffline: platformCapabilities.canWorkOffline,
-          hasNativeMenus: platformCapabilities.hasNativeMenus,
-          canManageWindows: platformCapabilities.canManageWindows,
-          hasSystemIntegration: platformCapabilities.hasSystemIntegration,
-          canAutoUpdate: platformCapabilities.canAutoUpdate,
-          hasNativeNotifications: platformCapabilities.hasNativeNotifications,
-          canAccessClipboard: platformCapabilities.canAccessClipboard,
-        }}
-        onChange={(next) => onManifestChange(activeTab.workbookId, activeTab.file, next)}
-        onSave={() => onSaveManifest(activeTab.workbookId, activeTab.file)}
-        onReload={() => onReloadManifest(activeTab.file)}
-      />
-    );
-  }
+    if (activeTab.kind === 'manifest' && manifestEditorData) {
+      return (
+        <ManifestEditorPanel
+          manifest={manifestEditorData}
+          loading={Boolean(activeManifestSession?.loading) && !manifestIsDirty}
+          saving={Boolean(activeManifestSession?.saving)}
+          isDirty={manifestIsDirty}
+          error={activeManifestSession?.error}
+          editable={canEditManifest}
+          platformCapabilities={{
+            platform: platformCapabilities.platform as 'electron' | 'web',
+            canAccessFileSystem: platformCapabilities.canAccessFileSystem,
+            canWorkOffline: platformCapabilities.canWorkOffline,
+            hasNativeMenus: platformCapabilities.hasNativeMenus,
+            canManageWindows: platformCapabilities.canManageWindows,
+            hasSystemIntegration: platformCapabilities.hasSystemIntegration,
+            canAutoUpdate: platformCapabilities.canAutoUpdate,
+            hasNativeNotifications: platformCapabilities.hasNativeNotifications,
+            canAccessClipboard: platformCapabilities.canAccessClipboard,
+          }}
+          onChange={next => onManifestChange(activeTab.workbookId, activeTab.file, next)}
+          onSave={() => onSaveManifest(activeTab.workbookId, activeTab.file)}
+          onReload={() => onReloadManifest(activeTab.file)}
+        />
+      );
+    }
 
-  if (activeTab.kind === "code") {
-    const isDirty = activeCodeSession
-      ? activeCodeSession.content !== activeCodeSession.originalContent
-      : false;
-    
-    return (
-      <CodeEditorPanel
-        ref={codeEditorRef}
-        codeFile={activeTab.codeFile}
-        content={activeCodeSession?.content ?? ""}
-        loading={activeCodeSession ? activeCodeSession.loading : true}
-        saving={activeCodeSession ? activeCodeSession.saving : false}
-        isDirty={isDirty}
-        error={activeCodeSession?.error}
-        onChange={(value) => {
-          onCodeChange(activeTab.codeFile, value);
-          // Mark tab as dirty when code changes (similar to sheet's onDirtyChange)
-          const willBeDirty = value !== activeCodeSession?.originalContent;
-          onDirtyChange(willBeDirty);
-        }}
-        onSave={() => onSaveCode(activeTab.codeFile)}
-        onCloseTab={() => onCloseCodeTab(activeTab.id)}
-      />
-    );
-  }
+    if (activeTab.kind === 'code') {
+      const isDirty = activeCodeSession
+        ? activeCodeSession.content !== activeCodeSession.originalContent
+        : false;
 
-  return null;
-});
+      return (
+        <CodeEditorPanel
+          ref={codeEditorRef}
+          codeFile={activeTab.codeFile}
+          content={activeCodeSession?.content ?? ''}
+          loading={activeCodeSession ? activeCodeSession.loading : true}
+          saving={activeCodeSession ? activeCodeSession.saving : false}
+          isDirty={isDirty}
+          error={activeCodeSession?.error}
+          onChange={value => {
+            onCodeChange(activeTab.codeFile, value);
+            // Mark tab as dirty when code changes (similar to sheet's onDirtyChange)
+            const willBeDirty = value !== activeCodeSession?.originalContent;
+            onDirtyChange(willBeDirty);
+          }}
+          onSave={() => onSaveCode(activeTab.codeFile)}
+          onCloseTab={() => onCloseCodeTab(activeTab.id)}
+        />
+      );
+    }
+
+    return null;
+  }
+);

@@ -1,7 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent } from '../../../../../test/utils';
+import { render, screen, fireEvent, createMockAction } from '../../../../../test/utils';
 import { Toolbar } from './Toolbar';
-import { createMockAction } from '../../../../../test/utils';
 
 describe('Toolbar Component', () => {
   it('renders without crashing', () => {
@@ -27,7 +26,7 @@ describe('Toolbar Component', () => {
   it('handles action clicks correctly', () => {
     const mockClick1 = jest.fn();
     const mockClick2 = jest.fn();
-    
+
     const actions = [
       createMockAction('action1', { onClick: mockClick1 }),
       createMockAction('action2', { onClick: mockClick2 }),
@@ -36,7 +35,7 @@ describe('Toolbar Component', () => {
     render(<Toolbar actions={actions} />);
 
     const buttons = screen.getAllByRole('button');
-    
+
     fireEvent.click(buttons[0]);
     expect(mockClick1).toHaveBeenCalledTimes(1);
     expect(mockClick2).not.toHaveBeenCalled();
@@ -46,45 +45,36 @@ describe('Toolbar Component', () => {
   });
 
   it('shows tooltips for actions with tooltip prop', async () => {
-    const actions = [
-      createMockAction('action1', { tooltip: 'Save File' }),
-    ];
+    const actions = [createMockAction('action1', { tooltip: 'Save File' })];
 
     render(<Toolbar actions={actions} />);
 
     const button = screen.getByRole('button');
-    
+
     // Hover over the button to show tooltip
     fireEvent.mouseEnter(button);
-    
+
     // Wait for tooltip to appear
     const tooltip = await screen.findByRole('tooltip');
     expect(tooltip).toHaveTextContent('Save File');
   });
 
   it('renders actions without tooltips correctly', () => {
-    const actions = [
-      createMockAction('action1', { tooltip: undefined }),
-    ];
+    const actions = [createMockAction('action1', { tooltip: undefined })];
 
     render(<Toolbar actions={actions} />);
 
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
-    
+
     // Should not have tooltip wrapper
     fireEvent.mouseEnter(button);
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
   it('renders grouped actions with dividers', () => {
-    const group1 = [
-      createMockAction('group1-action1'),
-      createMockAction('group1-action2'),
-    ];
-    const group2 = [
-      createMockAction('group2-action1'),
-    ];
+    const group1 = [createMockAction('group1-action1'), createMockAction('group1-action2')];
+    const group2 = [createMockAction('group2-action1')];
 
     render(<Toolbar groups={[group1, group2]} />);
 
@@ -154,7 +144,7 @@ describe('Toolbar Component', () => {
     render(<Toolbar actions={actions} />);
 
     const buttons = screen.getAllByRole('button');
-    
+
     // Active button should have different variant/color
     expect(buttons[1]).toHaveClass(/MuiIconButton-colorPrimary/);
     expect(buttons[0]).not.toHaveClass(/MuiIconButton-colorPrimary/);
@@ -188,9 +178,7 @@ describe('Toolbar Component', () => {
   });
 
   it('renders string icons correctly', () => {
-    const actions = [
-      createMockAction('action1', { icon: 'save' }),
-    ];
+    const actions = [createMockAction('action1', { icon: 'save' })];
 
     render(<Toolbar actions={actions} />);
 
@@ -200,9 +188,7 @@ describe('Toolbar Component', () => {
 
   it('renders React node icons correctly', () => {
     const customIcon = <span data-testid="custom-icon">★</span>;
-    const actions = [
-      createMockAction('action1', { icon: customIcon }),
-    ];
+    const actions = [createMockAction('action1', { icon: customIcon })];
 
     render(<Toolbar actions={actions} />);
 
@@ -230,7 +216,7 @@ describe('Toolbar Component', () => {
 
   it('applies correct container styling', () => {
     render(<Toolbar />);
-    
+
     const container = document.querySelector('.MuiBox-root');
     expect(container).toHaveStyle('display: flex');
     expect(container).toHaveStyle('align-items: center');

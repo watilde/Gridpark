@@ -243,7 +243,10 @@ describe('parseGridSelector', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const parsed = parseGridSelector(selector);
     expect(parsed).toEqual({ selectorString: selector });
-    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid Gridpark selector syntax'), selector);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid Gridpark selector syntax'),
+      selector
+    );
     consoleWarnSpy.mockRestore();
   });
 

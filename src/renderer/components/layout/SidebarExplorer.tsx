@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
-import { Box, Sheet, Typography } from "@mui/joy";
-import { FileTree, FileNode } from "../../features/file-explorer/FileTree";
+import React, { useMemo } from 'react';
+import { Box, Sheet, Typography } from '@mui/joy';
+import { FileTree, FileNode } from '../../features/file-explorer/FileTree';
 
 interface SidebarExplorerProps {
   workbookNodes: FileNode[];
@@ -17,7 +17,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   selectedNodeId,
   onNodeSelect,
   dirtyNodeIds,
-  title = "Explore",
+  title = 'Explore',
 }) => {
   // Filter nodes based on search query
   const filteredTreeNodes = useMemo(() => {
@@ -43,9 +43,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
       }
       return null;
     };
-    return workbookNodes
-      .map(filterNode)
-      .filter((node): node is FileNode => Boolean(node));
+    return workbookNodes.map(filterNode).filter((node): node is FileNode => Boolean(node));
   }, [searchQuery, workbookNodes]);
 
   const isFiltering = Boolean(searchQuery.trim());
@@ -57,7 +55,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   }
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <FileTree
         files={displayNodes}
         selectedNodeId={selectedNodeId}
@@ -71,14 +69,12 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
           variant="plain"
           sx={{
             p: 2,
-            borderTop: "1px solid",
-            borderColor: "divider",
-            color: "text.secondary",
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            color: 'text.secondary',
           }}
         >
-          <Typography level="body-sm">
-            No files match "{searchQuery.trim()}"
-          </Typography>
+          <Typography level="body-sm">No files match "{searchQuery.trim()}"</Typography>
         </Sheet>
       )}
     </Box>

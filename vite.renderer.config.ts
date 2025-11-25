@@ -5,10 +5,10 @@ import { resolve } from 'path';
 // Vite config for Electron renderer process
 export default defineConfig({
   plugins: [react()],
-  
+
   // Root directory for renderer
   root: resolve(__dirname, 'src/renderer'),
-  
+
   // Build configuration
   build: {
     outDir: resolve(__dirname, '.vite/renderer'),
@@ -32,7 +32,7 @@ export default defineConfig({
             }
             return 'monaco-editor';
           }
-          // Bundle workers  
+          // Bundle workers
           if (id.includes('.worker')) {
             return 'monaco-workers';
           }
@@ -40,14 +40,14 @@ export default defineConfig({
       },
     },
   },
-  
+
   // Development server
   server: {
     host: '127.0.0.1',
     port: 5173,
     strictPort: true,
   },
-  
+
   // Path resolution
   resolve: {
     alias: {
@@ -68,7 +68,7 @@ export default defineConfig({
       'monaco-editor/esm/vs/editor/editor.api',
     ],
   },
-  
+
   // Environment variables
   define: {
     __IS_WEB__: false,

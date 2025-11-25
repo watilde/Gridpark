@@ -8,16 +8,17 @@ const meta = {
     layout: 'padded',
     docs: {
       description: {
-        component: 'Component to test and verify that Caveat and Noto Sans fonts are loading correctly from Fontsource packages.'
-      }
-    }
+        component:
+          'Component to test and verify that Caveat and Noto Sans fonts are loading correctly from Fontsource packages.',
+      },
+    },
   },
   tags: ['autodocs'],
   argTypes: {
     text: {
       control: 'text',
-      description: 'Text content to display for font testing'
-    }
+      description: 'Text content to display for font testing',
+    },
   },
 } satisfies Meta<typeof FontTest>;
 
@@ -29,7 +30,7 @@ type Story = StoryObj<typeof meta>;
  */
 export const Default: Story = {
   args: {
-    text: 'The quick brown fox jumps over the lazy dog'
+    text: 'The quick brown fox jumps over the lazy dog',
   },
 };
 
@@ -38,7 +39,7 @@ export const Default: Story = {
  */
 export const JapaneseText: Story = {
   args: {
-    text: 'こんにちは、世界！Gridparkへようこそ'
+    text: 'こんにちは、世界！Gridparkへようこそ',
   },
 };
 
@@ -47,7 +48,7 @@ export const JapaneseText: Story = {
  */
 export const NumbersAndSymbols: Story = {
   args: {
-    text: '1234567890 !@#$%^&*()_+-=[]{}|;:,.<>?'
+    text: '1234567890 !@#$%^&*()_+-=[]{}|;:,.<>?',
   },
 };
 
@@ -56,6 +57,6 @@ export const NumbersAndSymbols: Story = {
  */
 export const MixedCase: Story = {
   args: {
-    text: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    text: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
   },
 };

@@ -1,9 +1,9 @@
 /**
  * Formula Worker (Phase 3 - HyperFormula Integration)
- * 
+ *
  * Calculates formulas in a separate thread to avoid blocking the UI.
  * Uses IndexedDB for data access (Dexie works in Workers!)
- * 
+ *
  * Supported functions:
  * - Phase 2: Basic functions (SUM, AVERAGE, COUNT, MIN, MAX)
  * - Phase 3: Full Excel compatibility with HyperFormula (400+ functions)
@@ -12,7 +12,7 @@
  *   - SUMIF, SUMIFS, COUNTIF, COUNTIFS, AVERAGEIF
  *   - TEXT, DATE, MATH, STATISTICAL functions
  *   - And 400+ more Excel functions
- * 
+ *
  * Features:
  * - Automatic dependency tracking
  * - Circular reference detection
@@ -45,7 +45,7 @@ class WorkerDatabase extends Dexie {
 
   constructor() {
     super('ExcelAppDatabase');
-    
+
     this.version(2).stores({
       sheetMetadata: '++id, tabId, workbookId, &[tabId], lastAccessedAt',
       cells: '++id, &[tabId+row+col], tabId, [tabId+row], [tabId+col], version',
@@ -79,9 +79,9 @@ const sheetIdMap = new Map<string, number>();
 
 interface CachedResult {
   result: number | string;
-  dependencies: string[];  // Cells this formula depends on
-  timestamp: number;       // When calculated
-  version: number;         // Cell version when calculated
+  dependencies: string[]; // Cells this formula depends on
+  timestamp: number; // When calculated
+  version: number; // Cell version when calculated
 }
 
 // Cache: cellRef -> CachedResult
@@ -116,13 +116,13 @@ function isCacheValid(cacheKey: string, cached: CachedResult, tabId: string): bo
     const { row, col } = parseCellRef(depRef);
     const versionKey = getVersionKey(tabId, row, col);
     const currentVersion = cellVersions.get(versionKey) || 0;
-    
+
     // If any dependency has a newer version, cache is invalid
     if (currentVersion > cached.version) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -132,18 +132,18 @@ function isCacheValid(cacheKey: string, cached: CachedResult, tabId: string): bo
 function invalidateCache(tabId: string, row: number, col: number) {
   const cellRef = `${columnIndexToLetter(col)}${row + 1}`;
   const cacheKey = getCacheKey(tabId, cellRef);
-  
+
   // Remove from cache
   calculationCache.delete(cacheKey);
-  
+
   // Mark as dirty
   dirtyCells.add(cacheKey);
-  
+
   // Increment version
   const versionKey = getVersionKey(tabId, row, col);
   const currentVersion = cellVersions.get(versionKey) || 0;
   cellVersions.set(versionKey, currentVersion + 1);
-  
+
   // Invalidate dependents (cells that depend on this cell)
   const sheetId = sheetIdMap.get(tabId);
   if (sheetId !== undefined) {
@@ -153,7 +153,7 @@ function invalidateCache(tabId: string, row: number, col: number) {
         row,
         col,
       });
-      
+
       // Recursively invalidate dependents
       for (const dependent of dependents) {
         invalidateCache(tabId, dependent.row, dependent.col);
@@ -170,17 +170,17 @@ function invalidateCache(tabId: string, row: number, col: number) {
 function getCachedResult(tabId: string, cellRef: string): number | string | null {
   const cacheKey = getCacheKey(tabId, cellRef);
   const cached = calculationCache.get(cacheKey);
-  
+
   if (!cached) {
     return null;
   }
-  
+
   if (!isCacheValid(cacheKey, cached, tabId)) {
     // Cache invalid, remove it
     calculationCache.delete(cacheKey);
     return null;
   }
-  
+
   return cached.result;
 }
 
@@ -188,22 +188,22 @@ function getCachedResult(tabId: string, cellRef: string): number | string | null
  * Store result in cache
  */
 function setCachedResult(
-  tabId: string, 
-  cellRef: string, 
-  result: number | string, 
+  tabId: string,
+  cellRef: string,
+  result: number | string,
   dependencies: string[]
 ) {
   const cacheKey = getCacheKey(tabId, cellRef);
   const { row, col } = parseCellRef(cellRef);
   const versionKey = getVersionKey(tabId, row, col);
-  
+
   calculationCache.set(cacheKey, {
     result,
     dependencies,
     timestamp: Date.now(),
     version: cellVersions.get(versionKey) || 0,
   });
-  
+
   // Remove from dirty set
   dirtyCells.delete(cacheKey);
 }
@@ -220,7 +220,7 @@ async function loadSheetIntoHyperFormula(tabId: string): Promise<number> {
 
   // Get all cells from IndexedDB
   const cells = await db.cells.where('tabId').equals(tabId).toArray();
-  
+
   // Determine sheet dimensions
   let maxRow = 0;
   let maxCol = 0;
@@ -232,7 +232,9 @@ async function loadSheetIntoHyperFormula(tabId: string): Promise<number> {
   // Create 2D array (sparse to dense conversion)
   const rows = Math.max(maxRow + 1, 100);
   const cols = Math.max(maxCol + 1, 50);
-  const data: any[][] = Array(rows).fill(null).map(() => Array(cols).fill(null));
+  const data: any[][] = Array(rows)
+    .fill(null)
+    .map(() => Array(cols).fill(null));
 
   // Fill with cell data
   cells.forEach(cell => {
@@ -245,7 +247,7 @@ async function loadSheetIntoHyperFormula(tabId: string): Promise<number> {
   // Add sheet to HyperFormula
   const sheetId = hfEngine.addSheet(`Sheet_${tabId}`);
   hfEngine.setSheetContent(sheetId, data);
-  
+
   // Store mapping
   sheetIdMap.set(tabId, sheetId);
 
@@ -262,7 +264,7 @@ function parseCellRef(cellRef: string): { row: number; col: number } {
   if (!match) {
     throw new Error(`Invalid cell reference: ${cellRef}`);
   }
-  
+
   const [, colStr, rowStr] = match;
   return {
     row: parseInt(rowStr) - 1,
@@ -404,9 +406,9 @@ function parseRangeReference(ref: string): CellRange {
   if (!match) {
     throw new Error(`Invalid range reference: ${ref}`);
   }
-  
+
   const [, startCol, startRow, endCol, endRow] = match;
-  
+
   return {
     startRow: parseInt(startRow) - 1,
     startCol: columnToIndex(startCol),
@@ -420,13 +422,13 @@ function parseRangeReference(ref: string): CellRange {
  */
 function parseFormula(formula: string): { function: string; range: CellRange } | null {
   if (!formula.startsWith('=')) return null;
-  
+
   const match = formula.match(/^=([A-Z]+)\(([A-Z0-9:]+)\)$/);
   if (!match) return null;
-  
+
   const [, func, rangeRef] = match;
   const range = parseRangeReference(rangeRef);
-  
+
   return { function: func, range };
 }
 
@@ -443,7 +445,7 @@ async function getCellsInRange(tabId: string, range: CellRange): Promise<StoredC
     .between([tabId, range.startRow], [tabId, range.endRow])
     .and(cell => cell.col >= range.startCol && cell.col <= range.endCol)
     .toArray();
-  
+
   return cells;
 }
 
@@ -462,9 +464,9 @@ async function calculateSUM(tabId: string, range: CellRange): Promise<number> {
 async function calculateAVERAGE(tabId: string, range: CellRange): Promise<number> {
   const cells = await getCellsInRange(tabId, range);
   const numericCells = cells.filter(cell => !isNaN(Number(cell.value)));
-  
+
   if (numericCells.length === 0) return 0;
-  
+
   const sum = numericCells.reduce((acc, cell) => acc + Number(cell.value), 0);
   return sum / numericCells.length;
 }
@@ -476,19 +478,15 @@ async function calculateCOUNT(tabId: string, range: CellRange): Promise<number> 
 
 async function calculateMIN(tabId: string, range: CellRange): Promise<number> {
   const cells = await getCellsInRange(tabId, range);
-  const numericValues = cells
-    .map(cell => Number(cell.value))
-    .filter(val => !isNaN(val));
-  
+  const numericValues = cells.map(cell => Number(cell.value)).filter(val => !isNaN(val));
+
   return numericValues.length > 0 ? Math.min(...numericValues) : 0;
 }
 
 async function calculateMAX(tabId: string, range: CellRange): Promise<number> {
   const cells = await getCellsInRange(tabId, range);
-  const numericValues = cells
-    .map(cell => Number(cell.value))
-    .filter(val => !isNaN(val));
-  
+  const numericValues = cells.map(cell => Number(cell.value)).filter(val => !isNaN(val));
+
   return numericValues.length > 0 ? Math.max(...numericValues) : 0;
 }
 
@@ -501,8 +499,8 @@ async function calculateMAX(tabId: string, range: CellRange): Promise<number> {
  * Supports 400+ Excel functions
  */
 async function calculateWithHyperFormula(
-  tabId: string, 
-  formula: string, 
+  tabId: string,
+  formula: string,
   cellRef: string
 ): Promise<number | string> {
   try {
@@ -512,25 +510,25 @@ async function calculateWithHyperFormula(
       console.log(`[FormulaWorker] Cache hit for ${cellRef}:`, cachedResult);
       return cachedResult;
     }
-    
+
     // Load sheet if not already loaded
     const sheetId = await loadSheetIntoHyperFormula(tabId);
-    
+
     // Parse cell reference
     const { row, col } = parseCellRef(cellRef);
-    
+
     // Build cell address
     const cellAddress = {
       sheet: sheetId,
       row,
       col,
     };
-    
+
     // Calculate formula using HyperFormula
     const result = hfEngine.calculateFormula(formula, cellAddress);
-    
+
     console.log(`[FormulaWorker] HyperFormula result for ${cellRef}:`, result);
-    
+
     // Get dependencies for caching (Phase 4)
     const dependencies: string[] = [];
     try {
@@ -541,10 +539,10 @@ async function calculateWithHyperFormula(
     } catch (error) {
       // No dependencies
     }
-    
+
     // Store in cache (Phase 4)
     setCachedResult(tabId, cellRef, result, dependencies);
-    
+
     return result;
   } catch (error) {
     console.error('[FormulaWorker] HyperFormula error:', error);
@@ -557,7 +555,7 @@ async function calculateWithHyperFormula(
  * - First tries HyperFormula (supports all Excel functions)
  * - Falls back to basic functions if HyperFormula fails
  */
-async function calculate(tabId: string, formula: string, cellRef: string = 'A1'): Promise<number | string> {
+async function calculate(tabId: string, formula: string, cellRef = 'A1'): Promise<number | string> {
   try {
     // Strategy: Try HyperFormula first (supports 400+ functions)
     try {
@@ -565,15 +563,15 @@ async function calculate(tabId: string, formula: string, cellRef: string = 'A1')
     } catch (hfError) {
       console.warn('[FormulaWorker] HyperFormula failed, trying basic functions:', hfError);
     }
-    
+
     // Fallback: Basic functions (Phase 2 implementation)
     const parsed = parseFormula(formula);
     if (!parsed) {
       return '#ERROR!';
     }
-    
+
     const { function: func, range } = parsed;
-    
+
     switch (func) {
       case 'SUM':
         return await calculateSUM(tabId, range);
@@ -602,35 +600,34 @@ async function calculate(tabId: string, formula: string, cellRef: string = 'A1')
 /**
  * Get dependencies for a cell
  */
-async function getCellDependencies(tabId: string, cellRef: string): Promise<{
+async function getCellDependencies(
+  tabId: string,
+  cellRef: string
+): Promise<{
   dependencies: string[];
   dependents: string[];
 }> {
   try {
     // Load sheet if not already loaded
     const sheetId = await loadSheetIntoHyperFormula(tabId);
-    
+
     // Parse cell reference
     const { row, col } = parseCellRef(cellRef);
-    
+
     const cellAddress = {
       sheet: sheetId,
       row,
       col,
     };
-    
+
     // Get precedents (cells this cell depends on)
     const precedents = hfEngine.getCellPrecedents(cellAddress);
-    const dependencies = precedents.map(addr => 
-      `${columnIndexToLetter(addr.col)}${addr.row + 1}`
-    );
-    
+    const dependencies = precedents.map(addr => `${columnIndexToLetter(addr.col)}${addr.row + 1}`);
+
     // Get dependents (cells that depend on this cell)
     const dependents = hfEngine.getCellDependents(cellAddress);
-    const dependentRefs = dependents.map(addr => 
-      `${columnIndexToLetter(addr.col)}${addr.row + 1}`
-    );
-    
+    const dependentRefs = dependents.map(addr => `${columnIndexToLetter(addr.col)}${addr.row + 1}`);
+
     return {
       dependencies,
       dependents: dependentRefs,
@@ -647,12 +644,12 @@ async function getCellDependencies(tabId: string, cellRef: string): Promise<{
 function columnIndexToLetter(index: number): string {
   let result = '';
   let num = index;
-  
+
   while (num >= 0) {
     result = String.fromCharCode((num % 26) + 65) + result;
     num = Math.floor(num / 26) - 1;
   }
-  
+
   return result;
 }
 
@@ -669,16 +666,16 @@ async function checkCircularReferences(tabId: string): Promise<{
 }> {
   try {
     const sheetId = sheetIdMap.get(tabId);
-    
+
     if (sheetId === undefined) {
       return { hasCircularRefs: false, circularCells: [] };
     }
 
     const circularCells: string[] = [];
-    
+
     // Get serialized data from HyperFormula
     const serialized = hfEngine.getSheetSerialized(sheetId);
-    
+
     // Look for circular reference errors (#CYCLE!)
     serialized.forEach((row, rowIndex) => {
       row.forEach((cell, colIndex) => {
@@ -707,10 +704,8 @@ async function checkCircularReferences(tabId: string): Promise<{
  */
 function getCacheStats() {
   const totalCalculations = calculationCache.size + dirtyCells.size;
-  const hitRate = totalCalculations > 0 
-    ? calculationCache.size / totalCalculations 
-    : 0;
-  
+  const hitRate = totalCalculations > 0 ? calculationCache.size / totalCalculations : 0;
+
   return {
     cacheSize: calculationCache.size,
     dirtyCellsCount: dirtyCells.size,
@@ -725,16 +720,16 @@ function getCacheStats() {
 self.addEventListener('message', async (event: MessageEvent) => {
   const message = event.data;
   const startTime = performance.now();
-  
+
   try {
     if (message.type === 'CALCULATE') {
       const { id, tabId, formula, cellRef } = message as CalculateMessage;
-      
+
       console.log('[FormulaWorker] Calculating:', { cellRef, formula });
-      
+
       const result = await calculate(tabId, formula, cellRef);
       const duration = performance.now() - startTime;
-      
+
       const response: ResultMessage = {
         type: 'RESULT',
         id,
@@ -742,56 +737,53 @@ self.addEventListener('message', async (event: MessageEvent) => {
         result,
         duration,
       };
-      
+
       self.postMessage(response);
-      
     } else if (message.type === 'BATCH_CALCULATE') {
       const { id, tabId, formulas } = message as BatchCalculateMessage;
-      
+
       console.log('[FormulaWorker] Batch calculating:', formulas.length, 'formulas');
-      
+
       const results = await Promise.all(
         formulas.map(async ({ cellRef, formula }) => ({
           cellRef,
           result: await calculate(tabId, formula, cellRef),
         }))
       );
-      
+
       const duration = performance.now() - startTime;
-      
+
       const response: BatchResultMessage = {
         type: 'BATCH_RESULT',
         id,
         results,
         duration,
       };
-      
+
       self.postMessage(response);
-      
     } else if (message.type === 'LOAD_SHEET') {
       const { id, tabId } = message as LoadSheetMessage;
-      
+
       console.log('[FormulaWorker] Loading sheet:', tabId);
-      
+
       const sheetId = await loadSheetIntoHyperFormula(tabId);
       const duration = performance.now() - startTime;
-      
+
       const response: LoadSheetResponseMessage = {
         type: 'SHEET_LOADED',
         id,
         tabId,
         sheetId,
       };
-      
+
       self.postMessage(response);
-      
     } else if (message.type === 'GET_DEPENDENCIES') {
       const { id, tabId, cellRef } = message as GetDependenciesMessage;
-      
+
       console.log('[FormulaWorker] Getting dependencies for:', cellRef);
-      
+
       const { dependencies, dependents } = await getCellDependencies(tabId, cellRef);
-      
+
       const response: DependenciesResponseMessage = {
         type: 'DEPENDENCIES',
         id,
@@ -799,63 +791,58 @@ self.addEventListener('message', async (event: MessageEvent) => {
         dependencies,
         dependents,
       };
-      
+
       self.postMessage(response);
-      
     } else if (message.type === 'INVALIDATE_CACHE') {
       const { id, tabId, row, col } = message as InvalidateCacheMessage;
-      
+
       console.log('[FormulaWorker] Invalidating cache for:', { tabId, row, col });
-      
+
       invalidateCache(tabId, row, col);
-      
+
       self.postMessage({
         type: 'CACHE_INVALIDATED',
         id,
       });
-      
     } else if (message.type === 'CHECK_CIRCULAR_REFS') {
       const { id, tabId } = message as CheckCircularRefsMessage;
-      
+
       console.log('[FormulaWorker] Checking circular references for:', tabId);
-      
+
       const { hasCircularRefs, circularCells } = await checkCircularReferences(tabId);
-      
+
       const response: CircularRefsResponseMessage = {
         type: 'CIRCULAR_REFS',
         id,
         hasCircularRefs,
         circularCells,
       };
-      
+
       self.postMessage(response);
-      
     } else if (message.type === 'GET_CACHE_STATS') {
       const { id } = message as CacheStatsMessage;
-      
+
       const stats = getCacheStats();
-      
+
       const response: CacheStatsResponseMessage = {
         type: 'CACHE_STATS',
         id,
         stats,
       };
-      
+
       self.postMessage(response);
-      
     } else {
       console.warn('[FormulaWorker] Unknown message type:', message.type);
     }
-    
   } catch (error) {
     console.error('[FormulaWorker] Fatal error:', error);
-    
+
     const errorResponse: ErrorMessage = {
       type: 'ERROR',
       id: message.id,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
-    
+
     self.postMessage(errorResponse);
   }
 });

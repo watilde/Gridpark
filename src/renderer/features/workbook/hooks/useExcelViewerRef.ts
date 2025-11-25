@@ -1,5 +1,5 @@
-import { useImperativeHandle, useCallback, Ref } from "react";
-import { CellPosition, CellData } from "../../../types/excel";
+import { useImperativeHandle, useCallback, Ref } from 'react';
+import { CellPosition, CellData } from '../../../types/excel';
 
 /**
  * ExcelViewer Ref API
@@ -69,7 +69,7 @@ const parseAddress = (address: string): CellPosition | null => {
   const match = /^([A-Z]+)(\d+)$/.exec(address.toUpperCase());
   if (!match) return null;
 
-  const col = match[1].split("").reduce((acc, char) => acc * 26 + char.charCodeAt(0) - 64, 0) - 1;
+  const col = match[1].split('').reduce((acc, char) => acc * 26 + char.charCodeAt(0) - 64, 0) - 1;
   const row = parseInt(match[2], 10) - 1;
 
   return { row, col };
@@ -161,7 +161,7 @@ export const useExcelViewerRef = (
         `[data-row="${pos.row}"][data-col="${pos.col}"]`
       ) as HTMLElement;
       if (cellElement) {
-        cellElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        cellElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     },
     [gridRef]
@@ -175,17 +175,17 @@ export const useExcelViewerRef = (
   }, [data]);
 
   const exportData = useCallback(() => {
-    return data.map((row) => row.map((cell) => ({ ...cell })));
+    return data.map(row => row.map(cell => ({ ...cell })));
   }, [data]);
 
   const undo = useCallback(() => {
     // TODO: Implement undo functionality
-    console.log("Undo not yet implemented");
+    console.log('Undo not yet implemented');
   }, []);
 
   const redo = useCallback(() => {
     // TODO: Implement redo functionality
-    console.log("Redo not yet implemented");
+    console.log('Redo not yet implemented');
   }, []);
 
   useImperativeHandle(

@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useTransition } from "react";
-import { ExcelFile, GridparkCodeFile } from "../types/excel";
-import { FileNode } from "../features/file-explorer/FileTree";
-import { WorkbookTab } from "../types/tabs";
-import { SheetSessionState } from "../features/workbook/components/ExcelViewer";
-import { createWorkbookNode, createSheetTab, createManifestTabInstance } from "../utils/workbookUtils";
-import { useAppDispatch, useAppSelector } from "../../stores";
+import { useCallback, useEffect, useMemo, useTransition } from 'react';
+import { ExcelFile, GridparkCodeFile } from '../types/excel';
+import { FileNode } from '../features/file-explorer/FileTree';
+import { WorkbookTab } from '../types/tabs';
+import { SheetSessionState } from '../features/workbook/components/ExcelViewer';
+import {
+  createWorkbookNode,
+  createSheetTab,
+  createManifestTabInstance,
+} from '../utils/workbookUtils';
+import { useAppDispatch, useAppSelector } from '../../stores';
 import {
   selectWorkbookNodes,
   selectCurrentDirectoryName,
@@ -18,7 +22,7 @@ import {
   closeTab,
   focusTab,
   resetWorkspace as resetWorkspaceAction,
-} from "../../stores/spreadsheetSlice";
+} from '../../stores/spreadsheetSlice';
 
 // ============================================================================
 // NOTE: Workspace state is now managed by Redux (spreadsheetSlice)
@@ -57,7 +61,7 @@ export interface TabOperationsDeps {
  * - useTabManagement
  * - useDirtyTracking
  * - useTabOperations
- * 
+ *
  * NOW USING REDUX for state management instead of useReducer
  */
 export const useWorkspace = (
@@ -80,7 +84,7 @@ export const useWorkspace = (
   // ==========================================
 
   const findWorkbookNode = useCallback(
-    (workbookId: string) => workbookNodes.find((node) => node.id === workbookId),
+    (workbookId: string) => workbookNodes.find(node => node.id === workbookId),
     [workbookNodes]
   );
 
@@ -101,14 +105,16 @@ export const useWorkspace = (
         );
 
         // Open first sheet by default
-        const firstSheetNode = nodes[0]?.children?.find((child) => child.type === "sheet");
+        const firstSheetNode = nodes[0]?.children?.find(child => child.type === 'sheet');
         const firstTab = firstSheetNode ? createSheetTab(firstSheetNode) : null;
 
-        dispatch(resetWorkspaceAction({
-          nodes,
-          directoryName: directoryName ?? "",
-          firstTab,
-        }));
+        dispatch(
+          resetWorkspaceAction({
+            nodes,
+            directoryName: directoryName ?? '',
+            firstTab,
+          })
+        );
       });
     },
     [startFileTransition, dispatch]
@@ -130,14 +136,17 @@ export const useWorkspace = (
   // Tab Management Functions
   // ==========================================
 
-  const focusTabAction = useCallback((tab: WorkbookTab) => {
-    dispatch(focusTab(tab));
-  }, [dispatch]);
+  const focusTabAction = useCallback(
+    (tab: WorkbookTab) => {
+      dispatch(focusTab(tab));
+    },
+    [dispatch]
+  );
 
   const handleTabChange = useCallback(
     (_event: React.SyntheticEvent | null, value: string | number | null) => {
-      if (!value || typeof value !== "string") return;
-      const tab = openTabs.find((t) => t.id === value);
+      if (!value || typeof value !== 'string') return;
+      const tab = openTabs.find(t => t.id === value);
       if (tab) {
         focusTabAction(tab);
       }
@@ -145,34 +154,33 @@ export const useWorkspace = (
     [openTabs, focusTabAction]
   );
 
-  const closeTabAction = useCallback((tabId: string) => {
-    dispatch(closeTab(tabId));
-  }, [dispatch]);
+  const closeTabAction = useCallback(
+    (tabId: string) => {
+      dispatch(closeTab(tabId));
+    },
+    [dispatch]
+  );
 
   // ==========================================
   // Dirty Tracking Functions (OPTIMIZED - Redux + Dexie)
   // ==========================================
 
-  const {
-    codeSessions,
-    manifestDirtyMap,
-    getManifestSessionKey,
-  } = dirtyTrackingDeps;
-  
+  const { codeSessions, manifestDirtyMap, getManifestSessionKey } = dirtyTrackingDeps;
+
   // Get Redux dirty map
   const dirtyMapFromRedux = useAppSelector(selectDirtyMap);
 
   const tabIsDirty = useCallback(
     (tab: WorkbookTab): boolean => {
-      if (tab.kind === "sheet") {
+      if (tab.kind === 'sheet') {
         // Check Redux dirty map (synced with Dexie)
         return Boolean(dirtyMapFromRedux[tab.id]);
       }
-      if (tab.kind === "code") {
+      if (tab.kind === 'code') {
         const session = codeSessions[tab.codeFile.absolutePath];
         return Boolean(session && session.content !== session.originalContent);
       }
-      if (tab.kind === "manifest") {
+      if (tab.kind === 'manifest') {
         const key = getManifestSessionKey(tab.file);
         return Boolean(key && manifestDirtyMap[key]);
       }
@@ -187,22 +195,22 @@ export const useWorkspace = (
     const visit = (node: FileNode): boolean => {
       let dirty = false;
 
-      if (node.type === "sheet") {
+      if (node.type === 'sheet') {
         // Check Redux dirty map
         dirty = Boolean(dirtyMapFromRedux[node.id]);
-      } else if (node.type === "code" && node.codeFile) {
+      } else if (node.type === 'code' && node.codeFile) {
         const session = codeSessions[node.codeFile.absolutePath];
         dirty = Boolean(session && session.content !== session.originalContent);
-      } else if (node.type === "manifest" && node.file) {
+      } else if (node.type === 'manifest' && node.file) {
         const key = getManifestSessionKey(node.file);
         dirty = Boolean(key && manifestDirtyMap[key]);
-      } else if (node.type === "workbook" && node.file) {
+      } else if (node.type === 'workbook' && node.file) {
         const key = getManifestSessionKey(node.file);
         dirty = Boolean(key && manifestDirtyMap[key]);
       }
 
       if (node.children?.length) {
-        const childDirty = node.children.map((child) => visit(child));
+        const childDirty = node.children.map(child => visit(child));
         dirty = dirty || childDirty.some(Boolean);
       }
 
@@ -221,10 +229,7 @@ export const useWorkspace = (
   // Tab Operations Functions
   // ==========================================
 
-  const {
-    ensureManifestSession,
-    ensureCodeSession,
-  } = tabOperationsDeps;
+  const { ensureManifestSession, ensureCodeSession } = tabOperationsDeps;
 
   const openTabForSheetNode = useCallback(
     (sheetNode: FileNode) => {
@@ -249,15 +254,15 @@ export const useWorkspace = (
 
   const openTabForCodeNode = useCallback(
     (codeNode: FileNode) => {
-      if (codeNode.type !== "code" || !codeNode.codeFile) {
+      if (codeNode.type !== 'code' || !codeNode.codeFile) {
         return;
       }
-      const workbook = findWorkbookNode(codeNode.workbookId ?? codeNode.parentId ?? "");
+      const workbook = findWorkbookNode(codeNode.workbookId ?? codeNode.parentId ?? '');
       if (!workbook || !workbook.file) {
         return;
       }
       const tab: WorkbookTab = {
-        kind: "code",
+        kind: 'code',
         id: `${codeNode.id}-tab`,
         workbookId: workbook.id,
         treeNodeId: codeNode.id,
@@ -273,22 +278,22 @@ export const useWorkspace = (
 
   const handleNodeSelect = useCallback(
     (node: FileNode) => {
-      if (node.type === "sheet") {
+      if (node.type === 'sheet') {
         openTabForSheetNode(node);
         return;
       }
-      if (node.type === "workbook") {
+      if (node.type === 'workbook') {
         openTabForManifest(node, node.id);
         return;
       }
-      if (node.type === "manifest") {
-        const workbook = findWorkbookNode(node.workbookId ?? node.parentId ?? "");
+      if (node.type === 'manifest') {
+        const workbook = findWorkbookNode(node.workbookId ?? node.parentId ?? '');
         if (workbook) {
           openTabForManifest(workbook, node.id);
         }
         return;
       }
-      if (node.type === "code") {
+      if (node.type === 'code') {
         openTabForCodeNode(node);
       }
     },
@@ -297,10 +302,10 @@ export const useWorkspace = (
 
   const handleCloseTab = useCallback(
     async (tabId: string) => {
-      const tabToClose = openTabs.find((tab) => tab.id === tabId);
-      
+      const tabToClose = openTabs.find(tab => tab.id === tabId);
+
       // Clean up Dexie data for sheet tabs
-      if (tabToClose?.kind === "sheet") {
+      if (tabToClose?.kind === 'sheet') {
         try {
           const { db } = await import('../../lib/db');
           // Optional: Keep data in DB for later, or delete it
@@ -310,7 +315,7 @@ export const useWorkspace = (
           console.error(`[useWorkspace] Failed to clean up sheet data:`, error);
         }
       }
-      
+
       closeTabAction(tabId);
     },
     [openTabs, closeTabAction]

@@ -7,7 +7,7 @@ const GridparkCard = styled(JoyCard)(({ theme }) => ({
   borderRadius: theme.radius.md,
   border: `1px solid ${theme.palette.divider}`,
   transition: 'all 0.2s ease',
-  
+
   // Code-first experience: subtle hover for interactive cards
   '&[data-interactive="true"]': {
     cursor: 'pointer',
@@ -30,7 +30,7 @@ const GridparkCard = styled(JoyCard)(({ theme }) => ({
 
 const CardHeader = styled('div')(({ theme }) => ({
   padding: '16px 16px 0 16px',
-  
+
   '& .card-title': {
     fontFamily: theme.fontFamily.body,
     fontSize: '18px',
@@ -79,7 +79,7 @@ export interface CardProps extends JoyCardProps {
 
 /**
  * Gridpark Card Component
- * 
+ *
  * Flexible container component following Gridpark design principles:
  * - Code-first: Clean, minimal design with developer-friendly spacing
  * - Interactive: Hover effects for clickable cards
@@ -111,16 +111,10 @@ export const Card: React.FC<CardProps> = ({
           {subtitle && <p className="card-subtitle">{subtitle}</p>}
         </CardHeader>
       )}
-      
-      <CardContent>
-        {children}
-      </CardContent>
-      
-      {actions && (
-        <CardActions>
-          {actions}
-        </CardActions>
-      )}
+
+      <CardContent>{children}</CardContent>
+
+      {actions && <CardActions>{actions}</CardActions>}
     </GridparkCard>
   );
 };

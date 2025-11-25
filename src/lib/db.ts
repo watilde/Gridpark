@@ -1,11 +1,11 @@
 /**
  * Dexie.js Database Configuration
- * 
+ *
  * Manages all table data using IndexedDB for:
  * - Sheet data (cells, formulas, formatting)
  * - Large datasets with reactive queries
  * - Offline-first data persistence
- * 
+ *
  * OPTIMIZED SCHEMA:
  * - Sparse matrix storage (only non-empty cells)
  * - Compound indexes for fast range queries
@@ -22,14 +22,7 @@ import Dexie, { Table } from 'dexie';
 /**
  * Cell value types matching ExcelViewer CellData
  */
-export type CellType = 
-  | 'empty'
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'date'
-  | 'error'
-  | 'formula';
+export type CellType = 'empty' | 'string' | 'number' | 'boolean' | 'date' | 'error' | 'formula';
 
 /**
  * Cell style data (subset of CSSProperties)
@@ -58,21 +51,21 @@ export interface CellStyleData {
 export interface StoredCellData {
   id?: number;
   // Composite key: tabId + row + col
-  tabId: string;           // Tab ID (unique per sheet in workspace)
-  row: number;             // 0-based row index
-  col: number;             // 0-based column index
-  
+  tabId: string; // Tab ID (unique per sheet in workspace)
+  row: number; // 0-based row index
+  col: number; // 0-based column index
+
   // Cell content
-  value: any;              // Cell value (string | number | boolean | null)
-  type: CellType;          // Cell type
-  formula?: string;        // Formula if present
-  
+  value: any; // Cell value (string | number | boolean | null)
+  type: CellType; // Cell type
+  formula?: string; // Formula if present
+
   // Styling
-  style?: CellStyleData;   // Cell-specific styles
-  
+  style?: CellStyleData; // Cell-specific styles
+
   // Metadata
-  updatedAt: Date;         // Last update timestamp
-  version: number;         // Version for undo/redo
+  updatedAt: Date; // Last update timestamp
+  version: number; // Version for undo/redo
 }
 
 /**
@@ -80,19 +73,19 @@ export interface StoredCellData {
  */
 export interface SheetMetadata {
   id?: number;
-  tabId: string;           // Unique tab ID
-  workbookId: string;      // Workbook identifier
-  sheetName: string;       // Sheet name
-  sheetIndex: number;      // Sheet position in workbook
-  
+  tabId: string; // Unique tab ID
+  workbookId: string; // Workbook identifier
+  sheetName: string; // Sheet name
+  sheetIndex: number; // Sheet position in workbook
+
   // Dimensions (for efficient rendering)
-  maxRow: number;          // Highest row with data
-  maxCol: number;          // Highest column with data
-  cellCount: number;       // Total non-empty cells
-  
+  maxRow: number; // Highest row with data
+  maxCol: number; // Highest column with data
+  cellCount: number; // Total non-empty cells
+
   // State
-  dirty: boolean;          // Has unsaved changes
-  
+  dirty: boolean; // Has unsaved changes
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -133,25 +126,27 @@ export class AppDatabase extends Dexie {
     });
 
     // Version 2: Optimized schema with sparse matrix and tab-based indexing
-    this.version(2).stores({
-      // Sheet metadata for quick lookups
-      sheetMetadata: '++id, tabId, workbookId, &[tabId], lastAccessedAt',
-      
-      // Cell data with compound index for range queries
-      // Primary index: tabId + row + col (unique per cell)
-      // Secondary indexes: tabId (for all cells in sheet), row, col
-      cells: '++id, &[tabId+row+col], tabId, [tabId+row], [tabId+col], version',
-      
-      // Workbook metadata
-      workbooks: '++id, &workbookId, filePath, lastOpened',
-    }).upgrade(async (tx) => {
-      // Migration from v1 to v2
-      // This will be implemented when we have data to migrate
-      console.log('[DB] Upgrading database from v1 to v2...');
-      
-      // For now, just log - actual migration will copy data from old schema
-      // In production, we'd copy from sheets/cells(v1) to sheetMetadata/cells(v2)
-    });
+    this.version(2)
+      .stores({
+        // Sheet metadata for quick lookups
+        sheetMetadata: '++id, tabId, workbookId, &[tabId], lastAccessedAt',
+
+        // Cell data with compound index for range queries
+        // Primary index: tabId + row + col (unique per cell)
+        // Secondary indexes: tabId (for all cells in sheet), row, col
+        cells: '++id, &[tabId+row+col], tabId, [tabId+row], [tabId+col], version',
+
+        // Workbook metadata
+        workbooks: '++id, &workbookId, filePath, lastOpened',
+      })
+      .upgrade(async tx => {
+        // Migration from v1 to v2
+        // This will be implemented when we have data to migrate
+        console.log('[DB] Upgrading database from v1 to v2...');
+
+        // For now, just log - actual migration will copy data from old schema
+        // In production, we'd copy from sheets/cells(v1) to sheetMetadata/cells(v2)
+      });
   }
 
   // ==========================================================================
@@ -162,10 +157,7 @@ export class AppDatabase extends Dexie {
    * Get sheet metadata by tab ID
    */
   async getSheetMetadata(tabId: string): Promise<SheetMetadata | undefined> {
-    return await this.sheetMetadata
-      .where('tabId')
-      .equals(tabId)
-      .first();
+    return await this.sheetMetadata.where('tabId').equals(tabId).first();
   }
 
   /**
@@ -177,7 +169,7 @@ export class AppDatabase extends Dexie {
     // Use transaction to prevent race conditions (React Strict Mode double invoke)
     return await this.transaction('rw', this.sheetMetadata, async () => {
       const existing = await this.getSheetMetadata(data.tabId);
-      
+
       if (existing) {
         await this.sheetMetadata.update(existing.id!, {
           ...data,
@@ -201,15 +193,15 @@ export class AppDatabase extends Dexie {
    */
   async updateSheetDimensions(tabId: string): Promise<void> {
     const cells = await this.getCellsForSheet(tabId);
-    
+
     let maxRow = 0;
     let maxCol = 0;
-    
+
     cells.forEach(cell => {
       maxRow = Math.max(maxRow, cell.row);
       maxCol = Math.max(maxCol, cell.col);
     });
-    
+
     const metadata = await this.getSheetMetadata(tabId);
     if (metadata) {
       await this.sheetMetadata.update(metadata.id!, {
@@ -224,7 +216,7 @@ export class AppDatabase extends Dexie {
   /**
    * Mark sheet as dirty (has unsaved changes)
    */
-  async markSheetDirty(tabId: string, dirty: boolean = true): Promise<void> {
+  async markSheetDirty(tabId: string, dirty = true): Promise<void> {
     const metadata = await this.getSheetMetadata(tabId);
     if (metadata) {
       await this.sheetMetadata.update(metadata.id!, {
@@ -242,10 +234,7 @@ export class AppDatabase extends Dexie {
    * Get all cells for a sheet (returns sparse array)
    */
   async getCellsForSheet(tabId: string): Promise<StoredCellData[]> {
-    return await this.cells
-      .where('tabId')
-      .equals(tabId)
-      .toArray();
+    return await this.cells.where('tabId').equals(tabId).toArray();
   }
 
   /**
@@ -261,11 +250,9 @@ export class AppDatabase extends Dexie {
     return await this.cells
       .where('tabId')
       .equals(tabId)
-      .and(cell => 
-        cell.row >= startRow && 
-        cell.row <= endRow && 
-        cell.col >= startCol && 
-        cell.col <= endCol
+      .and(
+        cell =>
+          cell.row >= startRow && cell.row <= endRow && cell.col >= startCol && cell.col <= endCol
       )
       .toArray();
   }
@@ -274,19 +261,21 @@ export class AppDatabase extends Dexie {
    * Get a specific cell
    */
   async getCell(tabId: string, row: number, col: number): Promise<StoredCellData | undefined> {
-    return await this.cells
-      .where('[tabId+row+col]')
-      .equals([tabId, row, col])
-      .first();
+    return await this.cells.where('[tabId+row+col]').equals([tabId, row, col]).first();
   }
 
   /**
    * Update or insert a single cell
    */
-  async upsertCell(tabId: string, row: number, col: number, data: Partial<StoredCellData>): Promise<number> {
+  async upsertCell(
+    tabId: string,
+    row: number,
+    col: number,
+    data: Partial<StoredCellData>
+  ): Promise<number> {
     const existing = await this.getCell(tabId, row, col);
     const now = new Date();
-    
+
     if (existing) {
       await this.cells.update(existing.id!, {
         ...data,
@@ -320,7 +309,7 @@ export class AppDatabase extends Dexie {
       tabId,
       count: cellUpdates.length,
     });
-    
+
     await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
       // Use Dexie's bulkPut for maximum performance
       const now = new Date();
@@ -335,32 +324,29 @@ export class AppDatabase extends Dexie {
         updatedAt: now,
         version: 1,
       }));
-      
+
       console.log('[db] bulkUpsertCells: calling bulkPut', {
         tabId,
         count: cellsToInsert.length,
       });
-      
+
       // bulkPut is much faster than individual upserts
       await this.cells.bulkPut(cellsToInsert);
-      
+
       console.log('[db] bulkUpsertCells: bulkPut completed, updating dimensions', { tabId });
-      
+
       // Update sheet dimensions within same transaction
       let maxRow = 0;
       let maxCol = 0;
-      
+
       cellUpdates.forEach(({ row, col }) => {
         maxRow = Math.max(maxRow, row);
         maxCol = Math.max(maxCol, col);
       });
-      
+
       // Use put to ensure useLiveQuery picks up the change
-      const metadata = await this.sheetMetadata
-        .where('tabId')
-        .equals(tabId)
-        .first();
-        
+      const metadata = await this.sheetMetadata.where('tabId').equals(tabId).first();
+
       if (metadata?.id) {
         await this.sheetMetadata.update(metadata.id, {
           maxRow,
@@ -379,9 +365,9 @@ export class AppDatabase extends Dexie {
         console.warn('[db] bulkUpsertCells: metadata not found for', tabId);
       }
     });
-    
+
     console.log('[db] bulkUpsertCells: transaction completed', { tabId });
-    
+
     return cellUpdates.length;
   }
 
@@ -399,11 +385,8 @@ export class AppDatabase extends Dexie {
    * Clear all cells for a sheet
    */
   async clearSheetCells(tabId: string): Promise<void> {
-    await this.cells
-      .where('tabId')
-      .equals(tabId)
-      .delete();
-    
+    await this.cells.where('tabId').equals(tabId).delete();
+
     // Reset dimensions
     await this.updateSheetDimensions(tabId);
   }
@@ -414,7 +397,7 @@ export class AppDatabase extends Dexie {
   async deleteSheet(tabId: string): Promise<void> {
     await this.transaction('rw', [this.sheetMetadata, this.cells], async () => {
       await this.clearSheetCells(tabId);
-      
+
       const metadata = await this.getSheetMetadata(tabId);
       if (metadata?.id) {
         await this.sheetMetadata.delete(metadata.id);
@@ -425,19 +408,23 @@ export class AppDatabase extends Dexie {
   /**
    * Convert sparse cell data to 2D array (for ExcelViewer compatibility)
    */
-  async getCellsAs2DArray(tabId: string, minRows: number = 100, minCols: number = 100): Promise<any[][]> {
+  async getCellsAs2DArray(tabId: string, minRows = 100, minCols = 100): Promise<any[][]> {
     const cells = await this.getCellsForSheet(tabId);
     const metadata = await this.getSheetMetadata(tabId);
-    
+
     // Determine dimensions
     const rows = Math.max(minRows, metadata?.maxRow ?? 0) + 1;
     const cols = Math.max(minCols, metadata?.maxCol ?? 0) + 1;
-    
+
     // Create empty 2D array
-    const result: any[][] = Array(rows).fill(null).map(() => 
-      Array(cols).fill(null).map(() => ({ value: null as any, type: 'empty' }))
-    );
-    
+    const result: any[][] = Array(rows)
+      .fill(null)
+      .map(() =>
+        Array(cols)
+          .fill(null)
+          .map(() => ({ value: null as any, type: 'empty' }))
+      );
+
     // Fill with actual cell data
     cells.forEach(cell => {
       if (cell.row < rows && cell.col < cols) {
@@ -449,7 +436,7 @@ export class AppDatabase extends Dexie {
         };
       }
     });
-    
+
     return result;
   }
 
@@ -462,28 +449,29 @@ export class AppDatabase extends Dexie {
       dataRows: data.length,
       dataCols: data[0]?.length || 0,
     });
-    
+
     await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
       // Clear existing cells
       await this.clearSheetCells(tabId);
       console.log('[db] Cleared existing cells for', tabId);
-      
+
       // Convert to sparse format (only save non-empty cells)
       const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> = [];
-      
+
       data.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
           // Skip null/undefined cells
           if (!cell) return;
-          
+
           // Save cells that:
           // 1. Have a non-empty value, OR
           // 2. Have a formula, OR
           // 3. Have a type other than 'empty'
           const hasValue = cell.value !== null && cell.value !== undefined && cell.value !== '';
-          const hasFormula = cell.formula !== null && cell.formula !== undefined && cell.formula !== '';
+          const hasFormula =
+            cell.formula !== null && cell.formula !== undefined && cell.formula !== '';
           const hasType = cell.type && cell.type !== 'empty';
-          
+
           if (hasValue || hasFormula || hasType) {
             cellUpdates.push({
               row: rowIndex,
@@ -498,12 +486,12 @@ export class AppDatabase extends Dexie {
           }
         });
       });
-      
+
       console.log('[db] Prepared', cellUpdates.length, 'cells to save');
-      
+
       // Bulk insert
       await this.bulkUpsertCells(tabId, cellUpdates);
-      
+
       console.log('[db] Bulk upsert completed for', tabId);
     });
   }
@@ -511,11 +499,12 @@ export class AppDatabase extends Dexie {
   /**
    * Get or create workbook metadata
    */
-  async getOrCreateWorkbook(workbookId: string, fileName: string, filePath: string): Promise<WorkbookMetadata> {
-    const existing = await this.workbooks
-      .where('workbookId')
-      .equals(workbookId)
-      .first();
+  async getOrCreateWorkbook(
+    workbookId: string,
+    fileName: string,
+    filePath: string
+  ): Promise<WorkbookMetadata> {
+    const existing = await this.workbooks.where('workbookId').equals(workbookId).first();
 
     if (existing) {
       // Update last opened
@@ -566,7 +555,7 @@ export async function getDatabaseStats() {
 
   const sheets = await db.sheetMetadata.toArray();
   const totalCellsInMetadata = sheets.reduce((sum, sheet) => sum + sheet.cellCount, 0);
-  
+
   return {
     sheets: sheetCount,
     cells: cellCount,

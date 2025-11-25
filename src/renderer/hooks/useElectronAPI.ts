@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback } from "react";
+import { useSyncExternalStore, useCallback } from 'react';
 
 /**
  * Electron API state snapshot
@@ -26,9 +26,9 @@ const getElectronSnapshot = (): ElectronAPISnapshot => {
     isAvailable: Boolean(electronAPI),
     hasGridpark: Boolean(electronAPI?.gridpark),
     hasFileSystem: Boolean(electronAPI?.fs),
-    platform: typeof navigator !== "undefined" ? navigator.platform : "unknown",
+    platform: typeof navigator !== 'undefined' ? navigator.platform : 'unknown',
   };
-  
+
   return cachedElectronSnapshot;
 };
 
@@ -41,11 +41,11 @@ const subscribeToElectron = (callback: () => void): (() => void) => {
   // Listen for potential runtime changes (if any)
   // For now, electronAPI is set once at initialization, so no dynamic subscription needed
   // But we keep the structure for future extensibility
-  
+
   // Example: if electronAPI could change dynamically
   // window.addEventListener('electron-api-changed', callback);
   // return () => window.removeEventListener('electron-api-changed', callback);
-  
+
   return () => {
     // No-op unsubscribe for now
   };
@@ -81,15 +81,13 @@ let fileEventState: FileEventState = {
 const getFileEventSnapshot = (): FileEventState => fileEventState;
 
 const subscribeToFileEvents = (callback: () => void): (() => void) => {
-  const unsubscribe = window.electronAPI?.onFilesOpened?.(
-    ({ files }: { files: any[] }) => {
-      fileEventState = {
-        lastOpenedFiles: files.map((f) => f.name),
-        lastOpenedTime: Date.now(),
-      };
-      callback();
-    }
-  );
+  const unsubscribe = window.electronAPI?.onFilesOpened?.(({ files }: { files: any[] }) => {
+    fileEventState = {
+      lastOpenedFiles: files.map(f => f.name),
+      lastOpenedTime: Date.now(),
+    };
+    callback();
+  });
 
   return () => {
     unsubscribe?.();
@@ -118,7 +116,7 @@ interface ThemeEventState {
 }
 
 let themeEventState: ThemeEventState = {
-  currentPreset: "",
+  currentPreset: '',
   lastChangeTime: 0,
 };
 

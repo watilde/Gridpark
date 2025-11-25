@@ -1,6 +1,6 @@
 /**
  * Redux Store Configuration
- * 
+ *
  * Manages application state using Redux Toolkit with persistence:
  * - UI state (tabs, active selections, settings)
  * - Dirty state tracking
@@ -9,8 +9,8 @@
  */
 
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { 
-  persistStore, 
+import {
+  persistStore,
   persistReducer,
   FLUSH,
   REHYDRATE,
@@ -35,7 +35,14 @@ const spreadsheetPersistConfig = {
   // Only persist UI preferences, not workspace/tab state
   whitelist: ['autoSaveEnabled', 'autoSaveInterval'],
   // Don't persist tabs, workbook nodes, or selections (lost on app restart)
-  blacklist: ['openTabs', 'activeTabId', 'workbookNodes', 'selectedNodeId', 'dirtyMap', 'currentDirectoryName'],
+  blacklist: [
+    'openTabs',
+    'activeTabId',
+    'workbookNodes',
+    'selectedNodeId',
+    'dirtyMap',
+    'currentDirectoryName',
+  ],
 };
 
 // ============================================================================
@@ -55,7 +62,7 @@ const rootReducer = combineReducers({
 
 export const store = configureStore({
   reducer: rootReducer,
-  middleware: (getDefaultMiddleware) =>
+  middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore redux-persist actions

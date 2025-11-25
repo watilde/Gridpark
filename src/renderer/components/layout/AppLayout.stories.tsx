@@ -6,9 +6,16 @@ import { Button } from '../ui/Button/Button';
 import { Card } from '../ui/Card/Card';
 import { SpreadsheetGrid } from '../../features/workbook/components/SpreadsheetGrid';
 import { FormulaBar } from '../../features/formula-bar/FormulaBar';
-import { 
-  TableChart, Functions, Code, Settings, Save, PlayArrow, 
-  FolderOpen, Description, Speed 
+import {
+  TableChart,
+  Functions,
+  Code,
+  Settings,
+  Save,
+  PlayArrow,
+  FolderOpen,
+  Description,
+  Speed,
 } from '@mui/icons-material';
 import { Typography } from '@mui/joy';
 
@@ -71,7 +78,7 @@ const sampleSidebarSections = [
 export const Default: Story = {
   args: {
     header: (
-      <Header 
+      <Header
         title="Gridpark"
         breadcrumbs={[
           { label: 'Workspace' },
@@ -80,8 +87,12 @@ export const Default: Story = {
         ]}
         actions={
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Button variant="soft" size="sm" startIcon={<Save />}>Save</Button>
-            <Button size="sm" startIcon={<PlayArrow />}>Run</Button>
+            <Button variant="soft" size="sm" startIcon={<Save />}>
+              Save
+            </Button>
+            <Button size="sm" startIcon={<PlayArrow />}>
+              Run
+            </Button>
           </div>
         }
       />
@@ -89,10 +100,12 @@ export const Default: Story = {
     sidebar: <Sidebar sections={sampleSidebarSections} />,
     children: (
       <div style={{ padding: '20px' }}>
-        <Typography level="h2" sx={{ mb: 2 }}>Main Content Area</Typography>
+        <Typography level="h2" sx={{ mb: 2 }}>
+          Main Content Area
+        </Typography>
         <Typography>
-          This is the main content area where spreadsheets, editors, and other primary
-          application content would be displayed.
+          This is the main content area where spreadsheets, editors, and other primary application
+          content would be displayed.
         </Typography>
       </div>
     ),
@@ -108,7 +121,7 @@ export const Default: Story = {
 export const FullSpreadsheetApp: Story = {
   args: {
     header: (
-      <Header 
+      <Header
         title="Gridpark"
         breadcrumbs={[
           { label: 'Projects' },
@@ -117,9 +130,15 @@ export const FullSpreadsheetApp: Story = {
         ]}
         actions={
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Button variant="soft" size="sm">Import</Button>
-            <Button variant="soft" size="sm">Export</Button>
-            <Button size="sm" color="success" startIcon={<Save />}>Save</Button>
+            <Button variant="soft" size="sm">
+              Import
+            </Button>
+            <Button variant="soft" size="sm">
+              Export
+            </Button>
+            <Button size="sm" color="success" startIcon={<Save />}>
+              Save
+            </Button>
           </div>
         }
       />
@@ -128,24 +147,24 @@ export const FullSpreadsheetApp: Story = {
     children: (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ padding: '16px', borderBottom: '1px solid var(--joy-palette-divider)' }}>
-          <FormulaBar 
+          <FormulaBar
             cellReference="B5"
             value="=SUM(B1:B4)"
             placeholder="Enter formula or value..."
           />
         </div>
         <div style={{ flex: 1, padding: '16px' }}>
-          <SpreadsheetGrid 
+          <SpreadsheetGrid
             rows={20}
             columns={10}
             initialData={{
-              'A1': { value: 'Revenue' },
-              'B1': { value: 125000 },
-              'A2': { value: 'Expenses' },
-              'B2': { value: 87500 },
-              'A3': { value: 'Profit' },
-              'B3': { value: 37500 },
-              'B5': { value: '=B1-B2' },
+              A1: { value: 'Revenue' },
+              B1: { value: 125000 },
+              A2: { value: 'Expenses' },
+              B2: { value: 87500 },
+              A3: { value: 'Profit' },
+              B3: { value: 37500 },
+              B5: { value: '=B1-B2' },
             }}
           />
         </div>
@@ -161,7 +180,8 @@ export const FullSpreadsheetApp: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Complete spreadsheet application layout with formula bar, grid, and status information.',
+        story:
+          'Complete spreadsheet application layout with formula bar, grid, and status information.',
       },
     },
   },
@@ -169,22 +189,21 @@ export const FullSpreadsheetApp: Story = {
 
 export const MinimalLayout: Story = {
   args: {
-    header: (
-      <Header 
-        title="Gridpark"
-        actions={<Button size="sm">Menu</Button>}
-      />
-    ),
+    header: <Header title="Gridpark" actions={<Button size="sm">Menu</Button>} />,
     hideSidebar: true,
     children: (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <Typography level="h1" sx={{ mb: 2 }}>Welcome to Gridpark</Typography>
+        <Typography level="h1" sx={{ mb: 2 }}>
+          Welcome to Gridpark
+        </Typography>
         <Typography level="body-lg" sx={{ mb: 4 }}>
           Transform spreadsheets into playgrounds
         </Typography>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <Button size="lg">Create New Spreadsheet</Button>
-          <Button size="lg" variant="soft">Import Excel File</Button>
+          <Button size="lg" variant="soft">
+            Import Excel File
+          </Button>
         </div>
       </div>
     ),
@@ -193,7 +212,8 @@ export const MinimalLayout: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Minimal layout without sidebar and footer, suitable for welcome screens or simple views.',
+        story:
+          'Minimal layout without sidebar and footer, suitable for welcome screens or simple views.',
       },
     },
   },
@@ -202,7 +222,7 @@ export const MinimalLayout: Story = {
 export const DeveloperWorkspace: Story = {
   args: {
     header: (
-      <Header 
+      <Header
         title="Gridpark"
         breadcrumbs={[
           { label: 'Functions' },
@@ -211,46 +231,56 @@ export const DeveloperWorkspace: Story = {
         ]}
         actions={
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Button variant="soft" size="sm">Debug</Button>
-            <Button variant="soft" size="sm">Test</Button>
-            <Button size="sm" color="success" startIcon={<PlayArrow />}>Deploy</Button>
+            <Button variant="soft" size="sm">
+              Debug
+            </Button>
+            <Button variant="soft" size="sm">
+              Test
+            </Button>
+            <Button size="sm" color="success" startIcon={<PlayArrow />}>
+              Deploy
+            </Button>
           </div>
         }
       />
     ),
     sidebar: (
-      <Sidebar sections={[
-        {
-          title: 'Explorer',
-          items: [
-            { id: 'functions', label: 'Custom Functions', icon: <Functions />, active: true },
-            { id: 'templates', label: 'Function Templates', icon: <Code /> },
-          ],
-        },
-        {
-          title: 'Development',
-          items: [
-            { id: 'debugger', label: 'Debugger', icon: <Settings /> },
-            { id: 'console', label: 'Debug Console', icon: <Description /> },
-            { id: 'performance', label: 'Performance', icon: <Speed />, badge: '3' },
-          ],
-        },
-      ]} />
+      <Sidebar
+        sections={[
+          {
+            title: 'Explorer',
+            items: [
+              { id: 'functions', label: 'Custom Functions', icon: <Functions />, active: true },
+              { id: 'templates', label: 'Function Templates', icon: <Code /> },
+            ],
+          },
+          {
+            title: 'Development',
+            items: [
+              { id: 'debugger', label: 'Debugger', icon: <Settings /> },
+              { id: 'console', label: 'Debug Console', icon: <Description /> },
+              { id: 'performance', label: 'Performance', icon: <Speed />, badge: '3' },
+            ],
+          },
+        ]}
+      />
     ),
     children: (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ flex: 1, padding: '20px' }}>
           <Card title="Function Editor" subtitle="CALCULATE_ROI.js">
-            <div style={{ 
-              backgroundColor: '#1e1e1e', 
-              color: '#d4d4d4', 
-              padding: '16px', 
-              borderRadius: '8px',
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '14px',
-              lineHeight: '1.5'
-            }}>
-{`/**
+            <div
+              style={{
+                backgroundColor: '#1e1e1e',
+                color: '#d4d4d4',
+                padding: '16px',
+                borderRadius: '8px',
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: '14px',
+                lineHeight: '1.5',
+              }}
+            >
+              {`/**
  * @customfunction
  * @param {number} revenue Total revenue amount
  * @param {number} cost Total cost amount  
@@ -271,7 +301,7 @@ function CALCULATE_ROI(revenue, cost, period) {
         </div>
         <div style={{ padding: '16px', borderTop: '1px solid var(--joy-palette-divider)' }}>
           <Card variant="soft" title="Test Function">
-            <FormulaBar 
+            <FormulaBar
               cellReference="A1"
               value="=GRIDPARK.CALCULATE_ROI(125000, 87500, 12)"
               placeholder="Test your function here..."
@@ -290,7 +320,8 @@ function CALCULATE_ROI(revenue, cost, period) {
   parameters: {
     docs: {
       description: {
-        story: 'Developer-focused layout for custom function development with code editor and testing tools.',
+        story:
+          'Developer-focused layout for custom function development with code editor and testing tools.',
       },
     },
   },
