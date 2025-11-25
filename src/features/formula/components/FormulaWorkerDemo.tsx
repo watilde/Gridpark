@@ -6,6 +6,14 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
+import Alert from '@mui/joy/Alert';
+import Card from '@mui/joy/Card';
+import Stack from '@mui/joy/Stack';
+import Chip from '@mui/joy/Chip';
+import TextField from '@mui/joy/TextField';
+import Button from '@mui/joy/Button';
 import { useFormulaWorker } from '../hooks/useFormulaWorker';
 import { useFormulaCalculation } from '../hooks/useFormulaCalculation';
 
@@ -86,7 +94,7 @@ export const FormulaWorkerDemo: React.FC<FormulaWorkerDemoProps> = ({ tabId }) =
         </Typography>
         <TextField
           value={formula}
-          onChange={e => setFormula(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormula(e.target.value)}
           placeholder="=SUM(A1:A100)"
           sx={{ mb: 2 }}
         />
