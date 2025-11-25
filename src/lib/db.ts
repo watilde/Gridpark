@@ -139,7 +139,7 @@ export class AppDatabase extends Dexie {
         // Workbook metadata
         workbooks: '++id, &workbookId, filePath, lastOpened',
       })
-      .upgrade(async tx => {
+      .upgrade(async _tx => {
         // Migration from v1 to v2
         // This will be implemented when we have data to migrate
         console.log('[DB] Upgrading database from v1 to v2...');

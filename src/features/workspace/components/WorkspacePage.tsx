@@ -148,11 +148,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     }
   }, [onRedo]);
 
-  const handleCellSelect = useCallback((pos: any) => {
+  const handleCellSelect = useCallback((_pos: any) => {
     // TODO: Implement cell selection handling
   }, []);
 
-  const handleRangeSelect = useCallback((range: any) => {
+  const handleRangeSelect = useCallback((_range: any) => {
     // TODO: Implement range selection handling
   }, []);
 
@@ -161,7 +161,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   // ============================================================================
 
   const handleSaveManifest = useCallback(
-    async (workbookId: string, file: ExcelFile) => {
+    async (workbookId: string, _file: ExcelFile) => {
       const tab = openTabs.find(t => t.kind === 'manifest' && t.workbookId === workbookId);
       if (tab) {
         await saveManager.saveTab(tab.id);
@@ -171,9 +171,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   );
 
   const handleSaveCode = useCallback(
-    async (codeFile: GridparkCodeFile) => {
+    async (_codeFile: GridparkCodeFile) => {
       const tab = openTabs.find(
-        t => t.kind === 'code' && t.codeFile.absolutePath === codeFile.absolutePath
+        t => t.kind === 'code' && t._codeFile.absolutePath === _codeFile.absolutePath
       );
       if (tab) {
         await saveManager.saveTab(tab.id);
@@ -231,7 +231,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     if (activeTab.kind === 'manifest') {
       return `${activeTab.fileName} (Manifest)`;
     }
-    return `${activeTab.codeFile.name} - ${activeTab.fileName}`;
+    return `${activeTab._codeFile.name} - ${activeTab.fileName}`;
   }, [activeTab]);
 
   useEffect(() => {

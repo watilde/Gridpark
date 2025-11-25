@@ -110,7 +110,7 @@ export const useExcelViewerRef = (
         ) as HTMLElement;
         if (cellElement) {
           cellElement.focus();
-          onSelectionChange(pos, pos);
+          onSelectionChange(_pos, pos);
         }
       }
     },

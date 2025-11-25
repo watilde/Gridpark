@@ -104,7 +104,7 @@ interface CellProps {
 }
 
 const CellBase = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & CellProps>(
-  ({ isSelected, isEditing, ...rest }, ref) => <div ref={ref} {...rest} />
+  ({ _isSelected, _isEditing, ...rest }, ref) => <div ref={ref} {...rest} />
 );
 
 const Cell = styled(CellBase)<CellProps>(({ theme, isSelected, isEditing }) => ({

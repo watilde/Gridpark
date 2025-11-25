@@ -88,15 +88,15 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
   (
     {
       activeTab,
-      activeSheetSession, // DEPRECATED: unused
+      _activeSheetSession, // DEPRECATED: unused
       activeCodeSession,
       activeManifestSession,
       manifestEditorData,
       manifestIsDirty,
       canEditManifest,
       platformCapabilities,
-      onSessionChange, // DEPRECATED: unused
-      onSaveSession, // DEPRECATED: unused
+      _onSessionChange, // DEPRECATED: unused
+      _onSaveSession, // DEPRECATED: unused
       onDirtyChange,
       onCellSelect,
       onRangeSelect,

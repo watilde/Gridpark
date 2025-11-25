@@ -201,7 +201,7 @@ export const useMonacoEditorRef = (
   }, [editorRef]);
 
   const find = useCallback(
-    (text: string) => {
+    (_text: string) => {
       const editor = editorRef.current;
       if (!editor) return;
 
@@ -216,7 +216,7 @@ export const useMonacoEditorRef = (
   );
 
   const replace = useCallback(
-    (findText: string, replaceText: string) => {
+    (_findText: string, _replaceText: string) => {
       const editor = editorRef.current;
       if (!editor) return;
 

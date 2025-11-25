@@ -20,7 +20,7 @@
  */
 
 import Dexie from 'dexie';
-import { HyperFormula, ConfigParams } from 'hyperformula';
+import { HyperFormula, ConfigParams as _ConfigParams } from 'hyperformula';
 
 // ============================================================================
 // IndexedDB Setup (Same schema as main thread)
@@ -767,7 +767,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
       console.log('[FormulaWorker] Loading sheet:', tabId);
 
       const sheetId = await loadSheetIntoHyperFormula(tabId);
-      const duration = performance.now() - startTime;
+      const _duration = performance.now() - startTime;
 
       const response: LoadSheetResponseMessage = {
         type: 'SHEET_LOADED',

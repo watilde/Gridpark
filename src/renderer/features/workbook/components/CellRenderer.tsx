@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CellData, CellStyle, CellPosition, CellRange } from '../../../types/excel';
+import { _CellData, CellStyle, _CellPosition, _CellRange } from '../../../types/excel';
 import { styled } from '@mui/joy/styles';
 import { excelPalette } from './theme';
 
@@ -119,12 +119,12 @@ export const CellItem = React.memo(
 
     const [editValue, setEditValue] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-    const isEditing = editValue !== null;
+    const _isEditing = editValue !== null;
 
     // Update edit value when cell changes externally (e.g., formula recalculation)
     useEffect(() => {
       if (
-        !isEditing &&
+        !_isEditing &&
         isActive &&
         inputRef.current &&
         document.activeElement === inputRef.current
@@ -133,7 +133,7 @@ export const CellItem = React.memo(
         const cellValue = cell.value !== null && cell.value !== undefined ? String(cell.value) : '';
         setEditValue(cellValue);
       }
-    }, [isActive, cell.value, isEditing]);
+    }, [isActive, cell.value, _isEditing]);
 
     // Handle input focus (start editing)
     const handleFocus = () => {
@@ -171,7 +171,7 @@ export const CellItem = React.memo(
     };
 
     // Determine display value
-    const displayValue = isEditing
+    const displayValue = _isEditing
       ? editValue
       : cell.value !== null && cell.value !== undefined
         ? String(cell.value)
@@ -212,7 +212,7 @@ export const CellItem = React.memo(
       </Cell>
     );
   },
-  (prevProps, nextProps) => {
+  (__prevProps, __nextProps) => {
     // Custom comparison to avoid re-renders if not necessary
     // This is optimization, but for now let's rely on React.memo with default shallow comparison
     // However, 'sheetData' prop changes ref every edit. Shallow compare will fail.

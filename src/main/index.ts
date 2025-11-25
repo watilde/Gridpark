@@ -14,7 +14,7 @@ import { themeOptions, DEFAULT_THEME_ID } from '../renderer/theme/theme';
 
 // Injected by Electron Forge's Vite plugin at build time.
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
-declare const MAIN_WINDOW_VITE_NAME: string;
+declare const _MAIN_WINDOW_VITE_NAME: string;
 
 if (process.platform === 'win32') {
   try {
@@ -48,7 +48,7 @@ const getIconFileNames = () => {
 };
 
 const resolveIconAsset = () => {
-  const resolvedFiles = getIconFileNames().map(file => resolveAssetPath(file));
+  const resolvedFiles = getIconFileNames().map(_file => resolveAssetPath(_file));
 
   for (const iconPath of resolvedFiles) {
     if (!existsSync(iconPath)) continue;
@@ -379,7 +379,7 @@ const handleOpenFiles = async (window: BrowserWindow) => {
   if (canceled || !filePaths.length) return;
   const files = filePaths
     .map(loadExcelFileFromPath)
-    .filter((file): file is ExcelFile => Boolean(file));
+    .filter((_file): file is ExcelFile => Boolean(_file));
   sendFilesToRenderer(window, { files, directoryName: undefined });
 };
 
@@ -401,7 +401,7 @@ const handleOpenFolder = async (window: BrowserWindow) => {
     });
   const files = excelPaths
     .map(loadExcelFileFromPath)
-    .filter((file): file is ExcelFile => Boolean(file));
+    .filter((_file): file is ExcelFile => Boolean(_file));
   sendFilesToRenderer(window, { files, directoryName: basename(folderPath) });
 };
 

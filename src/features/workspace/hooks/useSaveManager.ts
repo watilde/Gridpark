@@ -24,12 +24,12 @@ import type { WorkbookTab } from '../../../renderer/types/tabs';
 export interface UseSaveManagerParams {
   // Workspace functions
   findWorkbookNode: (workbookId: string) => any;
-  updateWorkbookReferences: (workbookId: string, file: ExcelFile) => void;
+  _updateWorkbookReferences: (workbookId: string, file: ExcelFile) => void;
 
   // File operations
   saveWorkbookFile: (file: ExcelFile) => Promise<void>;
   manifestSaveHandler: (workbookId: string, file: ExcelFile) => Promise<void>;
-  onSaveCode: (codeFile: GridparkCodeFile) => Promise<void>;
+  onSaveCode: (_codeFile: GridparkCodeFile) => Promise<void>;
 
   // Tabs
   openTabs: WorkbookTab[];
@@ -56,7 +56,7 @@ export interface UseSaveManagerReturn {
 export function useSaveManager(params: UseSaveManagerParams): UseSaveManagerReturn {
   const {
     findWorkbookNode,
-    updateWorkbookReferences,
+    _updateWorkbookReferences,
     saveWorkbookFile,
     manifestSaveHandler,
     onSaveCode,
@@ -132,10 +132,10 @@ export function useSaveManager(params: UseSaveManagerParams): UseSaveManagerRetu
         if (tab.kind === 'sheet') {
           await saveSheet(tabId);
         } else if (tab.kind === 'manifest') {
-          await manifestSaveHandler(tab.workbookId, tab.file);
+          await manifestSaveHandler(tab.workbookId, tab._file);
           markTabClean(tabId);
         } else if (tab.kind === 'code') {
-          await onSaveCode(tab.codeFile);
+          await onSaveCode(tab._codeFile);
           markTabClean(tabId);
         }
       } catch (error) {

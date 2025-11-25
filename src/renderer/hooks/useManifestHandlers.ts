@@ -8,7 +8,7 @@ export interface ManifestHandlersParams {
   setManifestSessions: React.Dispatch<React.SetStateAction<Record<string, ManifestSession>>>;
   getManifestSessionKey: (file: ExcelFile) => string;
   readManifestFile: (file: ExcelFile) => Promise<void>;
-  updateWorkbookReferences: (workbookId: string, updatedFile: ExcelFile) => void;
+  _updateWorkbookReferences: (workbookId: string, updatedFile: ExcelFile) => void;
   createDefaultManifest: (file: ExcelFile) => GridparkManifest;
 }
 
@@ -20,7 +20,7 @@ export const useManifestHandlers = ({
   setManifestSessions,
   getManifestSessionKey,
   readManifestFile,
-  updateWorkbookReferences,
+  _updateWorkbookReferences,
   // createDefaultManifest,
 }: ManifestHandlersParams) => {
   /**
@@ -28,7 +28,7 @@ export const useManifestHandlers = ({
    */
   const handleManifestChange = useCallback(
     (workbookId: string, file: ExcelFile, nextManifest: GridparkManifest) => {
-      const key = getManifestSessionKey(file);
+      const key = getManifestSessionKey(_file);
       const sanitized = cloneManifest(nextManifest);
 
       setManifestSessions(prev => {
@@ -56,10 +56,10 @@ export const useManifestHandlers = ({
 
       if (nextManifest.name && nextManifest.name !== file.name) {
         const updatedFile = { ...file, name: nextManifest.name };
-        updateWorkbookReferences(workbookId, updatedFile);
+        _updateWorkbookReferences(workbookId, updatedFile);
       }
     },
-    [getManifestSessionKey, updateWorkbookReferences, setManifestSessions]
+    [getManifestSessionKey, _updateWorkbookReferences, setManifestSessions]
   );
 
   /**
@@ -67,10 +67,10 @@ export const useManifestHandlers = ({
    */
   const handleSaveManifest = useCallback(
     async (workbookId: string, file: ExcelFile) => {
-      const key = getManifestSessionKey(file);
+      const key = getManifestSessionKey(_file);
       const session = manifestSessions[key];
       if (!session) {
-        await readManifestFile(file);
+        await readManifestFile(_file);
         return;
       }
 
@@ -110,7 +110,7 @@ export const useManifestHandlers = ({
             error: undefined,
           },
         }));
-        updateWorkbookReferences(workbookId, updatedFile);
+        _updateWorkbookReferences(workbookId, updatedFile);
       } catch (error) {
         setManifestSessions(prev => ({
           ...prev,
@@ -127,7 +127,7 @@ export const useManifestHandlers = ({
       getManifestSessionKey,
       readManifestFile,
       setManifestSessions,
-      updateWorkbookReferences,
+      _updateWorkbookReferences,
     ]
   );
 

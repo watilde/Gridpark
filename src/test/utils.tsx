@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { render as rtlRender, RenderOptions } from '@testing-library/react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import { theme } from '../renderer/theme/theme';
 
@@ -9,14 +9,23 @@ const customRender = (ui: React.ReactElement, options?: Omit<RenderOptions, 'wra
     return <CssVarsProvider theme={theme}>{children}</CssVarsProvider>;
   };
 
-  return render(ui, { wrapper: Wrapper, ...options });
+  return rtlRender(ui, { wrapper: Wrapper, ...options });
 };
 
-// Re-export everything from React Testing Library
-export * from '@testing-library/react';
+// Re-export specific items from React Testing Library
 export { userEvent } from '@testing-library/user-event';
+export {
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+  fireEvent,
+  act,
+  cleanup,
+  renderHook,
+} from '@testing-library/react';
 
-// Override render method
+// Export custom render as render
 export { customRender as render };
 
 // Helper functions for testing
@@ -34,15 +43,3 @@ export const createMockAction = (id: string, overrides = {}) => ({
   variant: 'plain' as const,
   ...overrides,
 });
-
-export const waitForElementToBeRemoved = async (element: HTMLElement) => {
-  return new Promise<void>(resolve => {
-    const observer = new MutationObserver(() => {
-      if (!document.contains(element)) {
-        observer.disconnect();
-        resolve();
-      }
-    });
-    observer.observe(document, { childList: true, subtree: true });
-  });
-};

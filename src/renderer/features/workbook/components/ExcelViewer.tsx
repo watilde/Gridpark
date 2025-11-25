@@ -590,7 +590,7 @@ const matchesParsedSelector = (
         if (element.dataset.cellAddress !== parsed.identifier) return false;
         break;
       case 'Range':
-        if (element.dataset.inRange !== 'true') return false; // For now, if the selector specified a range, we check for data-in-range="true"
+        if (element.dataset.inRange !== 'true') return false; // For now, if the selector specified a _range, we check for data-in-range="true"
         break;
       case 'Col':
         if (element.dataset.colId !== parsed.identifier) return false;
@@ -736,8 +736,8 @@ export interface ExcelViewerProps {
   file: ExcelFile | null;
   sheetIndex?: number;
   sessionState?: SheetSessionState;
-  onSessionChange?: (state: SheetSessionState) => void;
-  onSaveSession?: (state: SheetSessionState) => void;
+  _onSessionChange?: (state: SheetSessionState) => void;
+  _onSaveSession?: (state: SheetSessionState) => void;
   onDirtyChange?: (dirty: boolean) => void;
   onCellSelect?: (position: CellPosition) => void;
   onRangeSelect?: (range: CellRange) => void;
@@ -752,8 +752,8 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   file,
   sheetIndex = 0,
   sessionState,
-  onSessionChange,
-  onSaveSession,
+  _onSessionChange,
+  _onSaveSession,
   onDirtyChange,
   onCellSelect,
   onRangeSelect,
@@ -805,7 +805,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
       return [] as CellData[][];
     }
     // Ensure dimensions cover at least the data + buffer
-    const maxDataCol = getMaxColumnCount(baseData);
+    const _maxDataCol = getMaxColumnCount(baseData);
 
     // We use state values renderRowCount/ColCount to drive the virtual grid size
     // But we also need to ensure the underlying data array is big enough to avoid index out of bounds
@@ -824,7 +824,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     setRenderColCount(Math.max(DEFAULT_RENDERED_COLUMNS, dataCols + EXPANSION_BATCH_COLS));
   }, [gridData, currentSheet]);
 
-  const readGridparkFile = useCallback(async (codeFile?: GridparkCodeFile) => {
+  const _readGridparkFile = useCallback(async (_codeFile?: GridparkCodeFile) => {
     // Placeholder for reading files if needed for scripts/styles later
     return '';
   }, []);
@@ -946,12 +946,12 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   useEffect(() => {
     latestGridDataRef.current = gridData;
 
-    // FIX: Call onSessionChange immediately when gridData changes
+    // FIX: Call _onSessionChange immediately when gridData changes
     // This ensures ExcelViewerDexie always has the latest data
     // Set flag to prevent circular updates (gridData -> sessionState -> gridData)
-    if (_onSessionChange) {
+    if (__onSessionChange) {
       isUpdatingFromGridDataRef.current = true;
-      onSessionChange({
+      _onSessionChange({
         data: gridData,
         dirty: hasLocalChanges,
       });
@@ -960,7 +960,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
         isUpdatingFromGridDataRef.current = false;
       }, 100);
     }
-  }, [gridData, hasLocalChanges, onSessionChange]);
+  }, [gridData, hasLocalChanges, _onSessionChange]);
 
   useEffect(() => {
     dirtyRef.current = hasLocalChanges;
@@ -975,14 +975,14 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   // Cleanup: ensure final state is saved on unmount
   useEffect(() => {
     return () => {
-      if (_onSessionChange) {
-        onSessionChange({
+      if (__onSessionChange) {
+        _onSessionChange({
           data: latestGridDataRef.current,
           dirty: dirtyRef.current,
         });
       }
     };
-  }, [onSessionChange]);
+  }, [_onSessionChange]);
 
   // -- Dynamic Expansion on Scroll --
   const handleScroll = useCallback(
@@ -1056,7 +1056,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
 
   // -- Render Helpers --
 
-  const isCellInRange = (row: number, col: number): boolean => {
+  const _isCellInRange = (row: number, col: number): boolean => {
     if (!selectionRange) return false;
     return (
       row >= Math.min(selectionRange.startRow, selectionRange.endRow) &&

@@ -37,7 +37,7 @@ const getElectronSnapshot = (): ElectronAPISnapshot => {
  * Since window.electronAPI is relatively static, we just return an empty unsubscribe function
  * In a more dynamic scenario, you would listen to window events
  */
-const subscribeToElectron = (callback: () => void): (() => void) => {
+const subscribeToElectron = (_callback: () => void): (() => void) => {
   // Listen for potential runtime changes (if any)
   // For now, electronAPI is set once at initialization, so no dynamic subscription needed
   // But we keep the structure for future extensibility

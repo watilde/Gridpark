@@ -6,7 +6,7 @@ import {
 } from '../../theme/ThemeProvider';
 import type { ThemePresetId } from '../../theme/theme';
 import { useSettings } from '../../hooks/useSettings';
-import { db, resetDatabase, getDatabaseStats } from '../../../lib/db';
+import { resetDatabase, getDatabaseStats } from '../../../lib/db';
 import { persistor, useAppDispatch } from '../../../stores';
 import { resetSpreadsheetState } from '../../../stores/spreadsheetSlice';
 

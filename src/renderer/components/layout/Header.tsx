@@ -3,7 +3,7 @@ import { styled } from '@mui/joy/styles';
 // import { Button } from '../ui/Button/Button';
 import { Icon } from '../ui/Icon/Icon';
 
-const HeaderContainer = styled('div')(({ theme }) => ({
+const HeaderContainer = styled('div')(({ theme: _theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -31,7 +31,7 @@ const HeaderRight = styled('div')({
   gap: '8px',
 });
 
-const Logo = styled('div')(({ theme }) => ({
+const Logo = styled('div')(({ theme: _theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
@@ -41,7 +41,7 @@ const Logo = styled('div')(({ theme }) => ({
   fontFamily: theme.fontFamily.display,
 }));
 
-const Breadcrumb = styled('div')(({ theme }) => ({
+const Breadcrumb = styled('div')(({ theme: _theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '4px',

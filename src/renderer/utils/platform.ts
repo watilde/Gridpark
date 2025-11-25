@@ -32,7 +32,7 @@ export const isWeb = (): boolean => {
  */
 export const getPlatformCapabilities = () => {
   const electron = isElectron();
-  const web = isWeb();
+  const _web = isWeb();
 
   return {
     // File system access

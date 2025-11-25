@@ -271,7 +271,7 @@ export const DeveloperWorkflow: Story = {
       <FormulaBar
         cellReference="A1"
         value="=GRIDPARK.CALCULATE_ROI(B1,C1,D1)"
-        onValidateFormula={formula => ({
+        onValidateFormula={_formula => ({
           isValid: true,
           suggestions: [
             '=GRIDPARK.CALCULATE_ROI(revenue, cost, period)',
@@ -284,7 +284,7 @@ export const DeveloperWorkflow: Story = {
       <FormulaBar
         cellReference="A2"
         value="=GRIDPARK.FETCH_API"
-        onValidateFormula={formula => ({
+        onValidateFormula={_formula => ({
           isValid: false,
           error: 'Incomplete function call',
           suggestions: [

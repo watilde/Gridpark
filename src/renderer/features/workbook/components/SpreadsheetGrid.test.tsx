@@ -1,12 +1,12 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen as _screen, fireEvent, waitFor } from '@testing-library/react';
+// import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
 
 // Mock theme provider for Joy UI
 jest.mock('@mui/joy/styles', () => ({
   ...jest.requireActual('@mui/joy/styles'),
-  styled: (component: any) => (styles: any) => component,
+  styled: (component: any) => (_styles: any) => component,
 }));
 
 describe('SpreadsheetGrid', () => {
