@@ -976,7 +976,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   // Cleanup: ensure final state is saved on unmount
   useEffect(() => {
     return () => {
-      if (__onSessionChange) {
+      if (_onSessionChange) {
         _onSessionChange({
           data: latestGridDataRef.current,
           dirty: dirtyRef.current,
