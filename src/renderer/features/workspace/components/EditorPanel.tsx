@@ -1,4 +1,7 @@
 import React, { forwardRef, useRef, useImperativeHandle } from 'react';
+import Box from '@mui/joy/Box';
+import Sheet from '@mui/joy/Sheet';
+import Typography from '@mui/joy/Typography';
 import {
   // SheetSessionState,
   SearchNavigationCommand,
