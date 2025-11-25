@@ -1,4 +1,7 @@
 import React, { useMemo } from 'react';
+import Box from '@mui/joy/Box';
+import Sheet from '@mui/joy/Sheet';
+import Typography from '@mui/joy/Typography';
 import { FileTree, FileNode } from '../../features/file-explorer/FileTree';
 
 interface SidebarExplorerProps {
