@@ -16,7 +16,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "docs:dev": "vite --config src/site/vite.config.ts",
-    "docs:build": "vite build --config src/site/vite.config.ts",
+    "docs:build": "rm -rf docs/assets && vite build --config src/site/vite.config.ts",
     "docs:preview": "vite preview --config src/site/vite.config.ts"
   },
   "keywords": [],
