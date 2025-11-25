@@ -19,10 +19,10 @@ npm test
 
 ## Documentation
 
-See the [docs/](docs/) directory for detailed documentation:
-- [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) - Architecture and development guide
-- [Gridpark_Spec_v2.0.md](docs/Gridpark_Spec_v2.0.md) - Full specification
-- [Gridpark_Selector_Spec.md](docs/Gridpark_Selector_Spec.md) - Selector specification
+See the [docs-md/](docs-md/) directory for detailed documentation:
+- [DEVELOPER_GUIDE.md](docs-md/DEVELOPER_GUIDE.md) - Architecture and development guide
+- [Gridpark_Spec_v2.0.md](docs-md/Gridpark_Spec_v2.0.md) - Full specification
+- [Gridpark_Selector_Spec.md](docs-md/Gridpark_Selector_Spec.md) - Selector specification
 
 ## License
 

@@ -94,6 +94,7 @@ out/
 
 # Site build artifacts
 src/site/home/
+docs/
 
 # Test files
 web/test.html
