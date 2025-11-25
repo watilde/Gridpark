@@ -21,7 +21,7 @@ export const useManifestHandlers = ({
   getManifestSessionKey,
   readManifestFile,
   updateWorkbookReferences,
-  createDefaultManifest,
+  // createDefaultManifest,
 }: ManifestHandlersParams) => {
   /**
    * Handle manifest changes (edit operations)

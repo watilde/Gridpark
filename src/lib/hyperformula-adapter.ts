@@ -19,7 +19,7 @@
  */
 
 import { HyperFormula, ConfigParams, SimpleCellAddress } from 'hyperformula';
-import { AppDatabase, StoredCellData } from './db';
+// import { StoredCellData } from './db';
 
 // ============================================================================
 // Types

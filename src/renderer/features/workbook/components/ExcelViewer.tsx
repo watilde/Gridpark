@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { styled, Box, Sheet, Typography, CssVarsProvider } from '@mui/joy';
 import {
   ExcelFile,
   CellData,
@@ -76,7 +75,7 @@ const ensureGridDimensions = (data: CellData[][], targetRows: number, targetCols
 };
 
 // Dynamic expansion
-const EXPANSION_THRESHOLD = 5; // Expand when within 5 rows/cols of edge
+const _EXPANSION_THRESHOLD = 5; // Expand when within 5 rows/cols of edge
 const EXPANSION_BATCH_ROWS = 50;
 const EXPANSION_BATCH_COLS = 10;
 
@@ -172,7 +171,7 @@ const createGridElement = (
     };
   };
 
-  const getRangeFromAddresses = (startAddress: string, endAddress: string): CellRange | null => {
+  const _getRangeFromAddresses = (startAddress: string, endAddress: string): CellRange | null => {
     const startPos = parseCellRef(startAddress);
     const endPos = parseCellRef(endAddress);
     if (!startPos || !endPos) return null;
@@ -773,7 +772,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   const [renderRowCount, setRenderRowCount] = useState(DEFAULT_RENDERED_ROWS);
   const [renderColCount, setRenderColCount] = useState(DEFAULT_RENDERED_COLUMNS);
 
-  const gridRef = useRef<VirtualizedGridRef>(null);
+  const _gridRef = useRef<VirtualizedGridRef>(null);
   const watchersRef = useRef<Array<(event: GridparkCellEvent) => void>>([]);
   const latestGridDataRef = useRef<CellData[][]>([]);
   const dirtyRef = useRef<boolean>(sessionState?.dirty ?? false);
@@ -950,7 +949,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     // FIX: Call onSessionChange immediately when gridData changes
     // This ensures ExcelViewerDexie always has the latest data
     // Set flag to prevent circular updates (gridData -> sessionState -> gridData)
-    if (onSessionChange) {
+    if (_onSessionChange) {
       isUpdatingFromGridDataRef.current = true;
       onSessionChange({
         data: gridData,
@@ -976,7 +975,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   // Cleanup: ensure final state is saved on unmount
   useEffect(() => {
     return () => {
-      if (onSessionChange) {
+      if (_onSessionChange) {
         onSessionChange({
           data: latestGridDataRef.current,
           dirty: dirtyRef.current,

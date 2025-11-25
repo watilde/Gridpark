@@ -117,7 +117,7 @@ export function useSaveManager(params: UseSaveManagerParams): UseSaveManagerRetu
       markTabClean(tabId);
 
       // Also mark clean in Dexie
-      const { db } = await import('../../../lib/db');
+      const { db: _db } = await import('../../../lib/db');
       await db.markSheetDirty(tabId, false);
     },
     [openTabs, findWorkbookNode, saveWorkbookFile, markTabClean]

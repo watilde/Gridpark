@@ -42,8 +42,14 @@ export function useVirtualScrollFormula({
   onFormulaResult,
   priorityMode = 'visible-first',
 }: UseVirtualScrollFormulaOptions) {
-  const { calculate, calculateBatch, isReady, isSheetLoaded, stats, cacheStats } =
-    useFormulaWorker(tabId);
+  const {
+    calculate: _calculate,
+    calculateBatch,
+    isReady,
+    isSheetLoaded,
+    stats,
+    cacheStats,
+  } = useFormulaWorker(tabId);
 
   const [visibleResults, setVisibleResults] = useState<Record<string, number | string>>({});
   const [offScreenResults, setOffScreenResults] = useState<Record<string, number | string>>({});

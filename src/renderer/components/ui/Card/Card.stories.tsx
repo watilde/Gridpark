@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Card } from './Card';
 import { Button } from '../Button/Button';
 import { Code, TableChart, Functions, Speed } from '@mui/icons-material';
-import { Typography } from '@mui/joy';
 
 const meta: Meta<typeof Card> = {
   title: 'UI/Base/Card',

@@ -17,7 +17,6 @@ import {
   Description,
   Speed,
 } from '@mui/icons-material';
-import { Typography } from '@mui/joy';
 
 const meta: Meta<typeof AppLayout> = {
   title: 'UI/Layout/AppLayout',

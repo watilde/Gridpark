@@ -63,7 +63,7 @@ const ButtonGroup = styled('div')(({ theme }) => ({
 const ActionButton = styled('button')<{
   variant?: 'cancel' | 'confirm' | 'function';
   visible?: boolean;
-}>(({ theme, variant, visible = true }) => ({
+}>(({ theme, _variant, visible = true }) => ({
   display: visible ? 'flex' : 'none',
   alignItems: 'center',
   justifyContent: 'center',

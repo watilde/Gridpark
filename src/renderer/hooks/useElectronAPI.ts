@@ -43,8 +43,8 @@ const subscribeToElectron = (callback: () => void): (() => void) => {
   // But we keep the structure for future extensibility
 
   // Example: if electronAPI could change dynamically
-  // window.addEventListener('electron-api-changed', callback);
-  // return () => window.removeEventListener('electron-api-changed', callback);
+  // window.addEventListener('electron-api-changed', _callback);
+  // return () => window.removeEventListener('electron-api-changed', _callback);
 
   return () => {
     // No-op unsubscribe for now

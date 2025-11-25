@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Modal as JoyModal,
   ModalDialog,
-  DialogTitle,
+  // DialogTitle,
   DialogContent,
   DialogActions,
   Divider,

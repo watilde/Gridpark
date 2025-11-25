@@ -1,5 +1,4 @@
 import React from 'react';
-import { Typography, Box } from '@mui/joy';
 
 export interface FontTestProps {
   /** Test text content */

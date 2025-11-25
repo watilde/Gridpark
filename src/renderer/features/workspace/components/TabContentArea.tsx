@@ -5,7 +5,7 @@ import { EditorPanel, EditorPanelHandle } from './EditorPanel';
 import { WorkbookTab } from '../../../types/tabs';
 import {
   ActiveCellDetails,
-  SheetSessionState,
+  // SheetSessionState,
   SearchNavigationCommand,
   ReplaceCommand,
   FormulaCommitCommand,

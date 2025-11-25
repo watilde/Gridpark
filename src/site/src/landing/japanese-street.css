@@ -5,362 +5,443 @@
 
 /* ネオン看板風の日本語タイトル */
 @keyframes neonFlicker {
-    0%, 100% { 
-        opacity: 1; 
-        filter: brightness(1) saturate(1);
-        text-shadow: 
-            0 0 10px currentColor,
-            0 0 20px currentColor,
-            0 0 30px currentColor,
-            0 0 40px currentColor;
-    }
-    5% { 
-        opacity: 0.8; 
-        filter: brightness(0.8) saturate(1.2);
-    }
-    10% { 
-        opacity: 1; 
-        filter: brightness(1.2) saturate(1);
-    }
-    15% { 
-        opacity: 0.9;
-        filter: brightness(0.9) saturate(1.1);
-    }
-    20% { 
-        opacity: 1;
-        filter: brightness(1) saturate(1);
-    }
-    25% { 
-        opacity: 0.85;
-        filter: brightness(0.85) saturate(1.15);
-    }
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1) saturate(1);
+    text-shadow:
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 30px currentColor,
+      0 0 40px currentColor;
+  }
+  5% {
+    opacity: 0.8;
+    filter: brightness(0.8) saturate(1.2);
+  }
+  10% {
+    opacity: 1;
+    filter: brightness(1.2) saturate(1);
+  }
+  15% {
+    opacity: 0.9;
+    filter: brightness(0.9) saturate(1.1);
+  }
+  20% {
+    opacity: 1;
+    filter: brightness(1) saturate(1);
+  }
+  25% {
+    opacity: 0.85;
+    filter: brightness(0.85) saturate(1.15);
+  }
 }
 
 /* 和風の波パターンアニメーション */
 @keyframes waveFlow {
-    0% { 
-        stroke-dashoffset: 0; 
-        opacity: 0.25;
-    }
-    50% { 
-        stroke-dashoffset: 100; 
-        opacity: 0.35;
-    }
-    100% { 
-        stroke-dashoffset: 200; 
-        opacity: 0.25;
-    }
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 0.25;
+  }
+  50% {
+    stroke-dashoffset: 100;
+    opacity: 0.35;
+  }
+  100% {
+    stroke-dashoffset: 200;
+    opacity: 0.25;
+  }
 }
 
 /* 桜の花びら風のエフェクト */
 @keyframes sakuraFloat {
-    0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.6;
-    }
-    90% {
-        opacity: 0.4;
-    }
-    100% {
-        transform: translateY(100vh) rotate(360deg);
-        opacity: 0;
-    }
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
 }
 
 /* グリッチエフェクト強化 */
 @keyframes japaneseGlitch {
-    0% {
-        transform: translate(0);
-        clip-path: inset(0 0 0 0);
-    }
-    10% {
-        transform: translate(-5px, 2px);
-        clip-path: inset(10% 0 85% 0);
-    }
-    20% {
-        transform: translate(3px, -3px);
-        clip-path: inset(40% 0 50% 0);
-    }
-    30% {
-        transform: translate(-2px, 4px);
-        clip-path: inset(70% 0 20% 0);
-    }
-    40% {
-        transform: translate(4px, -2px);
-        clip-path: inset(20% 0 70% 0);
-    }
-    50% {
-        transform: translate(-3px, 3px);
-        clip-path: inset(60% 0 30% 0);
-    }
-    60% {
-        transform: translate(2px, -4px);
-        clip-path: inset(15% 0 80% 0);
-    }
-    70% {
-        transform: translate(-4px, 2px);
-        clip-path: inset(50% 0 40% 0);
-    }
-    80% {
-        transform: translate(3px, 3px);
-        clip-path: inset(30% 0 60% 0);
-    }
-    90% {
-        transform: translate(-2px, -2px);
-        clip-path: inset(80% 0 10% 0);
-    }
-    100% {
-        transform: translate(0);
-        clip-path: inset(0 0 0 0);
-    }
+  0% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
+  10% {
+    transform: translate(-5px, 2px);
+    clip-path: inset(10% 0 85% 0);
+  }
+  20% {
+    transform: translate(3px, -3px);
+    clip-path: inset(40% 0 50% 0);
+  }
+  30% {
+    transform: translate(-2px, 4px);
+    clip-path: inset(70% 0 20% 0);
+  }
+  40% {
+    transform: translate(4px, -2px);
+    clip-path: inset(20% 0 70% 0);
+  }
+  50% {
+    transform: translate(-3px, 3px);
+    clip-path: inset(60% 0 30% 0);
+  }
+  60% {
+    transform: translate(2px, -4px);
+    clip-path: inset(15% 0 80% 0);
+  }
+  70% {
+    transform: translate(-4px, 2px);
+    clip-path: inset(50% 0 40% 0);
+  }
+  80% {
+    transform: translate(3px, 3px);
+    clip-path: inset(30% 0 60% 0);
+  }
+  90% {
+    transform: translate(-2px, -2px);
+    clip-path: inset(80% 0 10% 0);
+  }
+  100% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 /* ヒーローセクションに日本語の追加エフェクト */
 .hero-title::before {
-    content: '表計算';
-    position: absolute;
-    top: -60px;
-    left: 50%;
-    transform: translateX(-50%) rotate(-8deg);
-    font-size: 2rem;
-    color: var(--spray-cyan);
-    opacity: 0.4;
-    animation: neonFlicker 3s ease-in-out infinite;
+  content: '表計算';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+  font-size: 2rem;
+  color: var(--spray-cyan);
+  opacity: 0.4;
+  animation: neonFlicker 3s ease-in-out infinite;
 }
 
 .hero-title::after {
-    content: 'アート革命';
-    position: absolute;
-    bottom: -60px;
-    right: -20px;
-    font-size: 1.8rem;
-    color: var(--spray-hotpink);
-    opacity: 0.4;
-    animation: neonFlicker 2.5s ease-in-out infinite;
+  content: 'アート革命';
+  position: absolute;
+  bottom: -60px;
+  right: -20px;
+  font-size: 1.8rem;
+  color: var(--spray-hotpink);
+  opacity: 0.4;
+  animation: neonFlicker 2.5s ease-in-out infinite;
 }
 
 /* サブタイトルの日本語エフェクト */
 .hero-subtitle::before {
-    content: '✦';
-    position: absolute;
-    left: -40px;
-    font-size: 2rem;
-    animation: neonFlicker 2s ease-in-out infinite, spin 4s linear infinite;
+  content: '✦';
+  position: absolute;
+  left: -40px;
+  font-size: 2rem;
+  animation:
+    neonFlicker 2s ease-in-out infinite,
+    spin 4s linear infinite;
 }
 
 .hero-subtitle::after {
-    content: '✦';
-    position: absolute;
-    right: -40px;
-    font-size: 2rem;
-    animation: neonFlicker 2.2s ease-in-out infinite, spin 4s linear infinite reverse;
+  content: '✦';
+  position: absolute;
+  right: -40px;
+  font-size: 2rem;
+  animation:
+    neonFlicker 2.2s ease-in-out infinite,
+    spin 4s linear infinite reverse;
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* セクションタイトルに漢字の装飾 */
 .section-title[data-jp]::before {
-    content: attr(data-jp);
-    position: absolute;
-    top: -40px;
-    left: 50%;
-    transform: translateX(-50%) rotate(-3deg);
-    font-size: 1.5rem;
-    opacity: 0.5;
-    color: var(--spray-yellow);
-    animation: neonFlicker 3s ease-in-out infinite;
+  content: attr(data-jp);
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  font-size: 1.5rem;
+  opacity: 0.5;
+  color: var(--spray-yellow);
+  animation: neonFlicker 3s ease-in-out infinite;
 }
 
 /* 桜の花びらエフェクト */
 .sakura-petal {
-    position: fixed;
-    width: 20px;
-    height: 20px;
-    background: radial-gradient(circle, var(--spray-pink) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    animation: sakuraFloat 15s linear infinite;
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, var(--spray-pink) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: sakuraFloat 15s linear infinite;
 }
 
 /* 和風の背景パターン */
 .features::before {
-    content: '機能';
-    position: absolute;
-    top: 5%;
-    left: 3%;
-    font-family: 'Rubik', sans-serif;
-    font-size: 12rem;
-    font-weight: 900;
-    color: transparent;
-    -webkit-text-stroke: 4px rgba(255, 234, 0, 0.12);
-    transform: rotate(-10deg);
-    z-index: 0;
-    pointer-events: none;
-    animation: neonFlicker 4s ease-in-out infinite;
+  content: '機能';
+  position: absolute;
+  top: 5%;
+  left: 3%;
+  font-family: 'Rubik', sans-serif;
+  font-size: 12rem;
+  font-weight: 900;
+  color: transparent;
+  -webkit-text-stroke: 4px rgba(255, 234, 0, 0.12);
+  transform: rotate(-10deg);
+  z-index: 0;
+  pointer-events: none;
+  animation: neonFlicker 4s ease-in-out infinite;
 }
 
 /* デモセクションの日本語装飾 */
 .demo::before {
-    content: '遊ぼう！';
-    position: absolute;
-    top: 10%;
-    right: 8%;
-    font-family: 'Rubik', sans-serif;
-    font-size: 8rem;
-    font-weight: 900;
-    color: var(--spray-red);
-    opacity: 0.25;
-    transform: rotate(15deg);
-    z-index: 0;
-    pointer-events: none;
-    animation: neonFlicker 3.5s ease-in-out infinite;
+  content: '遊ぼう！';
+  position: absolute;
+  top: 10%;
+  right: 8%;
+  font-family: 'Rubik', sans-serif;
+  font-size: 8rem;
+  font-weight: 900;
+  color: var(--spray-red);
+  opacity: 0.25;
+  transform: rotate(15deg);
+  z-index: 0;
+  pointer-events: none;
+  animation: neonFlicker 3.5s ease-in-out infinite;
 }
 
 .demo::after {
-    content: 'ペイントせよ';
-    position: absolute;
-    bottom: 8%;
-    left: 5%;
-    font-family: 'Permanent Marker', cursive;
-    font-size: 4rem;
-    color: var(--spray-lime);
-    opacity: 0.3;
-    transform: rotate(-12deg);
-    z-index: 0;
-    pointer-events: none;
-    animation: neonFlicker 2.8s ease-in-out infinite;
+  content: 'ペイントせよ';
+  position: absolute;
+  bottom: 8%;
+  left: 5%;
+  font-family: 'Permanent Marker', cursive;
+  font-size: 4rem;
+  color: var(--spray-lime);
+  opacity: 0.3;
+  transform: rotate(-12deg);
+  z-index: 0;
+  pointer-events: none;
+  animation: neonFlicker 2.8s ease-in-out infinite;
 }
 
 /* CTAセクションの日本語 */
 .cta::before {
-    content: '今すぐ！';
-    position: absolute;
-    top: 15%;
-    left: 8%;
-    font-family: 'Rubik', sans-serif;
-    font-size: 10rem;
-    font-weight: 900;
-    color: transparent;
-    -webkit-text-stroke: 6px rgba(255, 23, 68, 0.18);
-    transform: rotate(-15deg);
-    z-index: 0;
-    pointer-events: none;
-    animation: neonFlicker 3s ease-in-out infinite;
+  content: '今すぐ！';
+  position: absolute;
+  top: 15%;
+  left: 8%;
+  font-family: 'Rubik', sans-serif;
+  font-size: 10rem;
+  font-weight: 900;
+  color: transparent;
+  -webkit-text-stroke: 6px rgba(255, 23, 68, 0.18);
+  transform: rotate(-15deg);
+  z-index: 0;
+  pointer-events: none;
+  animation: neonFlicker 3s ease-in-out infinite;
 }
 
 .cta::after {
-    content: 'ダウンロード';
-    position: absolute;
-    bottom: 12%;
-    right: 8%;
-    font-family: 'Rubik', sans-serif;
-    font-size: 7rem;
-    font-weight: 900;
-    color: transparent;
-    -webkit-text-stroke: 5px rgba(118, 255, 3, 0.2);
-    transform: rotate(18deg);
-    z-index: 0;
-    pointer-events: none;
-    animation: neonFlicker 3.3s ease-in-out infinite;
+  content: 'ダウンロード';
+  position: absolute;
+  bottom: 12%;
+  right: 8%;
+  font-family: 'Rubik', sans-serif;
+  font-size: 7rem;
+  font-weight: 900;
+  color: transparent;
+  -webkit-text-stroke: 5px rgba(118, 255, 3, 0.2);
+  transform: rotate(18deg);
+  z-index: 0;
+  pointer-events: none;
+  animation: neonFlicker 3.3s ease-in-out infinite;
 }
 
 /* カラフルなボーダーライン（祭り風） */
 @keyframes matsuriBorder {
-    0% {
-        background-position: 0% 0%;
-    }
-    100% {
-        background-position: 100% 0%;
-    }
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 0%;
+  }
 }
 
 .hero {
-    border-top: 8px solid transparent;
-    border-image: linear-gradient(
-        90deg,
-        var(--spray-red) 0%,
-        var(--spray-orange) 14%,
-        var(--spray-yellow) 28%,
-        var(--spray-lime) 42%,
-        var(--spray-green) 57%,
-        var(--spray-cyan) 71%,
-        var(--spray-blue) 85%,
-        var(--spray-red) 100%
-    ) 1;
-    background-size: 200% 100%;
-    animation: matsuriBorder 5s linear infinite;
+  border-top: 8px solid transparent;
+  border-image: linear-gradient(
+      90deg,
+      var(--spray-red) 0%,
+      var(--spray-orange) 14%,
+      var(--spray-yellow) 28%,
+      var(--spray-lime) 42%,
+      var(--spray-green) 57%,
+      var(--spray-cyan) 71%,
+      var(--spray-blue) 85%,
+      var(--spray-red) 100%
+    )
+    1;
+  background-size: 200% 100%;
+  animation: matsuriBorder 5s linear infinite;
 }
 
 /* 激しい回転アニメーション */
 @keyframes crazyRotate {
-    0% { transform: rotate(0deg) scale(1); }
-    10% { transform: rotate(36deg) scale(1.1); }
-    20% { transform: rotate(72deg) scale(0.95); }
-    30% { transform: rotate(108deg) scale(1.05); }
-    40% { transform: rotate(144deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.08); }
-    60% { transform: rotate(216deg) scale(0.97); }
-    70% { transform: rotate(252deg) scale(1.03); }
-    80% { transform: rotate(288deg) scale(1.02); }
-    90% { transform: rotate(324deg) scale(0.99); }
-    100% { transform: rotate(360deg) scale(1); }
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  10% {
+    transform: rotate(36deg) scale(1.1);
+  }
+  20% {
+    transform: rotate(72deg) scale(0.95);
+  }
+  30% {
+    transform: rotate(108deg) scale(1.05);
+  }
+  40% {
+    transform: rotate(144deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  60% {
+    transform: rotate(216deg) scale(0.97);
+  }
+  70% {
+    transform: rotate(252deg) scale(1.03);
+  }
+  80% {
+    transform: rotate(288deg) scale(1.02);
+  }
+  90% {
+    transform: rotate(324deg) scale(0.99);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
 }
 
 /* 虹色に光るテキスト */
 @keyframes rainbowText {
-    0% { color: var(--spray-red); }
-    14% { color: var(--spray-orange); }
-    28% { color: var(--spray-yellow); }
-    42% { color: var(--spray-lime); }
-    57% { color: var(--spray-cyan); }
-    71% { color: var(--spray-blue); }
-    85% { color: var(--spray-purple); }
-    100% { color: var(--spray-red); }
+  0% {
+    color: var(--spray-red);
+  }
+  14% {
+    color: var(--spray-orange);
+  }
+  28% {
+    color: var(--spray-yellow);
+  }
+  42% {
+    color: var(--spray-lime);
+  }
+  57% {
+    color: var(--spray-cyan);
+  }
+  71% {
+    color: var(--spray-blue);
+  }
+  85% {
+    color: var(--spray-purple);
+  }
+  100% {
+    color: var(--spray-red);
+  }
 }
 
 /* カードの激しいアニメーション */
 .feature-card {
-    animation: cardWild 8s ease-in-out infinite;
+  animation: cardWild 8s ease-in-out infinite;
 }
 
-.feature-card:nth-child(1) { animation-delay: 0s; }
-.feature-card:nth-child(2) { animation-delay: 1s; }
-.feature-card:nth-child(3) { animation-delay: 2s; }
-.feature-card:nth-child(4) { animation-delay: 3s; }
-.feature-card:nth-child(5) { animation-delay: 4s; }
-.feature-card:nth-child(6) { animation-delay: 5s; }
+.feature-card:nth-child(1) {
+  animation-delay: 0s;
+}
+.feature-card:nth-child(2) {
+  animation-delay: 1s;
+}
+.feature-card:nth-child(3) {
+  animation-delay: 2s;
+}
+.feature-card:nth-child(4) {
+  animation-delay: 3s;
+}
+.feature-card:nth-child(5) {
+  animation-delay: 4s;
+}
+.feature-card:nth-child(6) {
+  animation-delay: 5s;
+}
 
 @keyframes cardWild {
-    0%, 100% { transform: rotate(var(--card-rotation, 0deg)) scale(1); }
-    10% { transform: rotate(calc(var(--card-rotation, 0deg) + 3deg)) scale(1.02); }
-    20% { transform: rotate(calc(var(--card-rotation, 0deg) - 2deg)) scale(0.98); }
-    30% { transform: rotate(calc(var(--card-rotation, 0deg) + 4deg)) scale(1.01); }
-    40% { transform: rotate(calc(var(--card-rotation, 0deg) - 3deg)) scale(0.99); }
-    50% { transform: rotate(calc(var(--card-rotation, 0deg) + 2deg)) scale(1.03); }
-    60% { transform: rotate(calc(var(--card-rotation, 0deg) - 4deg)) scale(0.97); }
-    70% { transform: rotate(calc(var(--card-rotation, 0deg) + 3deg)) scale(1.01); }
-    80% { transform: rotate(calc(var(--card-rotation, 0deg) - 2deg)) scale(1.02); }
-    90% { transform: rotate(calc(var(--card-rotation, 0deg) + 1deg)) scale(0.99); }
+  0%,
+  100% {
+    transform: rotate(var(--card-rotation, 0deg)) scale(1);
+  }
+  10% {
+    transform: rotate(calc(var(--card-rotation, 0deg) + 3deg)) scale(1.02);
+  }
+  20% {
+    transform: rotate(calc(var(--card-rotation, 0deg) - 2deg)) scale(0.98);
+  }
+  30% {
+    transform: rotate(calc(var(--card-rotation, 0deg) + 4deg)) scale(1.01);
+  }
+  40% {
+    transform: rotate(calc(var(--card-rotation, 0deg) - 3deg)) scale(0.99);
+  }
+  50% {
+    transform: rotate(calc(var(--card-rotation, 0deg) + 2deg)) scale(1.03);
+  }
+  60% {
+    transform: rotate(calc(var(--card-rotation, 0deg) - 4deg)) scale(0.97);
+  }
+  70% {
+    transform: rotate(calc(var(--card-rotation, 0deg) + 3deg)) scale(1.01);
+  }
+  80% {
+    transform: rotate(calc(var(--card-rotation, 0deg) - 2deg)) scale(1.02);
+  }
+  90% {
+    transform: rotate(calc(var(--card-rotation, 0deg) + 1deg)) scale(0.99);
+  }
 }
 
 /* 背景に浮かぶ日本語 */
 @keyframes floatJapanese {
-    0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 0.1;
-    }
-    50% {
-        opacity: 0.2;
-    }
-    100% {
-        transform: translateY(-100px) rotate(10deg);
-        opacity: 0;
-    }
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(-100px) rotate(10deg);
+    opacity: 0;
+  }
 }

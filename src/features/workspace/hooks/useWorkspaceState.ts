@@ -146,7 +146,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     getManifestSessionKey,
     ensureManifestSession,
     readManifestFile,
-    createDefaultManifest,
+    // createDefaultManifest,
     setManifestSessions,
   } = useManifestSessions();
 
@@ -207,7 +207,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     getManifestSessionKey,
     readManifestFile,
     updateWorkbookReferences,
-    createDefaultManifest,
+    // createDefaultManifest,
   });
 
   // ============================================
@@ -338,7 +338,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     handleManifestChange,
     handleCodeChange,
     readManifestFile,
-    createDefaultManifest,
+    // createDefaultManifest,
 
     // Formula bar
     formulaBarState,

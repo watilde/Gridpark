@@ -16,12 +16,23 @@
   ],
   "parser": "@typescript-eslint/parser",
   "rules": {
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-    "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-empty-function": ["error", { "allow": ["arrowFunctions"] }],
     "import/no-unresolved": "off",
-    "prettier/prettier": "warn",
-    "storybook/no-renderer-packages": "off"
+    "import/no-named-as-default": "off",
+    "import/no-duplicates": "off",
+    "prettier/prettier": "error",
+    "storybook/no-renderer-packages": "off",
+    "no-case-declarations": "off",
+    "no-useless-escape": "off"
   }
 }

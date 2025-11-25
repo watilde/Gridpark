@@ -6,7 +6,6 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Box, Button, Typography, Card, Chip, Stack, TextField, Alert } from '@mui/joy';
 import { useFormulaWorker } from '../hooks/useFormulaWorker';
 import { useFormulaCalculation } from '../hooks/useFormulaCalculation';
 

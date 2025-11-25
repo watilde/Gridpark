@@ -23,7 +23,7 @@ const GridContainer = styled(Box)({
 
 const HeaderCell = styled('div', {
   shouldForwardProp: prop => prop !== 'isActive' && prop !== 'isSelected',
-})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, isSelected }) => ({
+})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, _isSelected }) => ({
   backgroundColor: isActive
     ? theme.palette.mode === 'dark'
       ? '#2d5a7b'
@@ -62,7 +62,7 @@ const HeaderCell = styled('div', {
 
 const RowHeaderCell = styled('div', {
   shouldForwardProp: prop => prop !== 'isActive' && prop !== 'isSelected',
-})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, isSelected }) => ({
+})<{ isActive?: boolean; isSelected?: boolean }>(({ theme, isActive, _isSelected }) => ({
   backgroundColor: isActive
     ? theme.palette.mode === 'dark'
       ? '#2d5a7b'

@@ -9,7 +9,6 @@
  */
 
 import React, { useState } from 'react';
-import { Box, TextField, Typography, Button } from '@mui/material';
 import { useExcelSheet } from '../hooks/useExcelSheet';
 
 interface ExcelGridProps {
@@ -19,7 +18,14 @@ interface ExcelGridProps {
 }
 
 export const ExcelGrid: React.FC<ExcelGridProps> = ({ workbookId, sheetName, tabId }) => {
-  const { cells, getCell, updateCell, isDirty, markSaved, isLoading } = useExcelSheet({
+  const {
+    cells,
+    getCell: _getCell,
+    updateCell,
+    isDirty,
+    markSaved,
+    isLoading,
+  } = useExcelSheet({
     workbookId,
     sheetName,
     tabId,

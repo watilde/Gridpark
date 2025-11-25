@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { styled } from '@mui/joy/styles';
-import { Typography } from '@mui/joy';
 
 interface CellData {
   value: string | number | null;
@@ -60,7 +59,7 @@ const GridTable = styled('div')({
   minWidth: '100%',
 });
 
-const GridRow = styled('div')({
+const _GridRow = styled('div')({
   display: 'contents',
 });
 

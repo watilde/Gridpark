@@ -234,7 +234,7 @@ const spreadsheetSlice = createSlice({
 
 export const {
   // Workspace
-  setWorkbooks,
+  // setWorkbooks,
   updateWorkbook,
   setSelectedNode,
   resetWorkspace,

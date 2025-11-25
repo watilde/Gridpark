@@ -3,7 +3,6 @@ import { Modal } from './Modal';
 import { Button } from '../Button/Button';
 import { Input } from '../Input/Input';
 import { Card } from '../Card/Card';
-import { Typography } from '@mui/joy';
 import { useState } from 'react';
 import { Code, Save, Cancel, Delete } from '@mui/icons-material';
 

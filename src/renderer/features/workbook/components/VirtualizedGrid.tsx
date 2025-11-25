@@ -10,7 +10,7 @@ import { styled } from '@mui/joy/styles';
 import { Box } from '@mui/joy';
 
 // Local AutoSizer implementation to avoid import issues
-const AutoSizer = ({
+const _AutoSizer = ({
   children,
   disableHeight,
   disableWidth,
@@ -154,7 +154,7 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
     ref
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [scrollState, setScrollState] = useState({ scrollLeft: 0, scrollTop: 0 });
+    const [_scrollState, setScrollState] = useState({ scrollLeft: 0, scrollTop: 0 });
     const [visibleRange, setVisibleRange] = useState({
       startCol: 0,
       endCol: Math.min(20, columnCount),

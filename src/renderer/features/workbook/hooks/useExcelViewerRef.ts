@@ -78,7 +78,7 @@ const parseAddress = (address: string): CellPosition | null => {
 /**
  * Helper to convert position to Excel address
  */
-const toAddress = (pos: CellPosition): string => {
+const _toAddress = (pos: CellPosition): string => {
   const colLabel = String.fromCharCode(65 + pos.col);
   return `${colLabel}${pos.row + 1}`;
 };

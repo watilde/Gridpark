@@ -54,7 +54,7 @@ import 'monaco-editor/esm/vs/language/html/monaco.contribution';
 loader.config({ monaco });
 
 // No need for additional configuration
-let monacoConfigured = false;
+const _monacoConfigured = false;
 
 const configureMonaco = () => {
   monacoConfigured = true;

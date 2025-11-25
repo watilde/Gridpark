@@ -1,7 +1,6 @@
 import React from 'react';
 import { styled } from '@mui/joy/styles';
-import { Typography } from '@mui/joy';
-import { Button } from '../ui/Button/Button';
+// import { Button } from '../ui/Button/Button';
 import { Icon } from '../ui/Icon/Icon';
 
 const HeaderContainer = styled('div')(({ theme }) => ({

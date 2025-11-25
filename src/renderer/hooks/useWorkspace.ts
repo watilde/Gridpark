@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useTransition } from 'react';
 import { ExcelFile, GridparkCodeFile } from '../types/excel';
 import { FileNode } from '../features/file-explorer/FileTree';
 import { WorkbookTab } from '../types/tabs';
-import { SheetSessionState } from '../features/workbook/components/ExcelViewer';
+// import { SheetSessionState } from '../features/workbook/components/ExcelViewer';
 import {
   createWorkbookNode,
   createSheetTab,
@@ -16,7 +16,7 @@ import {
   selectActiveTabId,
   selectSelectedNodeId,
   selectDirtyMap,
-  setWorkbooks,
+  // setWorkbooks,
   updateWorkbook,
   openTab,
   closeTab,
@@ -307,7 +307,7 @@ export const useWorkspace = (
       // Clean up Dexie data for sheet tabs
       if (tabToClose?.kind === 'sheet') {
         try {
-          const { db } = await import('../../lib/db');
+          const { db: _db } = await import('../../lib/db');
           // Optional: Keep data in DB for later, or delete it
           // await db.deleteSheet(tabId);
           console.log(`[useWorkspace] Sheet tab closed: ${tabId}, data kept in Dexie`);

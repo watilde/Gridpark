@@ -273,7 +273,7 @@ export const useManifestSessions = () => {
     getManifestSessionKey,
     readManifestFile,
     ensureManifestSession,
-    createDefaultManifest,
+    // createDefaultManifest,
     cloneManifest,
   };
 };
