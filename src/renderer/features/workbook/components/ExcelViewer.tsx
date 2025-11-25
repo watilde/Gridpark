@@ -950,7 +950,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     // FIX: Call _onSessionChange immediately when gridData changes
     // This ensures ExcelViewerDexie always has the latest data
     // Set flag to prevent circular updates (gridData -> sessionState -> gridData)
-    if (__onSessionChange) {
+    if (_onSessionChange) {
       isUpdatingFromGridDataRef.current = true;
       _onSessionChange({
         data: gridData,

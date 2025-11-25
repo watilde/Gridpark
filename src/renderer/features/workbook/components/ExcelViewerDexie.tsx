@@ -221,7 +221,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
         // Check if Dexie already has data for this sheet
         // Query Dexie directly to avoid depending on useLiveQuery timing
         const { db: _db } = await import('../../../../lib/db');
-        const existingCells = await db.getCellsForSheet(tabId);
+        const existingCells = await _db.getCellsForSheet(tabId);
         const hasCellsInDexie = existingCells.length > 0;
 
         if (!hasCellsInDexie && sheet.data && sheet.data.length > 0) {
