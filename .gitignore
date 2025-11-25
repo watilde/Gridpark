@@ -92,6 +92,9 @@ dist-web/
 # Electron-Forge
 out/
 
+# Site build artifacts
+src/site/home/
+
 # Test files
 web/test.html
 web/excel-test.html
