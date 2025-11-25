@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { styled } from '@mui/joy/styles';
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
+import IconButton from '@mui/joy/IconButton';
+import Sheet from '@mui/joy/Sheet';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
