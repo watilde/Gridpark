@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useTransition } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../lib/db';
-import { ExcelFile, GridparkCodeFile } from '../types/excel';
+import { ExcelFile } from '../types/excel';
 import { FileNode } from '../features/file-explorer/FileTree';
 import { WorkbookTab } from '../types/tabs';
 import {
   createWorkbookNode,
   createSheetTab,
-  createManifestTabInstance,
 } from '../utils/workbookUtils';
 import { useAppDispatch, useAppSelector } from '../../stores';
 import {
@@ -31,42 +30,18 @@ import {
 
 /**
  * Parameters for dirty tracking (OPTIMIZED - Dexie Only)
+ * Note: Code and manifest dirty tracking removed - sheets only
  */
 export interface DirtyTrackingDeps {
-  codeSessions: Record<
-    string,
-    {
-      content: string;
-      originalContent: string;
-      loading: boolean;
-      saving: boolean;
-      error?: string;
-    }
-  >;
-  manifestDirtyMap: Record<string, boolean>;
-  getManifestSessionKey: (file: ExcelFile) => string;
+  // Empty for now - dirty tracking is in Dexie
 }
 
 /**
- * Parameters for tab operations
- */
-export interface TabOperationsDeps {
-  ensureManifestSession: (file: ExcelFile) => void;
-  ensureCodeSession: (codeFile: GridparkCodeFile) => void;
-}
-
-/**
- * Unified workspace hook that consolidates:
- * - useWorkspaceManager
- * - useTabManagement
- * - useDirtyTracking
- * - useTabOperations
- *
+ * Unified workspace hook that consolidates workspace state management
  * NOW USING REDUX for state management instead of useReducer
  */
 export const useWorkspace = (
-  dirtyTrackingDeps: DirtyTrackingDeps,
-  tabOperationsDeps: TabOperationsDeps
+  dirtyTrackingDeps: DirtyTrackingDeps
 ) => {
   // ✅ Use Redux instead of useReducer
   const dispatch = useAppDispatch();
@@ -240,8 +215,6 @@ export const useWorkspace = (
   // Tab Operations Functions
   // ==========================================
 
-  const { ensureManifestSession, ensureCodeSession } = tabOperationsDeps;
-
   const openTabForSheetNode = useCallback(
     (sheetNode: FileNode) => {
       const tab = createSheetTab(sheetNode);
@@ -251,64 +224,13 @@ export const useWorkspace = (
     [dispatch]
   );
 
-  const openTabForManifest = useCallback(
-    (workbookNode: FileNode, treeNodeId?: string) => {
-      const tab = createManifestTabInstance(workbookNode, treeNodeId);
-      if (!tab) return;
-      dispatch(openTab(tab));
-      if (workbookNode.file) {
-        ensureManifestSession(workbookNode.file);
-      }
-    },
-    [dispatch, ensureManifestSession]
-  );
-
-  const openTabForCodeNode = useCallback(
-    (codeNode: FileNode) => {
-      if (codeNode.type !== 'code' || !codeNode.codeFile) {
-        return;
-      }
-      const workbook = findWorkbookNode(codeNode.workbookId ?? codeNode.parentId ?? '');
-      if (!workbook || !workbook.file) {
-        return;
-      }
-      const tab: WorkbookTab = {
-        kind: 'code',
-        id: `${codeNode.id}-tab`,
-        workbookId: workbook.id,
-        treeNodeId: codeNode.id,
-        fileName: workbook.file.name,
-        file: workbook.file,
-        codeFile: codeNode.codeFile,
-      };
-      dispatch(openTab(tab));
-      ensureCodeSession(codeNode.codeFile);
-    },
-    [dispatch, findWorkbookNode, ensureCodeSession]
-  );
-
   const handleNodeSelect = useCallback(
     (node: FileNode) => {
       if (node.type === 'sheet') {
         openTabForSheetNode(node);
-        return;
-      }
-      if (node.type === 'workbook') {
-        openTabForManifest(node, node.id);
-        return;
-      }
-      if (node.type === 'manifest') {
-        const workbook = findWorkbookNode(node.workbookId ?? node.parentId ?? '');
-        if (workbook) {
-          openTabForManifest(workbook, node.id);
-        }
-        return;
-      }
-      if (node.type === 'code') {
-        openTabForCodeNode(node);
       }
     },
-    [openTabForSheetNode, openTabForManifest, openTabForCodeNode, findWorkbookNode]
+    [openTabForSheetNode]
   );
 
   const handleCloseTab = useCallback(
