@@ -3,12 +3,11 @@
  *
  * Central state management hook for the workspace.
  * Aggregates ALL workspace-related state and logic:
- * - File sessions
+ * - File sessions (Excel sheets only)
  * - Workspace management (tabs, nodes, selections)
  * - Save management
  * - Auto-save
  * - Formula bar
- * - Manifest handlers
  *
  * This is the SINGLE hook that pages should use.
  * All business logic is encapsulated here.
@@ -16,16 +15,11 @@
 
 import { useMemo, useCallback, useReducer } from 'react';
 import { useWorkspace } from '../../../renderer/hooks/useWorkspace';
-import {
-  useSaveWorkbook,
-  useManifestSessions,
-  useCodeSessions,
-} from '../../../renderer/hooks/useFileSessions';
+import { useSaveWorkbook } from '../../../renderer/hooks/useFileSessions';
 import { useFormulaBarOptimized } from '../../../renderer/hooks/useFormulaBarOptimized';
 import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
 import { useAutoSave } from './useAutoSave';
-import { cloneManifest, createDefaultManifest } from '../../../renderer/utils/sessionHelpers';
-import type { ExcelFile, GridparkCodeFile } from '../../../renderer/types/excel';
+import type { ExcelFile } from '../../../renderer/types/excel';
 import type {
   SearchNavigationCommand,
   ReplaceCommand,
@@ -71,10 +65,6 @@ export interface UseWorkspaceStateReturn {
   activeTab: any;
   isLoadingFiles: boolean;
 
-  // File sessions (manifest & code only - sheets are in Dexie)
-  manifestSessions: Record<string, any>;
-  codeSessions: Record<string, any>;
-
   // Search state
   searchState: SearchState;
   setTreeSearchQuery: (query: string) => void;
@@ -105,21 +95,10 @@ export interface UseWorkspaceStateReturn {
   findWorkbookNode: (workbookId: string) => any;
   updateWorkbookReferences: (workbookId: string, file: ExcelFile) => void;
 
-  // File operations
-  handleManifestChange: (workbookId: string, file: ExcelFile, data: any) => void;
-  handleCodeChange: (codeFile: GridparkCodeFile, value: string) => void;
-  readManifestFile: (file: ExcelFile) => Promise<void>;
-  createDefaultManifest: (file: ExcelFile) => any;
-
   // Formula bar
   formulaBarState: any;
 
   // Computed values
-  activeManifestSession: any;
-  activeCodeSession: any;
-  manifestEditorData: any;
-  manifestIsDirty: boolean;
-  canEditManifest: boolean;
   dirtyNodeIds: Record<string, boolean>;
 
   // Electron
@@ -138,33 +117,12 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
   // Manifest & Code: File system access only (no useState caching)
 
-  const {
-    manifestSessions,
-    manifestDirtyMap,
-    getManifestSessionKey,
-    ensureManifestSession,
-    readManifestFile,
-    // createDefaultManifest,
-    setManifestSessions,
-  } = useManifestSessions();
-
-  const { codeSessions, ensureCodeSession, handleCodeChange, onSaveCode } = useCodeSessions();
 
   // ============================================
   // Workspace Management
   // ============================================
 
-  const workspace = useWorkspace(
-    {
-      codeSessions,
-      manifestDirtyMap,
-      getManifestSessionKey,
-    },
-    {
-      ensureManifestSession,
-      ensureCodeSession,
-    }
-  );
+  const workspace = useWorkspace({});
 
   const {
     workbookNodes,
@@ -194,11 +152,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     (query: string) => dispatchSearch({ type: 'SET_TREE_SEARCH', payload: query }),
     []
   );
-
-  // ============================================
-  // Manifest Handlers
-  // ============================================
-
 
   // ============================================
   // Save Manager (Simplified - Dirty tracking is now in Dexie)
@@ -234,40 +187,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     [openTabs, activeTabId]
   );
 
-  // NOTE: activeSheetSession is removed - use useExcelSheet hook in components
-
-  const activeManifestKey = useMemo(
-    () => (activeTab?.kind === 'manifest' ? getManifestSessionKey(activeTab.file) : null),
-    [activeTab, getManifestSessionKey]
-  );
-
-  const activeManifestSession = useMemo(
-    () => (activeManifestKey ? manifestSessions[activeManifestKey] : undefined),
-    [activeManifestKey, manifestSessions]
-  );
-
-  const activeCodeSession = useMemo(
-    () => (activeTab?.kind === 'code' ? codeSessions[activeTab.codeFile.absolutePath] : undefined),
-    [activeTab, codeSessions]
-  );
-
-  const manifestEditorData = useMemo(() => {
-    if (activeTab?.kind !== 'manifest') return null;
-    return (
-      activeManifestSession?.data ??
-      (activeTab.file.manifest
-        ? cloneManifest(activeTab.file.manifest)
-        : createDefaultManifest(activeTab.file.name))
-    );
-  }, [activeTab, activeManifestSession]);
-
-  const manifestIsDirty = useMemo(
-    () => (activeManifestKey ? Boolean(manifestDirtyMap[activeManifestKey]) : false),
-    [activeManifestKey, manifestDirtyMap]
-  );
-
-  const canEditManifest = useMemo(() => Boolean(window.electronAPI?.gridpark), []);
-
   // ============================================
   // Dirty Node IDs
   // ============================================
@@ -297,10 +216,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     activeTab,
     isLoadingFiles,
 
-    // File sessions
-    manifestSessions,
-    codeSessions,
-
     // Search state
     searchState,
     setTreeSearchQuery,
@@ -318,21 +233,10 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     findWorkbookNode,
     updateWorkbookReferences,
 
-    // File operations
-    handleManifestChange,
-    handleCodeChange,
-    readManifestFile,
-    // createDefaultManifest,
-
     // Formula bar
     formulaBarState,
 
     // Computed values
-    activeManifestSession,
-    activeCodeSession,
-    manifestEditorData,
-    manifestIsDirty,
-    canEditManifest,
     dirtyNodeIds,
 
     // Electron
