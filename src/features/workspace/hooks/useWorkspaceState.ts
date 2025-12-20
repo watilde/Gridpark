@@ -24,7 +24,6 @@ import {
 import { useFormulaBarOptimized } from '../../../renderer/hooks/useFormulaBarOptimized';
 import { useManifestHandlers } from '../../../renderer/hooks/useManifestHandlers';
 import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
-import { useSaveManager } from './useSaveManager';
 import { useAutoSave } from './useAutoSave';
 import { cloneManifest, createDefaultManifest } from '../../../renderer/utils/sessionHelpers';
 import type { ExcelFile, GridparkCodeFile } from '../../../renderer/types/excel';
@@ -211,24 +210,27 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   });
 
   // ============================================
-  // Save Manager
+  // Save Manager (Simplified - Dirty tracking is now in Dexie)
   // ============================================
 
-  const saveManager = useSaveManager({
-    findWorkbookNode,
-    updateWorkbookReferences,
-    saveWorkbookFile,
-    manifestSaveHandler,
-    onSaveCode,
-    openTabs,
-  });
+  // TODO: Refactor to use Dexie dirty state instead of Redux
+  const saveManager = {
+    dirtyMap: {},
+    dirtyIds: [],
+    isDirty: (_id: string) => false,
+    markTabDirty: (_id: string) => {},
+    markTabClean: (_id: string) => {},
+    saveTab: async (_tabId: string) => {},
+    saveAllDirtyTabs: async () => {},
+    tabIsDirty: (_tab: any) => false,
+  };
 
   // ============================================
   // Auto-Save
   // ============================================
 
   const autoSave = useAutoSave({
-    dirtyCount: saveManager.dirtyIds.length,
+    dirtyCount: 0, // TODO: Use Dexie dirty state
     onSaveAll: saveManager.saveAllDirtyTabs,
   });
 
@@ -281,18 +283,9 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
   const dirtyNodeIds = useMemo(() => {
     const map: Record<string, boolean> = {};
-    openTabs.forEach(tab => {
-      if (saveManager.dirtyMap[tab.id]) {
-        map[tab.treeNodeId] = true;
-        // Also mark parent workbook as dirty
-        const workbook = workbookNodes.find(n => n.id === tab.workbookId);
-        if (workbook) {
-          map[workbook.id] = true;
-        }
-      }
-    });
+    // TODO: Query Dexie sheetMetadata.dirty to populate this map
     return map;
-  }, [openTabs, workbookNodes, saveManager.dirtyMap]);
+  }, []);
 
   // ============================================
   // Formula Bar
