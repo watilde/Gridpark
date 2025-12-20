@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Box, Button, Popover, Typography } from '@mui/joy';
+import { Box, Button, Dropdown, Menu, MenuButton, Typography } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
 import { HexColorPicker } from 'react-colorful';
 
@@ -232,7 +232,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
 };
 
 // ============================================================================
-// Color Picker Button (with Popover)
+// Color Picker Button (with Dropdown Menu)
 // ============================================================================
 
 export interface ColorPickerButtonProps extends ColorPickerProps {
@@ -268,16 +268,6 @@ export const ColorPickerButton: React.FC<ColorPickerButtonProps> = ({
   recentColors,
   onRecentColorsChange,
 }) => {
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  
   const handleChange = (color: string) => {
     if (onChange) {
       onChange(color);
@@ -285,16 +275,13 @@ export const ColorPickerButton: React.FC<ColorPickerButtonProps> = ({
     // Don't close automatically - let user pick multiple colors
   };
   
-  const open = Boolean(anchorEl);
-  
   return (
-    <>
-      <Button
+    <Dropdown>
+      <MenuButton
         variant="outlined"
         color="neutral"
         size={size}
         disabled={disabled}
-        onClick={handleClick}
         startDecorator={icon}
         sx={{
           position: 'relative',
@@ -312,28 +299,28 @@ export const ColorPickerButton: React.FC<ColorPickerButtonProps> = ({
         }}
       >
         {label}
-      </Button>
+      </MenuButton>
       
-      <Popover
-        open={open}
-        anchorEl={anchorEl}
-        onClose={handleClose}
+      <Menu
         placement="bottom-start"
         sx={{
-          '& .MuiPopover-paper': {
-            overflow: 'visible',
-          },
+          maxWidth: '300px',
+          maxHeight: '600px',
+          overflow: 'auto',
+          p: 0,
         }}
       >
-        <ColorPicker
-          value={value}
-          onChange={handleChange}
-          showAlpha={showAlpha}
-          recentColors={recentColors}
-          onRecentColorsChange={onRecentColorsChange}
-        />
-      </Popover>
-    </>
+        <Box sx={{ p: 0 }}>
+          <ColorPicker
+            value={value}
+            onChange={handleChange}
+            showAlpha={showAlpha}
+            recentColors={recentColors}
+            onRecentColorsChange={onRecentColorsChange}
+          />
+        </Box>
+      </Menu>
+    </Dropdown>
   );
 };
 
