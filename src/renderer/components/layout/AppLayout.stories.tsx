@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { AppLayout } from './AppLayout';
+import { ActivityBar } from './ActivityBar';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { Button } from '../ui/Button/Button';
 import { Card } from '../ui/Card/Card';
 import { SpreadsheetGrid } from '../../features/workbook/components/SpreadsheetGrid';
 import { FormulaBar } from '../../features/formula-bar/FormulaBar';
+import { Box, Typography } from '@mui/joy';
 import {
   TableChart,
   Functions,
@@ -321,6 +323,51 @@ function CALCULATE_ROI(revenue, cost, period) {
       description: {
         story:
           'Developer-focused layout for custom function development with code editor and testing tools.',
+      },
+    },
+  },
+};
+
+export const VSCodeStyleLayout: Story = {
+  args: {
+    activityBar: <ActivityBar activeView="excel" />,
+    header: (
+      <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Typography level="h4">Gridpark - Excel + Git</Typography>
+      </Box>
+    ),
+    sidebar: (
+      <Box sx={{ p: 2 }}>
+        <Typography level="title-lg" sx={{ mb: 2 }}>
+          Excel View
+        </Typography>
+        <Typography level="body-sm">File explorer goes here</Typography>
+      </Box>
+    ),
+    children: (
+      <Box sx={{ p: 3 }}>
+        <Typography level="h3" sx={{ mb: 2 }}>
+          VSCode-Style Layout with Activity Bar
+        </Typography>
+        <Typography sx={{ mb: 2 }}>
+          Activity Bar (48px) + Sidebar (280px) + Main Content
+        </Typography>
+        <Typography level="body-sm">
+          Click Activity Bar icons to switch between Excel View, Git Commit, History, Branches, Config, and Settings.
+        </Typography>
+      </Box>
+    ),
+    footer: (
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+        <Typography level="body-xs">Branch: main</Typography>
+        <Typography level="body-xs">Ln 1, Col 1</Typography>
+      </Box>
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'VSCode-inspired layout with Activity Bar for Excel and Git integration.',
       },
     },
   },

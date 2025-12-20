@@ -71,9 +71,11 @@ const Footer = styled(Sheet)(({ theme }) => ({
 
 export interface AppLayoutProps {
   header?: React.ReactNode;
+  activityBar?: React.ReactNode;
   sidebar?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  hideActivityBar?: boolean;
   hideSidebar?: boolean;
   hideFooter?: boolean;
   className?: string;
@@ -82,9 +84,11 @@ export interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
   header,
+  activityBar,
   sidebar,
   children,
   footer,
+  hideActivityBar = false,
   hideSidebar = false,
   hideFooter = false,
   className,
@@ -95,8 +99,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* Header spans full width at the top */}
       {header && <HeaderBar>{header}</HeaderBar>}
 
-      {/* Body contains sidebar and main content side by side */}
+      {/* Body contains activity bar, sidebar, and main content */}
       <BodyContainer>
+        {!hideActivityBar && activityBar}
         {!hideSidebar && sidebar && <Sidebar variant="outlined">{sidebar}</Sidebar>}
         <MainContent>
           <Content>{children}</Content>
