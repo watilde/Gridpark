@@ -20,9 +20,24 @@ import Dexie, { Table } from 'dexie';
 // ============================================================================
 
 /**
+ * Cell value types (strictly typed)
+ */
+export type CellValue = string | number | boolean | null | Date;
+
+/**
  * Cell value types matching ExcelViewer CellData
  */
 export type CellType = 'empty' | 'string' | 'number' | 'boolean' | 'date' | 'error' | 'formula';
+
+/**
+ * Cell data format for 2D array representation
+ */
+export interface CellData {
+  value: CellValue;
+  type: CellType;
+  formula?: string;
+  style?: CellStyleData;
+}
 
 /**
  * Cell style data (subset of CSSProperties)
@@ -55,8 +70,8 @@ export interface StoredCellData {
   row: number; // 0-based row index
   col: number; // 0-based column index
 
-  // Cell content
-  value: any; // Cell value (string | number | boolean | null)
+  // Cell content (strictly typed)
+  value: CellValue; // Cell value (string | number | boolean | null | Date)
   type: CellType; // Cell type
   formula?: string; // Formula if present
 
@@ -310,65 +325,72 @@ export class AppDatabase extends Dexie {
       count: cellUpdates.length,
     });
 
-    await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
-      // Use Dexie's bulkPut for maximum performance
-      const now = new Date();
-      const cellsToInsert: StoredCellData[] = cellUpdates.map(({ row, col, data }) => ({
-        tabId,
-        row,
-        col,
-        value: data.value ?? null,
-        type: data.type ?? 'empty',
-        formula: data.formula ?? undefined,
-        style: data.style ?? undefined,
-        updatedAt: now,
-        version: 1,
-      }));
-
-      console.log('[db] bulkUpsertCells: calling bulkPut', {
-        tabId,
-        count: cellsToInsert.length,
-      });
-
-      // bulkPut is much faster than individual upserts
-      await this.cells.bulkPut(cellsToInsert);
-
-      console.log('[db] bulkUpsertCells: bulkPut completed, updating dimensions', { tabId });
-
-      // Update sheet dimensions within same transaction
-      let maxRow = 0;
-      let maxCol = 0;
-
-      cellUpdates.forEach(({ row, col }) => {
-        maxRow = Math.max(maxRow, row);
-        maxCol = Math.max(maxCol, col);
-      });
-
-      // Use put to ensure useLiveQuery picks up the change
-      const metadata = await this.sheetMetadata.where('tabId').equals(tabId).first();
-
-      if (metadata?.id) {
-        await this.sheetMetadata.update(metadata.id, {
-          maxRow,
-          maxCol,
-          cellCount: cellUpdates.length,
-          updatedAt: now,
-        });
-        console.log('[db] bulkUpsertCells: metadata updated', {
+    try {
+      await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
+        // Use Dexie's bulkPut for maximum performance
+        const now = new Date();
+        const cellsToInsert: StoredCellData[] = cellUpdates.map(({ row, col, data }) => ({
           tabId,
-          metadataId: metadata.id,
-          maxRow,
-          maxCol,
-          cellCount: cellUpdates.length,
+          row,
+          col,
+          value: data.value ?? null,
+          type: data.type ?? 'empty',
+          formula: data.formula ?? undefined,
+          style: data.style ?? undefined,
+          updatedAt: now,
+          version: 1,
+        }));
+
+        console.log('[db] bulkUpsertCells: calling bulkPut', {
+          tabId,
+          count: cellsToInsert.length,
         });
-      } else {
-        console.warn('[db] bulkUpsertCells: metadata not found for', tabId);
-      }
-    });
 
-    console.log('[db] bulkUpsertCells: transaction completed', { tabId });
+        // bulkPut is much faster than individual upserts
+        await this.cells.bulkPut(cellsToInsert);
 
-    return cellUpdates.length;
+        console.log('[db] bulkUpsertCells: bulkPut completed, updating dimensions', { tabId });
+
+        // Update sheet dimensions within same transaction
+        let maxRow = 0;
+        let maxCol = 0;
+
+        cellUpdates.forEach(({ row, col }) => {
+          maxRow = Math.max(maxRow, row);
+          maxCol = Math.max(maxCol, col);
+        });
+
+        // Use put to ensure useLiveQuery picks up the change
+        const metadata = await this.sheetMetadata.where('tabId').equals(tabId).first();
+
+        if (metadata?.id) {
+          await this.sheetMetadata.update(metadata.id, {
+            maxRow,
+            maxCol,
+            cellCount: cellUpdates.length,
+            updatedAt: now,
+          });
+          console.log('[db] bulkUpsertCells: metadata updated', {
+            tabId,
+            metadataId: metadata.id,
+            maxRow,
+            maxCol,
+            cellCount: cellUpdates.length,
+          });
+        } else {
+          console.warn('[db] bulkUpsertCells: metadata not found for', tabId);
+        }
+      });
+
+      console.log('[db] bulkUpsertCells: transaction completed', { tabId });
+
+      return cellUpdates.length;
+    } catch (error) {
+      console.error('[db] bulkUpsertCells: transaction failed', { tabId, error });
+      throw new Error(
+        `Failed to bulk upsert cells for tab ${tabId}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   /**
@@ -395,20 +417,27 @@ export class AppDatabase extends Dexie {
    * Delete sheet and all its cells
    */
   async deleteSheet(tabId: string): Promise<void> {
-    await this.transaction('rw', [this.sheetMetadata, this.cells], async () => {
-      await this.clearSheetCells(tabId);
+    try {
+      await this.transaction('rw', [this.sheetMetadata, this.cells], async () => {
+        await this.clearSheetCells(tabId);
 
-      const metadata = await this.getSheetMetadata(tabId);
-      if (metadata?.id) {
-        await this.sheetMetadata.delete(metadata.id);
-      }
-    });
+        const metadata = await this.getSheetMetadata(tabId);
+        if (metadata?.id) {
+          await this.sheetMetadata.delete(metadata.id);
+        }
+      });
+    } catch (error) {
+      console.error('[db] deleteSheet: transaction failed', { tabId, error });
+      throw new Error(
+        `Failed to delete sheet ${tabId}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   /**
    * Convert sparse cell data to 2D array (for ExcelViewer compatibility)
    */
-  async getCellsAs2DArray(tabId: string, minRows = 100, minCols = 100): Promise<any[][]> {
+  async getCellsAs2DArray(tabId: string, minRows = 100, minCols = 100): Promise<CellData[][]> {
     const cells = await this.getCellsForSheet(tabId);
     const metadata = await this.getSheetMetadata(tabId);
 
@@ -417,12 +446,17 @@ export class AppDatabase extends Dexie {
     const cols = Math.max(minCols, metadata?.maxCol ?? 0) + 1;
 
     // Create empty 2D array
-    const result: any[][] = Array(rows)
+    const result: CellData[][] = Array(rows)
       .fill(null)
       .map(() =>
         Array(cols)
           .fill(null)
-          .map(() => ({ value: null as any, type: 'empty' }))
+          .map(
+            (): CellData => ({
+              value: null,
+              type: 'empty',
+            })
+          )
       );
 
     // Fill with actual cell data
@@ -443,57 +477,65 @@ export class AppDatabase extends Dexie {
   /**
    * Save 2D array to sparse cell storage (for migration from useState)
    */
-  async save2DArrayAsCells(tabId: string, data: any[][]): Promise<void> {
+  async save2DArrayAsCells(tabId: string, data: CellData[][]): Promise<void> {
     console.log('[db] save2DArrayAsCells called', {
       tabId,
       dataRows: data.length,
       dataCols: data[0]?.length || 0,
     });
 
-    await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
-      // Clear existing cells
-      await this.clearSheetCells(tabId);
-      console.log('[db] Cleared existing cells for', tabId);
+    try {
+      await this.transaction('rw', [this.cells, this.sheetMetadata], async () => {
+        // Clear existing cells
+        await this.clearSheetCells(tabId);
+        console.log('[db] Cleared existing cells for', tabId);
 
-      // Convert to sparse format (only save non-empty cells)
-      const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> = [];
+        // Convert to sparse format (only save non-empty cells)
+        const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> =
+          [];
 
-      data.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-          // Skip null/undefined cells
-          if (!cell) return;
+        data.forEach((row, rowIndex) => {
+          row.forEach((cell, colIndex) => {
+            // Skip null/undefined cells
+            if (!cell) return;
 
-          // Save cells that:
-          // 1. Have a non-empty value, OR
-          // 2. Have a formula, OR
-          // 3. Have a type other than 'empty'
-          const hasValue = cell.value !== null && cell.value !== undefined && cell.value !== '';
-          const hasFormula =
-            cell.formula !== null && cell.formula !== undefined && cell.formula !== '';
-          const hasType = cell.type && cell.type !== 'empty';
+            // Save cells that:
+            // 1. Have a non-empty value, OR
+            // 2. Have a formula, OR
+            // 3. Have a type other than 'empty'
+            const hasValue = cell.value !== null && cell.value !== undefined && cell.value !== '';
+            const hasFormula =
+              cell.formula !== null && cell.formula !== undefined && cell.formula !== '';
+            const hasType = cell.type && cell.type !== 'empty';
 
-          if (hasValue || hasFormula || hasType) {
-            cellUpdates.push({
-              row: rowIndex,
-              col: colIndex,
-              data: {
-                value: cell.value,
-                type: cell.type || 'string',
-                formula: cell.formula,
-                style: cell.style,
-              },
-            });
-          }
+            if (hasValue || hasFormula || hasType) {
+              cellUpdates.push({
+                row: rowIndex,
+                col: colIndex,
+                data: {
+                  value: cell.value,
+                  type: cell.type || 'string',
+                  formula: cell.formula,
+                  style: cell.style,
+                },
+              });
+            }
+          });
         });
+
+        console.log('[db] Prepared', cellUpdates.length, 'cells to save');
+
+        // Bulk insert
+        await this.bulkUpsertCells(tabId, cellUpdates);
+
+        console.log('[db] Bulk upsert completed for', tabId);
       });
-
-      console.log('[db] Prepared', cellUpdates.length, 'cells to save');
-
-      // Bulk insert
-      await this.bulkUpsertCells(tabId, cellUpdates);
-
-      console.log('[db] Bulk upsert completed for', tabId);
-    });
+    } catch (error) {
+      console.error('[db] save2DArrayAsCells: transaction failed', { tabId, error });
+      throw new Error(
+        `Failed to save 2D array as cells for tab ${tabId}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   /**

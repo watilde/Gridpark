@@ -24,13 +24,15 @@ export type { WorkbookTab };
  * OPTIMIZED Redux State: UI State ONLY
  *
  * Data persistence is handled by Dexie.js:
- * - Sheet data → Dexie cells table
+ * - Sheet data → Dexie cells table (including dirty flags)
  * - Manifest/Code → File system (via Electron)
  *
  * Redux manages UI state:
  * - Workspace navigation (tabs, nodes, selection)
- * - Dirty tracking (which tabs need saving)
  * - UI preferences (auto-save, settings)
+ *
+ * NOTE: Dirty tracking is now EXCLUSIVELY in Dexie (sheetMetadata.dirty)
+ * Use useLiveQuery to reactively read dirty state from Dexie
  */
 export interface SpreadsheetState {
   // ========================================================================
@@ -45,11 +47,6 @@ export interface SpreadsheetState {
   // ========================================================================
   openTabs: WorkbookTab[];
   activeTabId: string;
-
-  // ========================================================================
-  // Dirty State (Unsaved Changes Tracking)
-  // ========================================================================
-  dirtyMap: Record<string, boolean>;
 
   // ========================================================================
   // UI Preferences
@@ -68,7 +65,6 @@ const initialState: SpreadsheetState = {
   selectedNodeId: '',
   openTabs: [],
   activeTabId: '',
-  dirtyMap: {},
   autoSaveEnabled: false,
   autoSaveInterval: 2000,
 };
@@ -155,9 +151,6 @@ const spreadsheetSlice = createSlice({
       const tabId = action.payload;
       const nextTabs = state.openTabs.filter(tab => tab.id !== tabId);
 
-      // Clean up dirty state only (data is in Dexie)
-      delete state.dirtyMap[tabId];
-
       // Update active tab
       if (state.activeTabId === tabId) {
         const nextActive = nextTabs[nextTabs.length - 1];
@@ -184,28 +177,6 @@ const spreadsheetSlice = createSlice({
     focusTab: (state, action: PayloadAction<WorkbookTab>) => {
       state.activeTabId = action.payload.id;
       state.selectedNodeId = action.payload.treeNodeId;
-    },
-
-    // ========================================================================
-    // Dirty State Management (Single Source of Truth)
-    // ========================================================================
-
-    markDirty: (state, action: PayloadAction<string>) => {
-      const tabId = action.payload;
-      if (!state.dirtyMap[tabId]) {
-        state.dirtyMap[tabId] = true;
-      }
-    },
-
-    markClean: (state, action: PayloadAction<string>) => {
-      const tabId = action.payload;
-      if (state.dirtyMap[tabId]) {
-        delete state.dirtyMap[tabId];
-      }
-    },
-
-    markAllClean: state => {
-      state.dirtyMap = {};
     },
 
     // ========================================================================
@@ -245,11 +216,6 @@ export const {
   setActiveTab,
   focusTab,
 
-  // Dirty state
-  markDirty,
-  markClean,
-  markAllClean,
-
   // Auto-save
   setAutoSaveEnabled,
   setAutoSaveInterval,
@@ -279,16 +245,6 @@ export const selectActiveTab = (state: RootState) => {
   const { openTabs, activeTabId } = state.spreadsheet;
   return openTabs.find(tab => tab.id === activeTabId) || null;
 };
-
-// Dirty state selectors
-export const selectDirtyMap = (state: RootState) => state.spreadsheet.dirtyMap;
-
-// ✅ Memoized selector to prevent unnecessary re-renders
-// Object.keys() creates a new array every time, so we use createSelector
-export const selectDirtyTabs = createSelector([selectDirtyMap], dirtyMap => Object.keys(dirtyMap));
-
-export const selectIsDirty = (tabId: string) => (state: RootState) =>
-  Boolean(state.spreadsheet.dirtyMap[tabId]);
 
 // Auto-save selectors
 export const selectAutoSaveEnabled = (state: RootState) => state.spreadsheet.autoSaveEnabled;

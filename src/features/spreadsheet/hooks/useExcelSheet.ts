@@ -1,13 +1,12 @@
 /**
- * useExcelSheet Hook (OPTIMIZED v2)
+ * useExcelSheet Hook (OPTIMIZED v3 - Dexie Only)
  *
  * This is the STATE LAYER that bridges:
  * - Dexie.js v2 (sparse matrix storage with useLiveQuery)
- * - Redux (UI state and dirty tracking)
  *
  * Provides a clean API for components to:
  * - Read/write cell data reactively
- * - Track dirty state automatically
+ * - Track dirty state automatically (via Dexie only)
  * - Handle save operations
  * - Convert between sparse matrix and 2D array formats
  *
@@ -16,14 +15,53 @@
  * - Efficient range queries
  * - Memoized cell lookups
  * - Batch updates
+ *
+ * ARCHITECTURE:
+ * - Dirty tracking: Dexie sheetMetadata.dirty (single source of truth)
+ * - No Redux dirty state (removed to prevent data inconsistency)
  */
 
 import { useMemo, useCallback, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, StoredCellData } from '../../../lib/db';
-import { useAppDispatch, useAppSelector } from '../../../stores';
-import { markDirty, markClean, selectIsDirty } from '../../../stores/spreadsheetSlice';
+import { db, StoredCellData, CellData, CellValue, CellStyleData } from '../../../lib/db';
 import { useExcelUndoRedo, CellChange } from './useExcelUndoRedo';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Shallow equality check for cell style objects
+ */
+function shallowEqual(
+  a: CellStyleData | undefined,
+  b: CellStyleData | undefined
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return a === b;
+
+  const keysA = Object.keys(a) as Array<keyof CellStyleData>;
+  const keysB = Object.keys(b) as Array<keyof CellStyleData>;
+
+  if (keysA.length !== keysB.length) return false;
+
+  return keysA.every(key => a[key] === b[key]);
+}
+
+/**
+ * Check if two cell data objects are equal (optimized for performance)
+ */
+function cellDataEquals(
+  a: { value: CellValue; type: string; formula?: string; style?: CellStyleData },
+  b: { value: CellValue; type: string; formula?: string; style?: CellStyleData }
+): boolean {
+  return (
+    a.value === b.value &&
+    a.type === b.type &&
+    a.formula === b.formula &&
+    shallowEqual(a.style, b.style)
+  );
+}
 
 // ============================================================================
 // Types
@@ -41,14 +79,14 @@ export interface UseExcelSheetParams {
 export interface CellUpdate {
   row: number;
   col: number;
-  value?: any;
+  value?: CellValue;
   type?: string;
   formula?: string;
   style?: Record<string, any>;
 }
 
 export interface SheetSessionState {
-  data: any[][]; // 2D array format (for ExcelViewer compatibility)
+  data: CellData[][]; // 2D array format (for ExcelViewer compatibility)
   dirty: boolean;
 }
 
@@ -66,8 +104,6 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     minCols = 26, // Default: 26 cols (A-Z, standard Excel columns)
   } = params;
 
-  const dispatch = useAppDispatch();
-
   // ========================================================================
   // Undo/Redo History
   // ========================================================================
@@ -75,13 +111,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   const undoRedo = useExcelUndoRedo();
 
   // ========================================================================
-  // Redux State (UI state - dirty tracking only)
-  // ========================================================================
-
-  const isDirty = useAppSelector(selectIsDirty(tabId));
-
-  // ========================================================================
-  // Dexie State (Table data with reactive queries)
+  // Dexie State (Single source of truth for both data and dirty flag)
   // ========================================================================
 
   // Initialize sheet metadata on mount (separate from useLiveQuery)
@@ -136,33 +166,34 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   // ========================================================================
 
   // Convert sparse cell array to 2D array (for ExcelViewer compatibility)
-  const data2D = useMemo(() => {
+  const data2D = useMemo((): CellData[][] => {
     if (!cells) {
       return [];
     }
 
-    // Calculate actual dimensions from cell data (more reliable than metadata)
-    let actualMaxRow = 0;
-    let actualMaxCol = 0;
-    cells.forEach(cell => {
-      actualMaxRow = Math.max(actualMaxRow, cell.row);
-      actualMaxCol = Math.max(actualMaxCol, cell.col);
-    });
+    // Use metadata dimensions (more efficient than calculating from cells)
+    const metaMaxRow = metadata?.maxRow ?? 0;
+    const metaMaxCol = metadata?.maxCol ?? 0;
 
     // Ensure minimum dimensions
-    const rows = Math.max(minRows, actualMaxRow + 1);
-    const cols = Math.max(minCols, actualMaxCol + 1);
+    const rows = Math.max(minRows, metaMaxRow + 1);
+    const cols = Math.max(minCols, metaMaxCol + 1);
 
     // Create empty 2D array
-    const result: any[][] = Array(rows)
+    const result: CellData[][] = Array(rows)
       .fill(null)
       .map(() =>
         Array(cols)
           .fill(null)
-          .map(() => ({ value: null as any, type: 'empty' }))
+          .map(
+            (): CellData => ({
+              value: null,
+              type: 'empty',
+            })
+          )
       );
 
-    // Fill with actual cell data
+    // Fill with actual cell data (single loop)
     cells.forEach(cell => {
       if (cell.row < rows && cell.col < cols) {
         result[cell.row][cell.col] = {
@@ -175,7 +206,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     });
 
     return result;
-  }, [cells, minRows, minCols]);
+  }, [cells, metadata?.maxRow, metadata?.maxCol, minRows, minCols]);
 
   // Convert cell array to map for fast lookup
   const cellMap = useMemo(() => {
@@ -233,11 +264,10 @@ export function useExcelSheet(params: UseExcelSheetParams) {
         },
       ]);
 
-      // Mark sheet as dirty in DB and Redux
+      // Mark sheet as dirty in Dexie only
       await db.markSheetDirty(tabId, true);
-      dispatch(markDirty(tabId));
     },
-    [tabId, dispatch, getCell, undoRedo]
+    [tabId, getCell, undoRedo]
   );
 
   /**
@@ -277,11 +307,10 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       // Record history
       undoRedo.pushHistory(changes);
 
-      // Mark sheet as dirty in DB and Redux
+      // Mark sheet as dirty in Dexie only
       await db.markSheetDirty(tabId, true);
-      dispatch(markDirty(tabId));
     },
-    [tabId, dispatch, getCell, undoRedo]
+    [tabId, getCell, undoRedo]
   );
 
   /**
@@ -291,11 +320,10 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     async (row: number, col: number) => {
       await db.deleteCell(tabId, row, col);
 
-      // Mark as dirty
+      // Mark as dirty in Dexie only
       await db.markSheetDirty(tabId, true);
-      dispatch(markDirty(tabId));
     },
-    [tabId, dispatch]
+    [tabId]
   );
 
   /**
@@ -308,7 +336,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
    * @param options.markDirty - Whether to mark the sheet as dirty (default: true)
    */
   const save2DArray = useCallback(
-    async (data: any[][], options: { recordHistory?: boolean; markDirty?: boolean } = {}) => {
+    async (data: CellData[][], options: { recordHistory?: boolean; markDirty?: boolean } = {}) => {
       const { recordHistory = true, markDirty: shouldMarkDirty = true } = options;
 
       // Calculate changes for history (only if recordHistory is true)
@@ -327,7 +355,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
                   formula: oldCell.formula,
                   style: oldCell.style,
                 }
-              : { value: null, type: 'empty' };
+              : { value: null, type: 'empty' as const };
 
             const newData = {
               value: newCell?.value ?? null,
@@ -336,8 +364,8 @@ export function useExcelSheet(params: UseExcelSheetParams) {
               style: newCell?.style,
             };
 
-            // Only record if cell actually changed
-            if (JSON.stringify(oldData) !== JSON.stringify(newData)) {
+            // Use optimized equality check instead of JSON.stringify
+            if (!cellDataEquals(oldData, newData)) {
               changes.push({
                 row,
                 col,
@@ -359,10 +387,9 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       // Mark as dirty only if requested (skip for initial load)
       if (shouldMarkDirty) {
         await db.markSheetDirty(tabId, true);
-        dispatch(markDirty(tabId));
       }
     },
-    [tabId, dispatch, getCell, undoRedo]
+    [tabId, getCell, undoRedo]
   );
 
   /**
@@ -382,8 +409,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
    */
   const markSaved = useCallback(async () => {
     await db.markSheetDirty(tabId, false);
-    dispatch(markClean(tabId));
-  }, [tabId, dispatch]);
+  }, [tabId]);
 
   // ========================================================================
   // Undo/Redo Operations
@@ -403,11 +429,10 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       // Bulk update database (without recording history)
       await db.bulkUpsertCells(tabId, cellUpdates);
 
-      // Mark sheet as dirty in DB and Redux
+      // Mark sheet as dirty in Dexie only
       await db.markSheetDirty(tabId, true);
-      dispatch(markDirty(tabId));
     },
-    [tabId, dispatch]
+    [tabId]
   );
 
   /**
@@ -455,26 +480,6 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     undoRedo.clear();
   }, [undoRedo]);
 
-  // NOTE: Session state (scroll, selection) removed from Redux
-  // Components should manage their own UI state with useState if needed
-
-  // ========================================================================
-  // Auto-update sheet metadata last accessed time
-  // ========================================================================
-
-  useEffect(() => {
-    if (metadata) {
-      // Update last accessed time (debounced)
-      const timer = setTimeout(() => {
-        db.sheetMetadata.update(metadata.id!, {
-          lastAccessedAt: new Date(),
-        });
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [metadata]);
-
   // ========================================================================
   // Return API
   // ========================================================================
@@ -498,8 +503,8 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     save2DArray, // Save entire 2D array
     load2DArray, // Load as 2D array
 
-    // State
-    isDirty,
+    // State (from Dexie only)
+    isDirty: metadata?.dirty ?? false,
 
     // Actions
     markSaved,

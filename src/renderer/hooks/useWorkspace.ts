@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useTransition } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../lib/db';
 import { ExcelFile, GridparkCodeFile } from '../types/excel';
 import { FileNode } from '../features/file-explorer/FileTree';
 import { WorkbookTab } from '../types/tabs';
-// import { SheetSessionState } from '../features/workbook/components/ExcelViewer';
 import {
   createWorkbookNode,
   createSheetTab,
@@ -15,8 +16,6 @@ import {
   selectOpenTabs,
   selectActiveTabId,
   selectSelectedNodeId,
-  selectDirtyMap,
-  // setWorkbooks,
   updateWorkbook,
   openTab,
   closeTab,
@@ -26,11 +25,12 @@ import {
 
 // ============================================================================
 // NOTE: Workspace state is now managed by Redux (spreadsheetSlice)
-// This hook serves as an adapter layer between Redux and the component API
+// Dirty tracking for sheets is now EXCLUSIVELY in Dexie (sheetMetadata.dirty)
+// This hook serves as an adapter layer between Redux/Dexie and the component API
 // ============================================================================
 
 /**
- * Parameters for dirty tracking (OPTIMIZED - Redux + Dexie)
+ * Parameters for dirty tracking (OPTIMIZED - Dexie Only)
  */
 export interface DirtyTrackingDeps {
   codeSessions: Record<
@@ -162,19 +162,30 @@ export const useWorkspace = (
   );
 
   // ==========================================
-  // Dirty Tracking Functions (OPTIMIZED - Redux + Dexie)
+  // Dirty Tracking Functions (OPTIMIZED - Dexie Only)
   // ==========================================
 
   const { codeSessions, manifestDirtyMap, getManifestSessionKey } = dirtyTrackingDeps;
 
-  // Get Redux dirty map
-  const dirtyMapFromRedux = useAppSelector(selectDirtyMap);
+  // Load all sheet metadata from Dexie (reactive)
+  const allSheetMetadata = useLiveQuery(() => db.sheetMetadata.toArray(), []);
+
+  // Build dirty map from Dexie metadata
+  const sheetDirtyMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    allSheetMetadata?.forEach(metadata => {
+      if (metadata.dirty) {
+        map[metadata.tabId] = true;
+      }
+    });
+    return map;
+  }, [allSheetMetadata]);
 
   const tabIsDirty = useCallback(
     (tab: WorkbookTab): boolean => {
       if (tab.kind === 'sheet') {
-        // Check Redux dirty map (synced with Dexie)
-        return Boolean(dirtyMapFromRedux[tab.id]);
+        // Check Dexie dirty map
+        return Boolean(sheetDirtyMap[tab.id]);
       }
       if (tab.kind === 'code') {
         const session = codeSessions[tab.codeFile.absolutePath];
@@ -186,7 +197,7 @@ export const useWorkspace = (
       }
       return false;
     },
-    [codeSessions, getManifestSessionKey, manifestDirtyMap, dirtyMapFromRedux]
+    [codeSessions, getManifestSessionKey, manifestDirtyMap, sheetDirtyMap]
   );
 
   const dirtyNodeIds = useMemo(() => {
@@ -196,8 +207,8 @@ export const useWorkspace = (
       let dirty = false;
 
       if (node.type === 'sheet') {
-        // Check Redux dirty map
-        dirty = Boolean(dirtyMapFromRedux[node.id]);
+        // Check Dexie dirty map
+        dirty = Boolean(sheetDirtyMap[node.id]);
       } else if (node.type === 'code' && node.codeFile) {
         const session = codeSessions[node.codeFile.absolutePath];
         dirty = Boolean(session && session.content !== session.originalContent);
@@ -223,7 +234,7 @@ export const useWorkspace = (
 
     workbookNodes.forEach(visit);
     return map;
-  }, [workbookNodes, dirtyMapFromRedux, codeSessions, manifestDirtyMap, getManifestSessionKey]);
+  }, [workbookNodes, sheetDirtyMap, codeSessions, manifestDirtyMap, getManifestSessionKey]);
 
   // ==========================================
   // Tab Operations Functions

@@ -82,7 +82,10 @@ export const useSaveWorkbook = () => {
               colCount: data[0]?.length ?? sheet.colCount,
             };
           } catch (error) {
-            console.warn(`[useSaveWorkbook] No data in Dexie for ${sheet.name}, using original`);
+            console.warn(
+              `[useSaveWorkbook] No data in Dexie for ${sheet.name}, using original`,
+              error
+            );
             return sheet;
           }
         })
@@ -100,8 +103,9 @@ export const useSaveWorkbook = () => {
 
       console.log(`[useSaveWorkbook] Successfully saved: ${file.path}`);
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error('[useSaveWorkbook] Failed to save workbook:', error);
-      throw error;
+      throw new Error(`Failed to save workbook ${file.name}: ${message}`);
     }
   }, []);
 

@@ -19,7 +19,7 @@
  */
 
 import { HyperFormula, ConfigParams, SimpleCellAddress } from 'hyperformula';
-// import { StoredCellData } from './db';
+import { AppDatabase, CellData, CellValue } from './db';
 
 // ============================================================================
 // Types
@@ -28,11 +28,11 @@ import { HyperFormula, ConfigParams, SimpleCellAddress } from 'hyperformula';
 export interface SheetData {
   tabId: string;
   sheetName: string;
-  data: any[][];
+  data: CellData[][];
 }
 
 export interface CalculationResult {
-  value: any;
+  value: CellValue;
   error?: string;
 }
 
@@ -181,7 +181,7 @@ export class HyperFormulaAdapter {
   /**
    * Get the calculated value of a cell
    */
-  getCellValue(tabId: string, row: number, col: number): any {
+  getCellValue(tabId: string, row: number, col: number): CellValue {
     const sheetId = this.sheetIdMap.get(tabId);
 
     if (sheetId === undefined) {
@@ -194,7 +194,7 @@ export class HyperFormulaAdapter {
       col,
     };
 
-    return this.engine.getCellValue(cellAddress);
+    return this.engine.getCellValue(cellAddress) as CellValue;
   }
 
   /**
@@ -220,7 +220,7 @@ export class HyperFormulaAdapter {
   /**
    * Set a cell value (can be a value or a formula)
    */
-  setCellContent(tabId: string, row: number, col: number, content: any): void {
+  setCellContent(tabId: string, row: number, col: number, content: CellValue | string): void {
     const sheetId = this.sheetIdMap.get(tabId);
 
     if (sheetId === undefined) {
@@ -241,7 +241,7 @@ export class HyperFormulaAdapter {
    */
   batchSetCellContents(
     tabId: string,
-    updates: Array<{ row: number; col: number; content: any }>
+    updates: Array<{ row: number; col: number; content: CellValue | string }>
   ): void {
     const sheetId = this.sheetIdMap.get(tabId);
 
@@ -394,7 +394,7 @@ export class HyperFormulaAdapter {
    * Convert our 2D array format to HyperFormula format
    * HyperFormula expects raw values or formulas starting with '='
    */
-  private convert2DArrayToHyperFormulaFormat(data: any[][]): any[][] {
+  private convert2DArrayToHyperFormulaFormat(data: CellData[][]): (CellValue | string)[][] {
     return data.map(row =>
       row.map(cell => {
         if (!cell || cell.value === null || cell.value === undefined) {
@@ -441,7 +441,7 @@ export class HyperFormulaAdapter {
   /**
    * Detect cell type from value
    */
-  private detectCellType(value: any, formula?: string): string {
+  private detectCellType(value: CellValue, formula?: string): string {
     if (formula) return 'formula';
     if (value === null || value === undefined || value === '') return 'empty';
     if (typeof value === 'number') return 'number';
