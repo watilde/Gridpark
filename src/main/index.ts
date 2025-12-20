@@ -144,8 +144,6 @@ const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null
     return null;
   }
 };
-  }
-};
 
 const sendFilesToRenderer = (
   window: BrowserWindow,
