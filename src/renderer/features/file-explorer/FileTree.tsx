@@ -7,13 +7,10 @@ import Sheet from '@mui/joy/Sheet';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import PaletteIcon from '@mui/icons-material/Palette';
-import DescriptionIcon from '@mui/icons-material/Description';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { ExcelFile, GridparkCodeFile } from '../../../types/excel';
+import { ExcelFile } from '../../../types/excel';
 
 const TreeContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -74,13 +71,12 @@ const DirtyDot = styled('span')(({ theme }) => ({
 export interface FileNode {
   id: string;
   name: string;
-  type: 'folder' | 'workbook' | 'sheet' | 'manifest' | 'code';
+  type: 'folder' | 'workbook' | 'sheet';
   parentId?: string;
   workbookId?: string;
   sheetIndex?: number;
   children?: FileNode[];
   file?: ExcelFile;
-  codeFile?: GridparkCodeFile;
 }
 
 export interface FileTreeProps {
@@ -146,12 +142,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             )
           ) : node.type === 'sheet' ? (
             <TableChartIcon fontSize="small" />
-          ) : node.type === 'manifest' ? (
-            <DescriptionIcon fontSize="small" />
-          ) : node.codeFile?.role === 'main' ? (
-            <FlashOnIcon fontSize="small" />
-          ) : node.codeFile?.role === 'style' ? (
-            <PaletteIcon fontSize="small" />
           ) : (
             <InsertDriveFileIcon fontSize="small" />
           )}

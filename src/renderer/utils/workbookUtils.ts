@@ -1,52 +1,11 @@
 import { FileNode } from '../features/file-explorer/FileTree';
-import { ExcelFile, GridparkCodeFile } from '../types/excel';
+import { ExcelFile } from '../types/excel';
 import { WorkbookTab } from '../types/tabs';
 
-// Ensure createManifestTab is properly exported.
-export const sortCodeFiles = (files: GridparkCodeFile[]) =>
-  [...files].sort((a, b) => {
-    if (a.role === b.role) {
-      return a.name.localeCompare(b.name);
-    }
-    return a.role.localeCompare(b.role);
-  });
-
-const createCodeNode = (
-  parentId: string,
-  workbookId: string,
-  codeFile: GridparkCodeFile,
-  displayName?: string
-): FileNode => {
-  return {
-    id: `${parentId}-${codeFile.id}`,
-    name: displayName ?? codeFile.name,
-    type: 'code',
-    parentId,
-    workbookId,
-    codeFile,
-  };
-};
-
 export const createWorkbookNode = (excelFile: ExcelFile, id: string): FileNode => {
-  const codeFiles = excelFile.gridparkPackage?.files ?? [];
-  const workbookJs = codeFiles.find(file => file.scope === 'workbook' && file.role === 'main');
-  const workbookCss = codeFiles.find(file => file.scope === 'workbook' && file.role === 'style');
-
   const sheetNodes: FileNode[] = excelFile.sheets.map((sheet, index) => {
     const sheetId = `${id}-sheet-${index}`;
-    const sheetCodeFiles = codeFiles.filter(
-      file => file.scope === 'sheet' && file.sheetName === sheet.name
-    );
-    const jsFile = sheetCodeFiles.find(file => file.role === 'main');
-    const cssFile = sheetCodeFiles.find(file => file.role === 'style');
-    const sheetChildren: FileNode[] = [];
-    if (jsFile) {
-      sheetChildren.push(createCodeNode(sheetId, id, jsFile, 'JavaScript'));
-    }
-    if (cssFile) {
-      sheetChildren.push(createCodeNode(sheetId, id, cssFile, 'CSS'));
-    }
-
+    
     return {
       id: sheetId,
       name: sheet.name,
@@ -55,7 +14,7 @@ export const createWorkbookNode = (excelFile: ExcelFile, id: string): FileNode =
       workbookId: id,
       file: excelFile,
       sheetIndex: index,
-      children: sheetChildren,
+      children: [],
     };
   });
 
@@ -68,21 +27,13 @@ export const createWorkbookNode = (excelFile: ExcelFile, id: string): FileNode =
     children: sheetNodes,
   };
 
-  const workbookChildren: FileNode[] = [sheetsFolder];
-  if (workbookJs) {
-    workbookChildren.push(createCodeNode(id, id, workbookJs, 'JavaScript'));
-  }
-  if (workbookCss) {
-    workbookChildren.push(createCodeNode(id, id, workbookCss, 'CSS'));
-  }
-
   return {
     id,
     name: excelFile.name,
     type: 'workbook',
     workbookId: id,
     file: excelFile,
-    children: workbookChildren,
+    children: [sheetsFolder],
   };
 };
 
@@ -99,22 +50,5 @@ export const createSheetTab = (sheetNode: FileNode): WorkbookTab | null => {
     sheetName: sheetNode.name,
     fileName: sheetNode.file.name,
     file: sheetNode.file,
-  };
-};
-
-export const createManifestTabInstance = (
-  workbookNode: FileNode,
-  treeNodeId?: string
-): WorkbookTab | null => {
-  if (workbookNode.type !== 'workbook' || !workbookNode.file) {
-    return null;
-  }
-  return {
-    kind: 'manifest',
-    id: `${workbookNode.id}-manifest`,
-    workbookId: workbookNode.id,
-    treeNodeId: treeNodeId ?? workbookNode.id,
-    fileName: workbookNode.file.name,
-    file: workbookNode.file,
   };
 };

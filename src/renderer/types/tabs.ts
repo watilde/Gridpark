@@ -1,4 +1,4 @@
-import { ExcelFile, GridparkCodeFile } from './excel';
+import { ExcelFile } from './excel';
 
 export type SheetTab = {
   kind: 'sheet';
@@ -11,23 +11,4 @@ export type SheetTab = {
   file: ExcelFile;
 };
 
-export type ManifestTab = {
-  kind: 'manifest';
-  id: string;
-  workbookId: string;
-  treeNodeId: string;
-  fileName: string;
-  file: ExcelFile;
-};
-
-export type CodeTab = {
-  kind: 'code';
-  id: string;
-  workbookId: string;
-  treeNodeId: string;
-  fileName: string;
-  file: ExcelFile;
-  codeFile: GridparkCodeFile;
-};
-
-export type WorkbookTab = SheetTab | ManifestTab | CodeTab;
+export type WorkbookTab = SheetTab;

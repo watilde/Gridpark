@@ -16,7 +16,7 @@ export interface ElectronAPI {
   // Theme events
   onThemePresetChange: (callback: (presetId: string) => void) => () => void;
   
-  // File operations
+  // Excel file operations
   createNewFile: () => Promise<{
     success: boolean;
     file?: ExcelFile;
@@ -40,33 +40,6 @@ export interface ElectronAPI {
     canceled?: boolean;
     error?: string;
   }>;
-  
-  // Gridpark file operations
-  gridpark: {
-    readFile: (payload: { path: string; rootDir: string }) => Promise<{
-      success: boolean;
-      content?: string;
-      error?: string;
-    }>;
-    
-    writeFile: (payload: {
-      path: string;
-      rootDir: string;
-      content: string;
-    }) => Promise<{
-      success: boolean;
-      error?: string;
-    }>;
-    
-    writeBinaryFile: (payload: {
-      path: string;
-      rootDir: string;
-      data: Uint8Array;
-    }) => Promise<{
-      success: boolean;
-      error?: string;
-    }>;
-  };
 }
 
 declare global {

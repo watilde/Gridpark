@@ -1,16 +1,9 @@
 import { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } from 'electron';
 import type { AboutPanelOptionsOptions } from 'electron';
-import { join, basename, extname, dirname, normalize, relative, isAbsolute } from 'path';
-import { readFileSync, readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'fs';
-import ExcelJS from 'exceljs';
+import { join, basename, extname, dirname } from 'path';
+import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { parseExcelFile, serializeExcelFile } from '../renderer/utils/excelUtils';
-import {
-  ExcelFile,
-  GridparkManifest,
-  GridparkPackage,
-  GridparkCodeFile,
-  GridparkCodeLanguage,
-} from '../renderer/types/excel';
+import { ExcelFile } from '../renderer/types/excel';
 import { themeOptions, DEFAULT_THEME_ID } from '../renderer/theme/theme';
 
 // Injected by Electron Forge's Vite plugin at build time.
@@ -31,7 +24,6 @@ app.setName('Gridpark');
 
 const WINDOW_TITLE_FALLBACK = 'Gridpark';
 
-const GRIDPARK_DIRNAME = '.gridpark';
 const resolveAssetPath = (...paths: string[]) => {
   if (app.isPackaged) {
     return join(process.resourcesPath, ...paths);
@@ -73,75 +65,6 @@ const resolveIconAsset = () => {
 };
 
 const { iconImage: ICON_IMAGE, iconPath: ICON_PATH } = resolveIconAsset();
-
-const getWorkbookName = (filePath: string) => basename(filePath, extname(filePath));
-
-const getGridparkRoot = (filePath: string) =>
-  join(dirname(filePath), GRIDPARK_DIRNAME, getWorkbookName(filePath));
-
-const normalizeRelativePath = (relativePath: string) =>
-  relativePath.replace(/^[./\\]+/, '').replace(/\\/g, '/');
-
-const detectLanguageFromExtension = (fileName: string): GridparkCodeLanguage => {
-  if (fileName.endsWith('.css')) return 'css';
-  if (fileName.endsWith('.json')) return 'json';
-  if (fileName.endsWith('.txt')) return 'text';
-  return 'javascript';
-};
-
-const ensurePathInsideRoot = (targetPath: string, rootDir: string) => {
-  const normalizedRoot = normalize(rootDir);
-  const normalizedTarget = normalize(targetPath);
-  const rel = relative(normalizedRoot, normalizedTarget);
-  return rel !== '' ? !rel.startsWith('..') && !isAbsolute(rel) : true;
-};
-
-const createGridparkPackage = (
-  filePath: string,
-  manifest?: GridparkManifest
-): GridparkPackage | undefined => {
-  if (!manifest) return undefined;
-  const rootDir = getGridparkRoot(filePath);
-  const files: GridparkCodeFile[] = [];
-  const manifestPath = join(rootDir, 'manifest.json');
-
-  const pushFile = (
-    scope: GridparkCodeFile['scope'],
-    role: GridparkCodeFile['role'],
-    relativePath: string,
-    sheetName?: string
-  ) => {
-    if (!relativePath) return;
-    const sanitizedRelative = normalizeRelativePath(relativePath);
-    const absolutePath = normalize(join(rootDir, sanitizedRelative));
-    files.push({
-      id: `${scope}-${role}-${sheetName || 'root'}-${sanitizedRelative}`,
-      name: sanitizedRelative.split('/').pop() || sanitizedRelative,
-      relativePath: sanitizedRelative,
-      absolutePath,
-      rootDir,
-      scope,
-      role,
-      sheetName,
-      language: detectLanguageFromExtension(sanitizedRelative),
-      exists: existsSync(absolutePath),
-    });
-  };
-
-  if (manifest.script) {
-    pushFile('workbook', 'main', manifest.script);
-  }
-  if (manifest.style) {
-    pushFile('workbook', 'style', manifest.style);
-  }
-
-  Object.values(manifest.sheets ?? {}).forEach(sheet => {
-    if (sheet.script) pushFile('sheet', 'main', sheet.script, sheet.name);
-    if (sheet.style) pushFile('sheet', 'style', sheet.style, sheet.name);
-  });
-
-  return { rootDir, manifestPath, files };
-};
 
 const createMainWindow = (): void => {
   const window = new BrowserWindow({
@@ -207,145 +130,6 @@ ipcMain.on('app:set-title', (event, title: string) => {
   }
 });
 
-type GridparkFilePayload = {
-  path: string;
-  rootDir: string;
-};
-
-type GridparkWritePayload = GridparkFilePayload & { content: string };
-type GridparkBinaryWritePayload = GridparkFilePayload & { data: Uint8Array };
-
-ipcMain.handle('gridpark:read-file', async (_event, payload: GridparkFilePayload) => {
-  try {
-    if (!payload?.path || !payload?.rootDir) {
-      return { success: false, error: 'Invalid file payload.' };
-    }
-    if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
-      return { success: false, error: 'Access denied for requested file.' };
-    }
-    if (!existsSync(payload.path)) {
-      return { success: true, content: '' };
-    }
-    const content = readFileSync(payload.path, 'utf-8');
-    return { success: true, content };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-});
-
-ipcMain.handle('gridpark:write-file', async (_event, payload: GridparkWritePayload) => {
-  try {
-    if (!payload?.path || !payload?.rootDir) {
-      return { success: false, error: 'Invalid file payload.' };
-    }
-    if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
-      return { success: false, error: 'Access denied for requested file.' };
-    }
-    const targetDir = dirname(payload.path);
-    if (!existsSync(targetDir)) {
-      mkdirSync(targetDir, { recursive: true });
-    }
-    writeFileSync(payload.path, payload.content ?? '', 'utf-8');
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-});
-
-ipcMain.handle(
-  'gridpark:write-binary-file',
-  async (_event, payload: GridparkBinaryWritePayload) => {
-    try {
-      if (!payload?.path || !payload?.rootDir || !payload?.data) {
-        return { success: false, error: 'Invalid file payload.' };
-      }
-      if (!ensurePathInsideRoot(payload.path, payload.rootDir)) {
-        return { success: false, error: 'Access denied for requested file.' };
-      }
-      const targetDir = dirname(payload.path);
-      if (!existsSync(targetDir)) {
-        mkdirSync(targetDir, { recursive: true });
-      }
-      const buffer = Buffer.from(payload.data);
-      writeFileSync(payload.path, buffer);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }
-);
-
-const loadManifestForFile = (filePath: string): GridparkManifest | undefined => {
-  try {
-    const manifestPath = join(getGridparkRoot(filePath), 'manifest.json');
-    if (!existsSync(manifestPath)) return undefined;
-    const raw = readFileSync(manifestPath, 'utf-8');
-    return JSON.parse(raw);
-  } catch (error) {
-    console.warn('Failed to load manifest for', filePath, error);
-    return undefined;
-  }
-};
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '') || 'sheet';
-
-const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
-  try {
-    const manifestDir = getGridparkRoot(filePath);
-    const manifestPath = join(manifestDir, 'manifest.json');
-    if (existsSync(manifestPath)) {
-      return;
-    }
-    if (!existsSync(manifestDir)) {
-      mkdirSync(manifestDir, { recursive: true });
-    }
-
-    const sheets: Record<string, { name: string; main: string; style: string }> = {};
-    workbook.sheets.forEach((sheet, index) => {
-      const slug = slugify(sheet.name);
-      const key = `sheet-${index + 1}`;
-      sheets[key] = {
-        name: sheet.name,
-        script: `sheets/${slug}/script.js`,
-        style: `sheets/${slug}/style.css`,
-      };
-    });
-
-    const manifest = {
-      name: workbook.name || workbookName,
-      version: '1.0.0',
-      description: '',
-      apiVersion: 1,
-      script: 'script.js',
-      style: 'style.css',
-      sheets,
-      permissions: {
-        filesystem: 'workbook',
-        network: false,
-        runtime: [],
-      },
-    };
-
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-    console.log('Generated manifest for', workbookName);
-  } catch (error) {
-    console.warn('Failed to ensure manifest for', filePath, error);
-  }
-};
-
 const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null> => {
   try {
     const buffer = readFileSync(filePath);
@@ -354,13 +138,12 @@ const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null
       buffer.byteOffset + buffer.byteLength
     );
     const workbook = await parseExcelFile(arrayBuffer, basename(filePath));
-    ensureManifestForFile(filePath, workbook);
-    const manifest = loadManifestForFile(filePath);
-    const gridparkPackage = createGridparkPackage(filePath, manifest);
-    return { ...workbook, path: filePath, manifest, gridparkPackage };
+    return { ...workbook, path: filePath };
   } catch (error) {
     console.error('Failed to load Excel file:', filePath, error);
     return null;
+  }
+};
   }
 };
 
