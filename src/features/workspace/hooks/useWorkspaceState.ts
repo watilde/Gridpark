@@ -22,7 +22,6 @@ import {
   useCodeSessions,
 } from '../../../renderer/hooks/useFileSessions';
 import { useFormulaBarOptimized } from '../../../renderer/hooks/useFormulaBarOptimized';
-import { useManifestHandlers } from '../../../renderer/hooks/useManifestHandlers';
 import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
 import { useAutoSave } from './useAutoSave';
 import { cloneManifest, createDefaultManifest } from '../../../renderer/utils/sessionHelpers';
@@ -200,14 +199,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   // Manifest Handlers
   // ============================================
 
-  const { handleManifestChange, handleSaveManifest: manifestSaveHandler } = useManifestHandlers({
-    manifestSessions,
-    setManifestSessions,
-    getManifestSessionKey,
-    readManifestFile,
-    updateWorkbookReferences,
-    // createDefaultManifest,
-  });
 
   // ============================================
   // Save Manager (Simplified - Dirty tracking is now in Dexie)

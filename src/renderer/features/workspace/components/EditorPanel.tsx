@@ -3,7 +3,6 @@ import Box from '@mui/joy/Box';
 import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
 import {
-  // SheetSessionState,
   SearchNavigationCommand,
   ReplaceCommand,
   FormulaCommitCommand,
@@ -13,50 +12,19 @@ import {
   ExcelViewerDexie,
   ExcelViewerDexieHandle,
 } from '../../workbook/components/ExcelViewerDexie';
-import { CodeEditorPanel, CodeEditorPanelHandle } from '../../code-editor/CodeEditorPanel';
-import { ManifestEditorPanel } from '../../manifest-editor/ManifestEditorPanel';
 import { FormulaBar } from '../../formula-bar/FormulaBar';
 import { SpreadsheetToolbar } from '../../toolbar/SpreadsheetToolbar';
 import { WorkbookTab } from '../../../types/tabs';
-import {
-  ExcelFile,
-  CellPosition,
-  CellRange,
-  GridparkManifest,
-  GridparkCodeFile,
-} from '../../../types/excel';
-import { ManifestSession } from '../../../hooks/useFileSessions';
+import { CellPosition, CellRange } from '../../../types/excel';
 
 interface EditorPanelProps {
   activeTab: WorkbookTab | null;
-  activeSheetSession?: SheetSessionState; // DEPRECATED: kept for type compatibility
-  activeCodeSession?: {
-    content: string;
-    originalContent: string;
-    loading: boolean;
-    saving: boolean;
-    error?: string;
-  };
-  activeManifestSession?: ManifestSession;
-  manifestEditorData: GridparkManifest | null;
-  manifestIsDirty: boolean;
-  canEditManifest: boolean;
   platformCapabilities: any;
   // Sheet handlers
-  onSessionChange?: (state: SheetSessionState) => void; // DEPRECATED: no longer used
-  onSaveSession?: (state: SheetSessionState) => void; // DEPRECATED: no longer used
   onDirtyChange: (dirty: boolean) => void;
   onCellSelect: (position: CellPosition) => void;
   onRangeSelect: (range: CellRange) => void;
   onActiveCellDetails: (details: ActiveCellDetails) => void;
-  // Manifest handlers
-  onManifestChange: (workbookId: string, file: ExcelFile, next: GridparkManifest) => void;
-  onSaveManifest: (workbookId: string, file: ExcelFile) => void;
-  onReloadManifest: (file: ExcelFile) => void;
-  // Code handlers
-  onCodeChange: (codeFile: GridparkCodeFile, value: string) => void;
-  onSaveCode: (codeFile: GridparkCodeFile) => void;
-  onCloseCodeTab: (tabId: string) => void;
   // Shared state
   sheetSearchQuery: string;
   searchNavigation?: SearchNavigationCommand;
@@ -67,7 +35,6 @@ interface EditorPanelProps {
 
 /**
  * Ref handle exposed by EditorPanel
- * Currently only supports code editor undo/redo
  */
 export interface EditorPanelHandle {
   /**
@@ -92,25 +59,11 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
   (
     {
       activeTab,
-      _activeSheetSession, // DEPRECATED: unused
-      activeCodeSession,
-      activeManifestSession,
-      manifestEditorData,
-      manifestIsDirty,
-      canEditManifest,
       platformCapabilities,
-      _onSessionChange, // DEPRECATED: unused
-      _onSaveSession, // DEPRECATED: unused
       onDirtyChange,
       onCellSelect,
       onRangeSelect,
       onActiveCellDetails,
-      onManifestChange,
-      onSaveManifest,
-      onReloadManifest,
-      onCodeChange,
-      onSaveCode,
-      onCloseCodeTab,
       sheetSearchQuery,
       searchNavigation,
       replaceCommand,
@@ -119,7 +72,6 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
     },
     ref
   ) => {
-    const codeEditorRef = useRef<CodeEditorPanelHandle>(null);
     const sheetViewerRef = useRef<ExcelViewerDexieHandle>(null);
     
     // Track selected cell/range for toolbar
@@ -140,45 +92,25 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
     };
 
     // Expose undo/redo methods via ref
-    // Supports both code editor and sheet viewer
     useImperativeHandle(
       ref,
       () => ({
         undo: () => {
-          if (activeTab?.kind === 'code') {
-            codeEditorRef.current?.undo();
-          } else if (activeTab?.kind === 'sheet') {
-            sheetViewerRef.current?.undo();
-          }
+          sheetViewerRef.current?.undo();
         },
         redo: () => {
-          if (activeTab?.kind === 'code') {
-            codeEditorRef.current?.redo();
-          } else if (activeTab?.kind === 'sheet') {
-            sheetViewerRef.current?.redo();
-          }
+          sheetViewerRef.current?.redo();
         },
         canUndo: () => {
-          // No logging here - called every 200ms
-          if (activeTab?.kind === 'code') {
-            return codeEditorRef.current?.canUndo() ?? false;
-          } else if (activeTab?.kind === 'sheet') {
-            return sheetViewerRef.current?.canUndo() ?? false;
-          }
-          return false;
+          return sheetViewerRef.current?.canUndo() ?? false;
         },
         canRedo: () => {
-          // No logging here - called every 200ms
-          if (activeTab?.kind === 'code') {
-            return codeEditorRef.current?.canRedo() ?? false;
-          } else if (activeTab?.kind === 'sheet') {
-            return sheetViewerRef.current?.canRedo() ?? false;
-          }
-          return false;
+          return sheetViewerRef.current?.canRedo() ?? false;
         },
       }),
-      [activeTab]
+      []
     );
+
     if (!activeTab) {
       return (
         <Sheet
@@ -192,7 +124,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
           }}
         >
           <Typography level="body-md" sx={{ color: 'neutral.500' }}>
-            Open a sheet, manifest, or code file from the file tree.
+            Open a sheet from the file tree.
           </Typography>
         </Sheet>
       );
@@ -227,59 +159,8 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
       );
     }
 
-    if (activeTab.kind === 'manifest' && manifestEditorData) {
-      return (
-        <ManifestEditorPanel
-          manifest={manifestEditorData}
-          loading={Boolean(activeManifestSession?.loading) && !manifestIsDirty}
-          saving={Boolean(activeManifestSession?.saving)}
-          isDirty={manifestIsDirty}
-          error={activeManifestSession?.error}
-          editable={canEditManifest}
-          platformCapabilities={{
-            platform: platformCapabilities.platform as 'electron' | 'web',
-            canAccessFileSystem: platformCapabilities.canAccessFileSystem,
-            canWorkOffline: platformCapabilities.canWorkOffline,
-            hasNativeMenus: platformCapabilities.hasNativeMenus,
-            canManageWindows: platformCapabilities.canManageWindows,
-            hasSystemIntegration: platformCapabilities.hasSystemIntegration,
-            canAutoUpdate: platformCapabilities.canAutoUpdate,
-            hasNativeNotifications: platformCapabilities.hasNativeNotifications,
-            canAccessClipboard: platformCapabilities.canAccessClipboard,
-          }}
-          onChange={next => onManifestChange(activeTab.workbookId, activeTab.file, next)}
-          onSave={() => onSaveManifest(activeTab.workbookId, activeTab.file)}
-          onReload={() => onReloadManifest(activeTab.file)}
-        />
-      );
-    }
-
-    if (activeTab.kind === 'code') {
-      const isDirty = activeCodeSession
-        ? activeCodeSession.content !== activeCodeSession.originalContent
-        : false;
-
-      return (
-        <CodeEditorPanel
-          ref={codeEditorRef}
-          codeFile={activeTab.codeFile}
-          content={activeCodeSession?.content ?? ''}
-          loading={activeCodeSession ? activeCodeSession.loading : true}
-          saving={activeCodeSession ? activeCodeSession.saving : false}
-          isDirty={isDirty}
-          error={activeCodeSession?.error}
-          onChange={value => {
-            onCodeChange(activeTab.codeFile, value);
-            // Mark tab as dirty when code changes (similar to sheet's onDirtyChange)
-            const willBeDirty = value !== activeCodeSession?.originalContent;
-            onDirtyChange(willBeDirty);
-          }}
-          onSave={() => onSaveCode(activeTab.codeFile)}
-          onCloseTab={() => onCloseCodeTab(activeTab.id)}
-        />
-      );
-    }
-
     return null;
   }
 );
+
+EditorPanel.displayName = 'EditorPanel';
