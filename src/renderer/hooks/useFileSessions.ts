@@ -93,8 +93,8 @@ export const useSaveWorkbook = () => {
 
       const updatedFile = { ...file, sheets: updatedSheets };
 
-      // Serialize and write
-      const buffer = serializeExcelFile(updatedFile);
+      // Serialize and write (ExcelJS-powered for full style support)
+      const buffer = await serializeExcelFile(updatedFile);
       await gridparkApi.writeBinaryFile({
         path: file.path,
         rootDir: file.path,

@@ -1,63 +1,22 @@
-import * as XLSX from 'xlsx';
+// ExcelJS is now the primary Excel library (full style support)
 import { ExcelFile, ExcelSheet, CellData } from '../types/excel';
 
 /**
- * Parse Excel file from ArrayBuffer
+ * Parse Excel file from ArrayBuffer (ExcelJS-powered for full style support)
  */
-export const parseExcelFile = (arrayBuffer: ArrayBuffer, fileName: string): ExcelFile => {
-  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-
-  const sheets: ExcelSheet[] = workbook.SheetNames.map(sheetName => {
-    const worksheet = workbook.Sheets[sheetName];
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-
-    const rowCount = range.e.r + 1;
-    const colCount = range.e.c + 1;
-
-    const data: CellData[][] = [];
-
-    for (let row = 0; row < rowCount; row++) {
-      const rowData: CellData[] = [];
-      for (let col = 0; col < colCount; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-        const cell = worksheet[cellAddress];
-
-        if (!cell) {
-          rowData.push({
-            value: null,
-            type: 'empty',
-          });
-        } else {
-          const cellData: CellData = {
-            value: cell.v,
-            type: 'string',
-          };
-
-          // Determine cell type
-          if (cell.f) {
-            cellData.type = 'formula';
-            cellData.formula = cell.f;
-          } else if (cell.t === 'n') {
-            cellData.type = 'number';
-          } else if (cell.t === 'b') {
-            cellData.type = 'boolean';
-          } else if (cell.t === 's') {
-            cellData.type = 'string';
-          }
-
-          rowData.push(cellData);
-        }
-      }
-      data.push(rowData);
-    }
-
-    return {
-      name: sheetName,
-      data,
-      rowCount,
-      colCount,
-    };
-  });
+export const parseExcelFile = async (arrayBuffer: ArrayBuffer, fileName: string): Promise<ExcelFile> => {
+  // Use ExcelJS for full style support
+  const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
+  
+  const result = await ExcelJSAdapter.readWorkbook(arrayBuffer);
+  
+  const sheets: ExcelSheet[] = result.sheets.map(sheet => ({
+    name: sheet.name,
+    data: sheet.data,
+    rowCount: sheet.data.length,
+    colCount: sheet.data[0]?.length ?? 0,
+    properties: sheet.properties,
+  }));
 
   return {
     name: fileName,
@@ -191,15 +150,15 @@ const normalizeCellValue = (cell: CellData): any => {
   return cell.value ?? '';
 };
 
-export const serializeExcelFile = (file: ExcelFile): ArrayBuffer => {
-  const workbook = XLSX.utils.book_new();
-  file.sheets.forEach(sheet => {
-    const data =
-      sheet.data.length > 0
-        ? sheet.data.map(row => row.map(cell => normalizeCellValue(cell)))
-        : [[]];
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name || 'Sheet');
-  });
-  return XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+export const serializeExcelFile = async (file: ExcelFile): Promise<ArrayBuffer> => {
+  // Use ExcelJS for full style support
+  const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
+  
+  const sheets = file.sheets.map(sheet => ({
+    name: sheet.name || 'Sheet',
+    data: sheet.data,
+    properties: sheet.properties,
+  }));
+  
+  return await ExcelJSAdapter.writeWorkbook(sheets);
 };

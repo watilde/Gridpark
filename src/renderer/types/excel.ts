@@ -59,13 +59,20 @@ export interface ExcelSheet {
   data: CellData[][];
   rowCount: number;
   colCount: number;
+  properties?: any;  // ExcelSheetProperties from exceljs-types
 }
 
 export interface CellData {
-  value: string | number | boolean | null;
-  type: 'string' | 'number' | 'boolean' | 'formula' | 'empty';
+  value: string | number | boolean | null | Date;
+  type: 'string' | 'number' | 'boolean' | 'formula' | 'empty' | 'date' | 'error' | 'richText';
   formula?: string;
-  style?: CellStyle;
+  style?: CellStyle;  // Legacy CSS-style (for backwards compatibility)
+  // ExcelJS extensions (imported lazily to avoid circular deps)
+  richText?: any[];  // ExcelRichTextFragment[]
+  merge?: any;  // ExcelMergeInfo
+  dataValidation?: any;  // ExcelDataValidation
+  note?: any;  // Note/Comment
+  hyperlink?: any;  // Hyperlink info
 }
 
 export interface CellStyle {
