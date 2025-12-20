@@ -11,6 +11,7 @@ import tokyoNightPreset from './tokyoNight';
 import nordPreset from './nord';
 import catppuccinPreset from './catppuccin';
 import ayuPreset from './ayu';
+import { vscodePreset } from './vscode';
 
 export const themePresets: Record<ThemePresetId, ThemePreset> = {
   gridpark: gridparkPreset,
@@ -24,6 +25,7 @@ export const themePresets: Record<ThemePresetId, ThemePreset> = {
   nord: nordPreset,
   catppuccin: catppuccinPreset,
   ayu: ayuPreset,
+  vscode: vscodePreset,
 };
 
 export const themePresetList = Object.values(themePresets);

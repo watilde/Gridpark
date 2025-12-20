@@ -27,7 +27,8 @@ export type ThemePresetId =
   | 'tokyoNight'
   | 'nord'
   | 'catppuccin'
-  | 'ayu';
+  | 'ayu'
+  | 'vscode';
 
 export type ThemePreset = {
   id: ThemePresetId;
