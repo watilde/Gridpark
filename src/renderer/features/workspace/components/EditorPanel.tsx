@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useImperativeHandle } from 'react';
+import React, { forwardRef, useRef, useImperativeHandle, useState } from 'react';
 import Box from '@mui/joy/Box';
 import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
@@ -16,6 +16,7 @@ import {
 import { CodeEditorPanel, CodeEditorPanelHandle } from '../../code-editor/CodeEditorPanel';
 import { ManifestEditorPanel } from '../../manifest-editor/ManifestEditorPanel';
 import { FormulaBar } from '../../formula-bar/FormulaBar';
+import { SpreadsheetToolbar } from '../../toolbar/SpreadsheetToolbar';
 import { WorkbookTab } from '../../../types/tabs';
 import {
   ExcelFile,
@@ -120,6 +121,23 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
   ) => {
     const codeEditorRef = useRef<CodeEditorPanelHandle>(null);
     const sheetViewerRef = useRef<ExcelViewerDexieHandle>(null);
+    
+    // Track selected cell/range for toolbar
+    const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
+    const [selectedRange, setSelectedRange] = useState<CellRange | null>(null);
+    
+    // Wrap cell/range selection handlers to update toolbar state
+    const handleCellSelect = (position: CellPosition) => {
+      setSelectedCell(position);
+      setSelectedRange(null);
+      onCellSelect(position);
+    };
+    
+    const handleRangeSelect = (range: CellRange) => {
+      setSelectedRange(range);
+      setSelectedCell(null);
+      onRangeSelect(range);
+    };
 
     // Expose undo/redo methods via ref
     // Supports both code editor and sheet viewer
@@ -184,6 +202,11 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <FormulaBar formulaBarState={formulaBarState} />
+          <SpreadsheetToolbar
+            tabId={activeTab.id}
+            selectedCell={selectedCell}
+            selectedRange={selectedRange}
+          />
           <Box sx={{ flex: 1, minHeight: 0 }}>
             <ExcelViewerDexie
               ref={sheetViewerRef}
@@ -191,8 +214,8 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
               file={activeTab.file}
               sheetIndex={activeTab.sheetIndex}
               onDirtyChange={onDirtyChange}
-              onCellSelect={onCellSelect}
-              onRangeSelect={onRangeSelect}
+              onCellSelect={handleCellSelect}
+              onRangeSelect={handleRangeSelect}
               searchQuery={sheetSearchQuery}
               searchNavigation={searchNavigation}
               replaceCommand={replaceCommand}

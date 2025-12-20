@@ -8,7 +8,7 @@
  * - Font Color picker
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   IconButton,
@@ -24,8 +24,10 @@ import {
   FormatUnderlined as UnderlineIcon,
   StrikethroughS as StrikeIcon,
   FormatColorText as FontColorIcon,
+  FormatColorFill as FillColorIcon,
 } from '@mui/icons-material';
 import { ExcelFont } from '../../../lib/exceljs-types';
+import { ColorPickerButton } from '../../components/ui/ColorPicker';
 
 // ============================================================================
 // Styled Components
@@ -86,9 +88,19 @@ export interface FontToolbarProps {
   currentFont?: Partial<ExcelFont>;
   
   /**
+   * Current fill color (background)
+   */
+  currentFillColor?: string;
+  
+  /**
    * Callback when font changes
    */
   onFontChange?: (font: Partial<ExcelFont>) => void;
+  
+  /**
+   * Callback when fill color changes
+   */
+  onFillColorChange?: (color: string) => void;
   
   /**
    * Disabled state
@@ -99,6 +111,16 @@ export interface FontToolbarProps {
    * Compact mode (smaller controls)
    */
   compact?: boolean;
+  
+  /**
+   * Recent colors for picker
+   */
+  recentColors?: string[];
+  
+  /**
+   * Callback when recent colors change
+   */
+  onRecentColorsChange?: (colors: string[]) => void;
 }
 
 // ============================================================================
@@ -107,18 +129,27 @@ export interface FontToolbarProps {
 
 export const FontToolbar: React.FC<FontToolbarProps> = ({
   currentFont = {},
+  currentFillColor,
   onFontChange,
+  onFillColorChange,
   disabled = false,
   compact = false,
+  recentColors = [],
+  onRecentColorsChange,
 }) => {
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  
   const fontFamily = currentFont.name || 'Calibri';
   const fontSize = currentFont.size || 11;
   const isBold = currentFont.bold || false;
   const isItalic = currentFont.italic || false;
   const isUnderline = currentFont.underline || false;
   const isStrike = currentFont.strike || false;
+  
+  // Convert ARGB to hex for color picker
+  const fontColor = currentFont.color?.argb 
+    ? `#${currentFont.color.argb.substring(2)}` 
+    : '#000000';
+  
+  const fillColor = currentFillColor || '#FFFFFF';
   
   // ========================================================================
   // Handlers
@@ -163,12 +194,20 @@ export const FontToolbar: React.FC<FontToolbarProps> = ({
   
   const handleFontColorChange = (color: string) => {
     if (onFontChange) {
+      // Convert hex to ARGB
+      const argb = `FF${color.substring(1)}`;
       onFontChange({ 
         ...currentFont, 
-        color: { argb: color }
+        color: { argb }
       });
     }
   };
+  
+  const handleFillColorChange = useCallback((color: string) => {
+    if (onFillColorChange) {
+      onFillColorChange(color);
+    }
+  }, [onFillColorChange]);
   
   // ========================================================================
   // Render
@@ -267,18 +306,27 @@ export const FontToolbar: React.FC<FontToolbarProps> = ({
         </Tooltip>
       </ButtonGroup>
       
-      {/* Font Color - Will be replaced with color picker in next step */}
-      <Tooltip title="Font Color" placement="bottom">
-        <IconButton
-          onClick={() => setShowColorPicker(!showColorPicker)}
-          disabled={disabled}
-          color="neutral"
-          variant="outlined"
-          size={compact ? 'sm' : 'md'}
-        >
-          <FontColorIcon />
-        </IconButton>
-      </Tooltip>
+      {/* Font Color Picker */}
+      <ColorPickerButton
+        icon={<FontColorIcon />}
+        value={fontColor}
+        onChange={handleFontColorChange}
+        disabled={disabled}
+        size={compact ? 'sm' : 'md'}
+        recentColors={recentColors}
+        onRecentColorsChange={onRecentColorsChange}
+      />
+      
+      {/* Fill Color Picker */}
+      <ColorPickerButton
+        icon={<FillColorIcon />}
+        value={fillColor}
+        onChange={handleFillColorChange}
+        disabled={disabled}
+        size={compact ? 'sm' : 'md'}
+        recentColors={recentColors}
+        onRecentColorsChange={onRecentColorsChange}
+      />
     </ToolbarGroup>
   );
 };
