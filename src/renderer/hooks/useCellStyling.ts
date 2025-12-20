@@ -9,8 +9,8 @@
  */
 
 import { useCallback } from 'react';
-import { db, CellStyleData } from '../../../lib/db';
-import { ExcelCellStyle, ExcelFont, ExcelFill, ExcelBorder, ExcelAlignment } from '../../../lib/exceljs-types';
+import { db, CellStyleData } from '../../lib/db';
+import { ExcelCellStyle, ExcelFont, ExcelFill, ExcelBorder, ExcelAlignment } from '../../lib/exceljs-types';
 
 // ============================================================================
 // Convert between ExcelJS style and our storage format
