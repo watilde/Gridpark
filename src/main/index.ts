@@ -346,14 +346,14 @@ const ensureManifestForFile = (filePath: string, workbook: ExcelFile) => {
   }
 };
 
-const loadExcelFileFromPath = (filePath: string): ExcelFile | null => {
+const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null> => {
   try {
     const buffer = readFileSync(filePath);
     const arrayBuffer = buffer.buffer.slice(
       buffer.byteOffset,
       buffer.byteOffset + buffer.byteLength
     );
-    const workbook = parseExcelFile(arrayBuffer, basename(filePath));
+    const workbook = await parseExcelFile(arrayBuffer, basename(filePath));
     ensureManifestForFile(filePath, workbook);
     const manifest = loadManifestForFile(filePath);
     const gridparkPackage = createGridparkPackage(filePath, manifest);
@@ -378,8 +378,7 @@ const handleOpenFiles = async (window: BrowserWindow) => {
     filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
   });
   if (canceled || !filePaths.length) return;
-  const files = filePaths
-    .map(loadExcelFileFromPath)
+  const files = (await Promise.all(filePaths.map(loadExcelFileFromPath)))
     .filter((_file): file is ExcelFile => Boolean(_file));
   sendFilesToRenderer(window, { files, directoryName: undefined });
 };
@@ -400,8 +399,7 @@ const handleOpenFolder = async (window: BrowserWindow) => {
         return false;
       }
     });
-  const files = excelPaths
-    .map(loadExcelFileFromPath)
+  const files = (await Promise.all(excelPaths.map(loadExcelFileFromPath)))
     .filter((_file): file is ExcelFile => Boolean(_file));
   sendFilesToRenderer(window, { files, directoryName: basename(folderPath) });
 };
@@ -501,7 +499,7 @@ ipcMain.handle('excel:create-new-file', async () => {
     await workbook.xlsx.writeFile(filePath);
 
     // Load the created file and return it
-    const createdFile = loadExcelFileFromPath(filePath);
+    const createdFile = await loadExcelFileFromPath(filePath);
     if (!createdFile) {
       return { success: false, error: 'Failed to load created file' };
     }
@@ -543,8 +541,7 @@ ipcMain.handle('excel:open-file', async () => {
       return { success: false, canceled: true };
     }
 
-    const files = filePaths
-      .map(loadExcelFileFromPath)
+    const files = (await Promise.all(filePaths.map(loadExcelFileFromPath)))
       .filter((file): file is ExcelFile => Boolean(file));
 
     if (!files.length) {
@@ -610,8 +607,7 @@ ipcMain.handle('excel:open-folder', async () => {
       };
     }
 
-    const files = excelPaths
-      .map(loadExcelFileFromPath)
+    const files = (await Promise.all(excelPaths.map(loadExcelFileFromPath)))
       .filter((file): file is ExcelFile => Boolean(file));
 
     if (!files.length) {
