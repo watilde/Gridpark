@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } from 'electron
 import type { AboutPanelOptionsOptions } from 'electron';
 import { join, basename, extname, dirname, normalize, relative, isAbsolute } from 'path';
 import { readFileSync, readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'fs';
-import { parseExcelFile } from '../renderer/utils/excelUtils';
+import ExcelJS from 'exceljs';
+import { parseExcelFile, serializeExcelFile } from '../renderer/utils/excelUtils';
 import {
   ExcelFile,
   GridparkManifest,
@@ -460,3 +461,177 @@ const setupMenu = (window: BrowserWindow) => {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 };
+
+// ============================================================================
+// New File Operations (ExcelJS Integration)
+// ============================================================================
+
+/**
+ * Create New Excel File
+ * Shows save dialog and creates an empty workbook with one sheet
+ */
+ipcMain.handle('excel:create-new-file', async () => {
+  try {
+    const mainWindow = BrowserWindow.getFocusedWindow();
+    if (!mainWindow) {
+      return { success: false, error: 'No active window' };
+    }
+
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Create New Excel File',
+      defaultPath: 'Untitled.xlsx',
+      filters: [{ name: 'Excel Files', extensions: ['xlsx'] }],
+      properties: ['createDirectory', 'showOverwriteConfirmation'],
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, canceled: true };
+    }
+
+    // Create a new workbook with ExcelJS
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Gridpark';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    // Add a default sheet
+    const worksheet = workbook.addWorksheet('Sheet1');
+
+    // Write the file
+    await workbook.xlsx.writeFile(filePath);
+
+    // Load the created file and return it
+    const createdFile = loadExcelFileFromPath(filePath);
+    if (!createdFile) {
+      return { success: false, error: 'Failed to load created file' };
+    }
+
+    // Send to renderer
+    sendFilesToRenderer(mainWindow, { files: [createdFile] });
+
+    return {
+      success: true,
+      file: createdFile,
+    };
+  } catch (error) {
+    console.error('Failed to create new file:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+/**
+ * Open Excel File(s)
+ * Shows open dialog and loads selected files
+ */
+ipcMain.handle('excel:open-file', async () => {
+  try {
+    const mainWindow = BrowserWindow.getFocusedWindow();
+    if (!mainWindow) {
+      return { success: false, error: 'No active window' };
+    }
+
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Open Excel File',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
+    });
+
+    if (canceled || !filePaths.length) {
+      return { success: false, canceled: true };
+    }
+
+    const files = filePaths
+      .map(loadExcelFileFromPath)
+      .filter((file): file is ExcelFile => Boolean(file));
+
+    if (!files.length) {
+      return { success: false, error: 'No valid Excel files found' };
+    }
+
+    // Send to renderer
+    sendFilesToRenderer(mainWindow, { files });
+
+    return {
+      success: true,
+      files,
+      count: files.length,
+    };
+  } catch (error) {
+    console.error('Failed to open file:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+/**
+ * Open Folder
+ * Shows folder dialog and loads all Excel files in the folder
+ */
+ipcMain.handle('excel:open-folder', async () => {
+  try {
+    const mainWindow = BrowserWindow.getFocusedWindow();
+    if (!mainWindow) {
+      return { success: false, error: 'No active window' };
+    }
+
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Open Folder',
+      properties: ['openDirectory'],
+    });
+
+    if (canceled || !filePaths.length) {
+      return { success: false, canceled: true };
+    }
+
+    const folderPath = filePaths[0];
+    const folderName = basename(folderPath);
+
+    // Find all Excel files in the folder (non-recursive)
+    const excelPaths = readdirSync(folderPath)
+      .map(entry => join(folderPath, entry))
+      .filter(fullPath => {
+        try {
+          const stats = statSync(fullPath);
+          return stats.isFile() && ['.xlsx', '.xls'].includes(extname(fullPath).toLowerCase());
+        } catch {
+          return false;
+        }
+      });
+
+    if (!excelPaths.length) {
+      return {
+        success: false,
+        error: 'No Excel files found in the selected folder',
+      };
+    }
+
+    const files = excelPaths
+      .map(loadExcelFileFromPath)
+      .filter((file): file is ExcelFile => Boolean(file));
+
+    if (!files.length) {
+      return { success: false, error: 'Failed to load Excel files' };
+    }
+
+    // Send to renderer
+    sendFilesToRenderer(mainWindow, { files, directoryName: folderName });
+
+    return {
+      success: true,
+      files,
+      folderName,
+      count: files.length,
+    };
+  } catch (error) {
+    console.error('Failed to open folder:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});

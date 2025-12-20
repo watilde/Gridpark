@@ -116,10 +116,66 @@ const StatusItem = styled(Box)({
 
 export const VSCodeLayoutDemo: React.FC = () => {
   const [activeView, setActiveView] = useState<ActivityBarView>('excel');
+  const [files, setFiles] = useState<ExcelFile[]>(demoFiles);
   const [activeFileId, setActiveFileId] = useState<string>('file1');
   const [activeSheetId, setActiveSheetId] = useState<string>('sheet1-1');
 
-  const activeFile = demoFiles.find(f => f.id === activeFileId);
+  // File operations hook
+  const {
+    createNewFile,
+    openFile,
+    openFolder,
+    isProcessing,
+    lastError,
+    lastCreatedFile,
+    lastOpenedFiles,
+    lastFolderName,
+  } = useExcelFileOperations();
+
+  // Listen for files opened from Electron
+  useEffect(() => {
+    if (!window.electronAPI?.onFilesOpened) return;
+
+    const unsubscribe = window.electronAPI.onFilesOpened((payload) => {
+      console.log('Files opened from Electron:', payload);
+      if (payload.files && Array.isArray(payload.files)) {
+        setFiles(payload.files as ExcelFile[]);
+        // Select first file
+        if (payload.files.length > 0) {
+          const firstFile = payload.files[0] as ExcelFile;
+          setActiveFileId(firstFile.id);
+          if (firstFile.sheets.length > 0) {
+            setActiveSheetId(firstFile.sheets[0].id);
+          }
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Update files when operations complete
+  useEffect(() => {
+    if (lastCreatedFile) {
+      setFiles(prev => [lastCreatedFile, ...prev]);
+      setActiveFileId(lastCreatedFile.id);
+      if (lastCreatedFile.sheets.length > 0) {
+        setActiveSheetId(lastCreatedFile.sheets[0].id);
+      }
+    }
+  }, [lastCreatedFile]);
+
+  useEffect(() => {
+    if (lastOpenedFiles.length > 0) {
+      setFiles(lastOpenedFiles);
+      setActiveFileId(lastOpenedFiles[0].id);
+      if (lastOpenedFiles[0].sheets.length > 0) {
+        setActiveSheetId(lastOpenedFiles[0].sheets[0].id);
+      }
+    }
+  }, [lastOpenedFiles]);
+
+  const activeFile = files.find(f => f.id === activeFileId);
   const activeSheet = activeFile?.sheets.find(s => s.id === activeSheetId);
 
   const renderSidebar = () => {
@@ -168,6 +224,24 @@ export const VSCodeLayoutDemo: React.FC = () => {
       <MainArea>
         {/* Content */}
         <ContentArea>
+          {lastError && (
+            <Alert color="danger" sx={{ mb: 2 }}>
+              <strong>Error:</strong> {lastError}
+            </Alert>
+          )}
+          
+          {isProcessing && (
+            <Alert color="primary" sx={{ mb: 2 }}>
+              Processing file operation...
+            </Alert>
+          )}
+          
+          {lastFolderName && (
+            <Alert color="success" sx={{ mb: 2 }}>
+              Opened folder: <strong>{lastFolderName}</strong> ({files.length} files)
+            </Alert>
+          )}
+          
           <Typography level="h2" sx={{ mb: 2 }}>
             {activeFile?.name || 'No File Selected'}
           </Typography>
@@ -197,6 +271,9 @@ export const VSCodeLayoutDemo: React.FC = () => {
           >
             <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
               📊 Spreadsheet viewer will be rendered here
+            </Typography>
+            <Typography level="body-sm" sx={{ color: 'text.secondary', mt: 1 }}>
+              Total files loaded: {files.length}
             </Typography>
           </Box>
         </ContentArea>

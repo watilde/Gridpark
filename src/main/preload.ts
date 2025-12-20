@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('settings:theme', handler);
     return () => ipcRenderer.removeListener('settings:theme', handler);
   },
+  // File operations
+  createNewFile: () => ipcRenderer.invoke('excel:create-new-file'),
+  openFile: () => ipcRenderer.invoke('excel:open-file'),
+  openFolder: () => ipcRenderer.invoke('excel:open-folder'),
   gridpark: {
     readFile: (payload: { path: string; rootDir: string }) =>
       ipcRenderer.invoke('gridpark:read-file', payload),
