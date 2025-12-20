@@ -54,6 +54,7 @@ export interface ExcelViewSidebarProps {
   onSheetSelect?: (fileId: string, sheetId: string) => void;
   onFileCreate?: () => void;
   onFileOpen?: () => void;
+  onFolderOpen?: () => void;
   onFileStar?: (fileId: string, starred: boolean) => void;
   className?: string;
 }
@@ -268,6 +269,7 @@ export const ExcelViewSidebar: React.FC<ExcelViewSidebarProps> = ({
   onSheetSelect,
   onFileCreate,
   onFileOpen,
+  onFolderOpen,
   onFileStar,
   className,
 }) => {
@@ -329,6 +331,11 @@ export const ExcelViewSidebar: React.FC<ExcelViewSidebarProps> = ({
           </Tooltip>
           <Tooltip title="Open File" placement="bottom">
             <HeaderIconButton onClick={onFileOpen} aria-label="Open File">
+              <InsertDriveFile />
+            </HeaderIconButton>
+          </Tooltip>
+          <Tooltip title="Open Folder" placement="bottom">
+            <HeaderIconButton onClick={onFolderOpen} aria-label="Open Folder">
               <FolderOpen />
             </HeaderIconButton>
           </Tooltip>
@@ -424,6 +431,18 @@ export const ExcelViewSidebar: React.FC<ExcelViewSidebarProps> = ({
                     </ItemIcon>
                     <ItemLabel>{sheet.name}</ItemLabel>
                   </TreeItem>
+                ))}
+              </Box>
+            );
+          })}
+        </Section>
+      </SidebarContent>
+    </SidebarContainer>
+  );
+};
+
+ExcelViewSidebar.displayName = 'ExcelViewSidebar';
+</TreeItem>
                 ))}
               </Box>
             );

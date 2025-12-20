@@ -135,46 +135,22 @@ export const VSCodeLayoutDemo: React.FC = () => {
               setActiveFileId(fileId);
               setActiveSheetId(sheetId);
             }}
-            onFileCreate={() => console.log('Create file')}
-            onFileOpen={() => console.log('Open file')}
+            onFileCreate={() => console.log('Create new file')}
+            onFileOpen={() => console.log('Open existing file')}
+            onFolderOpen={() => console.log('Open folder')}
             onFileStar={(fileId, starred) => console.log('Star:', fileId, starred)}
           />
         );
       case 'commit':
-        return (
-          <Box sx={{ p: 2 }}>
-            <Typography level="title-lg" sx={{ mb: 2 }}>Git Commit</Typography>
-            <Typography level="body-sm">Commit view coming soon...</Typography>
-          </Box>
-        );
+        return <GitPlaceholderSidebar viewType="commit" />;
       case 'history':
-        return (
-          <Box sx={{ p: 2 }}>
-            <Typography level="title-lg" sx={{ mb: 2 }}>Git History</Typography>
-            <Typography level="body-sm">History view coming soon...</Typography>
-          </Box>
-        );
+        return <GitPlaceholderSidebar viewType="history" />;
       case 'branch':
-        return (
-          <Box sx={{ p: 2 }}>
-            <Typography level="title-lg" sx={{ mb: 2 }}>Git Branches</Typography>
-            <Typography level="body-sm">Branch view coming soon...</Typography>
-          </Box>
-        );
+        return <GitPlaceholderSidebar viewType="branch" />;
       case 'git-config':
-        return (
-          <Box sx={{ p: 2 }}>
-            <Typography level="title-lg" sx={{ mb: 2 }}>Git Config</Typography>
-            <Typography level="body-sm">Git configuration coming soon...</Typography>
-          </Box>
-        );
+        return <GitPlaceholderSidebar viewType="git-config" />;
       case 'settings':
-        return (
-          <Box sx={{ p: 2 }}>
-            <Typography level="title-lg" sx={{ mb: 2 }}>Settings</Typography>
-            <Typography level="body-sm">Settings panel coming soon...</Typography>
-          </Box>
-        );
+        return <SettingsPlaceholderSidebar />;
       default:
         return null;
     }
