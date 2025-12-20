@@ -21,10 +21,11 @@
  * - No Redux dirty state (removed to prevent data inconsistency)
  */
 
-import { useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, StoredCellData, CellData, CellValue, CellStyleData } from '../../../lib/db';
 import { useExcelUndoRedo, CellChange } from './useExcelUndoRedo';
+import { debounce } from '../../../lib/utils';
 
 // ============================================================================
 // Helper Functions
@@ -479,6 +480,35 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   const clearHistory = useCallback(() => {
     undoRedo.clear();
   }, [undoRedo]);
+
+  // ========================================================================
+  // Auto-update sheet metadata last accessed time (with debounce)
+  // ========================================================================
+
+  // Create debounced update function (only once per hook instance)
+  const debouncedUpdateLastAccessed = useRef(
+    debounce((metadataId: number) => {
+      db.sheetMetadata
+        .update(metadataId, {
+          lastAccessedAt: new Date(),
+        })
+        .catch(error => {
+          console.error('[useExcelSheet] Failed to update lastAccessedAt:', error);
+        });
+    }, 2000) // Update at most once every 2 seconds
+  );
+
+  // Update last accessed time when metadata changes
+  useEffect(() => {
+    if (metadata?.id) {
+      debouncedUpdateLastAccessed.current(metadata.id);
+    }
+
+    // Cleanup: cancel pending debounced calls on unmount
+    return () => {
+      debouncedUpdateLastAccessed.current.cancel();
+    };
+  }, [metadata?.id]);
 
   // ========================================================================
   // Return API
