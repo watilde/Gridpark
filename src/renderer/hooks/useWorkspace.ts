@@ -140,8 +140,6 @@ export const useWorkspace = (
   // Dirty Tracking Functions (OPTIMIZED - Dexie Only)
   // ==========================================
 
-  const { codeSessions, manifestDirtyMap, getManifestSessionKey } = dirtyTrackingDeps;
-
   // Load all sheet metadata from Dexie (reactive)
   const allSheetMetadata = useLiveQuery(() => db.sheetMetadata.toArray(), []);
 
@@ -162,17 +160,9 @@ export const useWorkspace = (
         // Check Dexie dirty map
         return Boolean(sheetDirtyMap[tab.id]);
       }
-      if (tab.kind === 'code') {
-        const session = codeSessions[tab.codeFile.absolutePath];
-        return Boolean(session && session.content !== session.originalContent);
-      }
-      if (tab.kind === 'manifest') {
-        const key = getManifestSessionKey(tab.file);
-        return Boolean(key && manifestDirtyMap[key]);
-      }
       return false;
     },
-    [codeSessions, getManifestSessionKey, manifestDirtyMap, sheetDirtyMap]
+    [sheetDirtyMap]
   );
 
   const dirtyNodeIds = useMemo(() => {
@@ -184,15 +174,6 @@ export const useWorkspace = (
       if (node.type === 'sheet') {
         // Check Dexie dirty map
         dirty = Boolean(sheetDirtyMap[node.id]);
-      } else if (node.type === 'code' && node.codeFile) {
-        const session = codeSessions[node.codeFile.absolutePath];
-        dirty = Boolean(session && session.content !== session.originalContent);
-      } else if (node.type === 'manifest' && node.file) {
-        const key = getManifestSessionKey(node.file);
-        dirty = Boolean(key && manifestDirtyMap[key]);
-      } else if (node.type === 'workbook' && node.file) {
-        const key = getManifestSessionKey(node.file);
-        dirty = Boolean(key && manifestDirtyMap[key]);
       }
 
       if (node.children?.length) {
@@ -209,7 +190,7 @@ export const useWorkspace = (
 
     workbookNodes.forEach(visit);
     return map;
-  }, [workbookNodes, sheetDirtyMap, codeSessions, manifestDirtyMap, getManifestSessionKey]);
+  }, [workbookNodes, sheetDirtyMap]);
 
   // ==========================================
   // Tab Operations Functions
