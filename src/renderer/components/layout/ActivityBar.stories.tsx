@@ -7,6 +7,25 @@ const meta: Meta<typeof ActivityBar> = {
   component: ActivityBar,
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      description: {
+        component: `
+VSCode-inspired Activity Bar for Gridpark.
+
+**Top Section (Git Operations):**
+- Git Commit View (staging, split/inline diff)
+- Git History View (commit timeline)
+- Git Branch View (merge support)
+- Git Configuration
+
+**Bottom Section (Main Features):**
+- Excel View (spreadsheet viewer) ⭐
+- Settings ⚙️
+
+Default active view is \`excel\`.
+        `,
+      },
+    },
   },
   decorators: [
     Story => (
@@ -15,6 +34,8 @@ const meta: Meta<typeof ActivityBar> = {
         <Box sx={{ flex: 1, p: 2, bgcolor: 'background.body' }}>
           <h2>Main Content Area</h2>
           <p>Click the Activity Bar icons to see the active state.</p>
+          <p><strong>Top:</strong> Git operations (Commit, History, Branch, Config)</p>
+          <p><strong>Bottom:</strong> Excel View ⭐ and Settings ⚙️</p>
         </Box>
       </Box>
     ),

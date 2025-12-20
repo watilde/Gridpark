@@ -2,13 +2,16 @@
  * Activity Bar Component
  * 
  * VSCode-inspired left sidebar navigation
- * Features:
- * - Excel View (spreadsheet viewer)
+ * 
+ * Top Section (Git operations):
  * - Git Commit View (split/inline diff)
  * - Git History View
  * - Git Branch View (merge support)
- * - Git Config (bottom)
- * - Settings (bottom)
+ * - Git Config
+ * 
+ * Bottom Section (Main features):
+ * - Excel View (spreadsheet viewer)
+ * - Settings
  */
 
 import React from 'react';
@@ -158,18 +161,6 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
   return (
     <ActivityBarContainer className={className}>
       <TopSection>
-        {/* Excel View */}
-        <Tooltip title="Excel View" placement="right" arrow>
-          <ActivityButton
-            active={activeView === 'excel'}
-            onClick={() => handleViewChange('excel')}
-            aria-label="Excel View"
-            aria-pressed={activeView === 'excel'}
-          >
-            <ExcelIcon />
-          </ActivityButton>
-        </Tooltip>
-
         {/* Git Commit View */}
         <Tooltip title="Git Commit (Split/Inline)" placement="right" arrow>
           <ActivityButton
@@ -205,10 +196,6 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
             <BranchIcon />
           </ActivityButton>
         </Tooltip>
-      </TopSection>
-
-      <BottomSection>
-        <Divider />
 
         {/* Git Config */}
         <Tooltip title="Git Configuration" placement="right" arrow>
@@ -219,6 +206,22 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
             aria-pressed={activeView === 'git-config'}
           >
             <GitHubIcon />
+          </ActivityButton>
+        </Tooltip>
+      </TopSection>
+
+      <BottomSection>
+        <Divider />
+
+        {/* Excel View */}
+        <Tooltip title="Excel View" placement="right" arrow>
+          <ActivityButton
+            active={activeView === 'excel'}
+            onClick={() => handleViewChange('excel')}
+            aria-label="Excel View"
+            aria-pressed={activeView === 'excel'}
+          >
+            <ExcelIcon />
           </ActivityButton>
         </Tooltip>
 
