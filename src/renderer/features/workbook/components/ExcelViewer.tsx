@@ -151,8 +151,6 @@ const createGridElement = (
   domElement: HTMLElement,
   currentSheetName: string, // Pass currentSheetName to derive sheetName for GridElement
   onCellChange: (row: number, col: number, value: any) => void,
-  setCellStyle: (row: number, col: number, style: CellStyle) => void,
-  setRangeStyle: (range: CellRange, style: CellStyle) => void,
   getColumnLabel: (colIndex: number) => string,
   parseCellRef: (ref: string) => { row: number; col: number } | null
 ): GridElement | null => {
@@ -480,8 +478,6 @@ const _gridQuerySelector = (
   selector: string,
   currentSheetName: string,
   onCellChange: (row: number, col: number, value: any) => void,
-  setCellStyle: (row: number, col: number, style: CellStyle) => void,
-  setRangeStyle: (range: CellRange, style: CellStyle) => void,
   getColumnLabel: (colIndex: number) => string,
   parseCellRef: (ref: string) => { row: number; col: number } | null
 ): GridElement | null => {
@@ -496,8 +492,6 @@ const _gridQuerySelector = (
     foundElement,
     currentSheetName,
     onCellChange,
-    setCellStyle,
-    setRangeStyle,
     getColumnLabel,
     parseCellRef
   );
@@ -508,9 +502,8 @@ const _gridQuerySelectorAll = (
   selector: string,
   currentSheetName: string,
   onCellChange: (row: number, col: number, value: any) => void,
-  setCellStyle: (row: number, col: number, style: CellStyle) => void,
-  setRangeStyle: (range: CellRange, style: CellStyle) => void,
-  getColumnLabel: (colIndex: number) => string
+  getColumnLabel: (colIndex: number) => string,
+  parseCellRef: (ref: string) => { row: number; col: number } | null
 ): GridElement[] => {
   const parsed = parseGridSelector(selector);
   if (!parsed.elementType) {
@@ -524,8 +517,6 @@ const _gridQuerySelectorAll = (
         el,
         currentSheetName,
         onCellChange,
-        setCellStyle,
-        setRangeStyle,
         getColumnLabel,
         parseCellRef
       )
@@ -1275,8 +1266,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
               selector,
               currentSheet?.name || '',
               handleCellChange,
-              setCellStyle,
-              setRangeStyle,
               getColumnLabel,
               parseCellRef
             );
@@ -1291,8 +1280,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
               selector,
               currentSheet?.name || '',
               handleCellChange,
-              setCellStyle,
-              setRangeStyle,
               getColumnLabel,
               parseCellRef
             );
@@ -1309,8 +1296,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
               selector,
               currentSheet?.name || '',
               handleCellChange,
-              setCellStyle,
-              setRangeStyle,
               getColumnLabel,
               parseCellRef
             );
@@ -1334,10 +1319,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     }
   }, [
     getCellValue,
-    setCellStyle,
-    setRangeStyle,
-    clearCellStyle,
-    clearAllStyles,
     selectedCell,
     selectionRange,
     insertRow,
@@ -1346,8 +1327,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     deleteCol,
     currentSheet?.name, // Added for grid.querySelector/All
     handleCellChange,
-    setCellStyle,
-    setRangeStyle,
     getColumnLabel,
     parseCellRef, // Added for grid.querySelector/All
   ]);
