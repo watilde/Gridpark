@@ -18,22 +18,13 @@ export const createWorkbookNode = (excelFile: ExcelFile, id: string): FileNode =
     };
   });
 
-  const sheetsFolder: FileNode = {
-    id: `${id}-sheets-folder`,
-    name: 'Sheets',
-    type: 'folder',
-    parentId: id,
-    workbookId: id,
-    children: sheetNodes,
-  };
-
   return {
     id,
     name: excelFile.name,
     type: 'workbook',
     workbookId: id,
     file: excelFile,
-    children: [sheetsFolder],
+    children: sheetNodes,
   };
 };
 
