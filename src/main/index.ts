@@ -68,15 +68,21 @@ const { iconImage: ICON_IMAGE, iconPath: ICON_PATH } = resolveIconAsset();
 
 const createMainWindow = (): void => {
   const window = new BrowserWindow({
-    width: 960,
-    height: 640,
+    width: 1200,
+    height: 800,
     minWidth: 720,
     minHeight: 480,
+    center: true,
+    show: false,
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
     },
     title: WINDOW_TITLE_FALLBACK,
     icon: ICON_IMAGE ?? ICON_PATH,
+  });
+
+  window.once('ready-to-show', () => {
+    window.show();
   });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -164,27 +170,6 @@ const handleOpenFiles = async (window: BrowserWindow) => {
   sendFilesToRenderer(window, { files, directoryName: undefined });
 };
 
-const handleOpenFolder = async (window: BrowserWindow) => {
-  const { canceled, filePaths } = await dialog.showOpenDialog(window, {
-    properties: ['openDirectory'],
-  });
-  if (canceled || !filePaths.length) return;
-  const folderPath = filePaths[0];
-  const excelPaths = readdirSync(folderPath)
-    .map(entry => join(folderPath, entry))
-    .filter(fullPath => {
-      try {
-        const stats = statSync(fullPath);
-        return stats.isFile() && ['.xlsx', '.xls'].includes(extname(fullPath).toLowerCase());
-      } catch {
-        return false;
-      }
-    });
-  const files = (await Promise.all(excelPaths.map(loadExcelFileFromPath)))
-    .filter((_file): file is ExcelFile => Boolean(_file));
-  sendFilesToRenderer(window, { files, directoryName: basename(folderPath) });
-};
-
 const setupMenu = (window: BrowserWindow) => {
   const isMac = process.platform === 'darwin';
   const themeSubmenu: Electron.MenuItemConstructorOptions[] = themeOptions.map(option => ({
@@ -224,18 +209,30 @@ const setupMenu = (window: BrowserWindow) => {
           accelerator: 'CmdOrCtrl+O',
           click: () => handleOpenFiles(window),
         },
-        {
-          label: 'Open Folder…',
-          accelerator: 'CmdOrCtrl+Shift+O',
-          click: () => handleOpenFolder(window),
-        },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' },
       ],
     },
     { role: 'editMenu' as const },
     { role: 'viewMenu' as const },
-    { role: 'windowMenu' as const },
+    {
+      label: 'Window',
+      submenu: [
+        {
+          label: 'Center Window',
+          click: () => window.center(),
+        },
+        { type: 'separator' },
+        { role: 'minimize' },
+        { role: 'zoom' },
+        ...(isMac ? [
+          { type: 'separator' as const },
+          { role: 'front' as const },
+        ] : [
+          { role: 'close' as const },
+        ]),
+      ],
+    },
   ];
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
