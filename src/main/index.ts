@@ -6,6 +6,13 @@ import { parseExcelFile, serializeExcelFile } from '../renderer/utils/excelUtils
 import { ExcelFile } from '../renderer/types/excel';
 import { themeOptions, DEFAULT_THEME_ID } from '../renderer/theme/theme';
 
+// Disable hardware acceleration to prevent GPU errors in sandbox environments
+app.disableHardwareAcceleration();
+
+// Suppress GPU process error logs
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+
 // Injected by Electron Forge's Vite plugin at build time.
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const _MAIN_WINDOW_VITE_NAME: string;
@@ -94,6 +101,20 @@ const createMainWindow = (): void => {
 
   if (process.env.NODE_ENV === 'development') {
     window.webContents.openDevTools({ mode: 'detach' });
+    
+    // Suppress DevTools protocol errors
+    window.webContents.on('devtools-opened', () => {
+      // Filter out unnecessary console errors from DevTools
+      const originalConsoleError = console.error;
+      console.error = (...args: any[]) => {
+        const message = args.join(' ');
+        // Ignore Autofill protocol errors
+        if (message.includes('Autofill.enable') || message.includes('Autofill.setAddresses')) {
+          return;
+        }
+        originalConsoleError.apply(console, args);
+      };
+    });
   }
   setupMenu(window);
 };
