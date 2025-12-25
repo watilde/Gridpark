@@ -912,6 +912,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
 
   // Track if we're in the process of updating to prevent circular updates
   const isUpdatingFromGridDataRef = useRef(false);
+  const lastSessionDataRef = useRef<CellData[][] | null>(null);
 
   useEffect(() => {
     // Only update gridData from sessionState if we're not currently pushing changes
@@ -920,15 +921,28 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
       return;
     }
 
+    // Only update if sessionState.data reference actually changed
+    // This prevents overwriting local edits when Dexie saves complete
     if (sessionState && sessionState.data.length) {
-      setGridData(recalculateSheetData(sessionState.data));
-      setHasLocalChanges(sessionState.dirty);
+      if (lastSessionDataRef.current !== sessionState.data) {
+        console.log('[ExcelViewer] Updating from sessionState', {
+          hasData: sessionState.data.length > 0,
+          dirty: sessionState.dirty,
+        });
+        lastSessionDataRef.current = sessionState.data;
+        setGridData(recalculateSheetData(sessionState.data));
+        setHasLocalChanges(sessionState.dirty);
+      }
       return;
     }
     if (currentSheet) {
-      setGridData(recalculateSheetData(currentSheet.data));
-      setHasLocalChanges(false);
+      if (lastSessionDataRef.current !== currentSheet.data) {
+        lastSessionDataRef.current = currentSheet.data;
+        setGridData(recalculateSheetData(currentSheet.data));
+        setHasLocalChanges(false);
+      }
     } else {
+      lastSessionDataRef.current = null;
       setGridData([]);
       setHasLocalChanges(false);
     }

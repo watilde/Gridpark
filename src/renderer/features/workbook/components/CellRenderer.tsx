@@ -150,6 +150,12 @@ export const CellItem = React.memo(
         const cellValue = cell.value !== null && cell.value !== undefined ? String(cell.value) : '';
         // Only trigger change if value actually changed
         if (editValue !== cellValue) {
+          console.log('[CellRenderer] Committing change', {
+            row: rowIndex,
+            col: columnIndex,
+            oldValue: cellValue,
+            newValue: editValue,
+          });
           onCellChange(rowIndex, columnIndex, editValue);
         }
         setEditValue(null);
