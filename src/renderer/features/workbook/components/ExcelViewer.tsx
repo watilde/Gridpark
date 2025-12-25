@@ -117,7 +117,7 @@ interface GridparkCellEvent {
   element: HTMLElement | null;
 }
 
-const getColumnWidth = (colIndex: number) => (colIndex === 0 ? 56 : 96);
+const getColumnWidth = (colIndex: number) => (colIndex === 0 ? 56 : 120);
 const ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 28;
 const ROW_HEADER_WIDTH = 40;
