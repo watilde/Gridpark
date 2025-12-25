@@ -18,5 +18,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Excel file operations
   createNewFile: () => ipcRenderer.invoke('excel:create-new-file'),
   openFile: () => ipcRenderer.invoke('excel:open-file'),
-  openFolder: () => ipcRenderer.invoke('excel:open-folder'),
 });

@@ -14,7 +14,6 @@ import { styled } from '@mui/joy/styles';
 import { Box, Typography, IconButton, Tooltip } from '@mui/joy';
 import {
   Folder,
-  FolderOpen,
   InsertDriveFile,
   TableChart,
   Add,
@@ -54,7 +53,6 @@ export interface ExcelViewSidebarProps {
   onSheetSelect?: (fileId: string, sheetId: string) => void;
   onFileCreate?: () => void;
   onFileOpen?: () => void;
-  onFolderOpen?: () => void;
   onFileStar?: (fileId: string, starred: boolean) => void;
   className?: string;
 }
@@ -269,7 +267,6 @@ export const ExcelViewSidebar: React.FC<ExcelViewSidebarProps> = ({
   onSheetSelect,
   onFileCreate,
   onFileOpen,
-  onFolderOpen,
   onFileStar,
   className,
 }) => {
@@ -332,11 +329,6 @@ export const ExcelViewSidebar: React.FC<ExcelViewSidebarProps> = ({
           <Tooltip title="Open File" placement="bottom">
             <HeaderIconButton onClick={onFileOpen} aria-label="Open File">
               <InsertDriveFile />
-            </HeaderIconButton>
-          </Tooltip>
-          <Tooltip title="Open Folder" placement="bottom">
-            <HeaderIconButton onClick={onFolderOpen} aria-label="Open Folder">
-              <FolderOpen />
             </HeaderIconButton>
           </Tooltip>
           <Tooltip title="More Actions" placement="bottom">

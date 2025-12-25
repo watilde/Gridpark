@@ -4,7 +4,6 @@
  * Provides easy access to Electron file operations:
  * - Create new Excel file
  * - Open existing Excel file(s)
- * - Open folder with Excel files
  */
 
 import { useCallback, useState } from 'react';
@@ -14,26 +13,23 @@ export interface UseExcelFileOperationsReturn {
   // Operations
   createNewFile: () => Promise<void>;
   openFile: () => Promise<void>;
-  openFolder: () => Promise<void>;
   
   // State
   isProcessing: boolean;
   lastError: string | null;
-  lastOperation: 'create' | 'open-file' | 'open-folder' | null;
+  lastOperation: 'create' | 'open-file' | null;
   
   // Results
   lastCreatedFile: ExcelFile | null;
   lastOpenedFiles: ExcelFile[];
-  lastFolderName: string | null;
 }
 
 export const useExcelFileOperations = (): UseExcelFileOperationsReturn => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [lastOperation, setLastOperation] = useState<'create' | 'open-file' | 'open-folder' | null>(null);
+  const [lastOperation, setLastOperation] = useState<'create' | 'open-file' | null>(null);
   const [lastCreatedFile, setLastCreatedFile] = useState<ExcelFile | null>(null);
   const [lastOpenedFiles, setLastOpenedFiles] = useState<ExcelFile[]>([]);
-  const [lastFolderName, setLastFolderName] = useState<string | null>(null);
 
   const createNewFile = useCallback(async () => {
     if (!window.electronAPI?.createNewFile) {
@@ -101,49 +97,13 @@ export const useExcelFileOperations = (): UseExcelFileOperationsReturn => {
     }
   }, []);
 
-  const openFolder = useCallback(async () => {
-    if (!window.electronAPI?.openFolder) {
-      setLastError('File operations not available in this environment');
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-      setLastError(null);
-      setLastOperation('open-folder');
-
-      const result = await window.electronAPI.openFolder();
-
-      if (result.canceled) {
-        setLastError(null);
-        return;
-      }
-
-      if (!result.success || !result.files) {
-        setLastError(result.error || 'Failed to open folder');
-        return;
-      }
-
-      setLastOpenedFiles(result.files);
-      setLastFolderName(result.folderName || null);
-      console.log(`Opened folder "${result.folderName}" with ${result.count} file(s)`);
-    } catch (error) {
-      console.error('Open folder error:', error);
-      setLastError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsProcessing(false);
-    }
-  }, []);
-
   return {
     createNewFile,
     openFile,
-    openFolder,
     isProcessing,
     lastError,
     lastOperation,
     lastCreatedFile,
     lastOpenedFiles,
-    lastFolderName,
   };
 };

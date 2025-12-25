@@ -31,15 +31,6 @@ export interface ElectronAPI {
     canceled?: boolean;
     error?: string;
   }>;
-  
-  openFolder: () => Promise<{
-    success: boolean;
-    files?: ExcelFile[];
-    folderName?: string;
-    count?: number;
-    canceled?: boolean;
-    error?: string;
-  }>;
 }
 
 declare global {
