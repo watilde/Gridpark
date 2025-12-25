@@ -918,6 +918,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     // Only update gridData from sessionState if we're not currently pushing changes
     // This prevents the circular update: gridData -> sessionState -> gridData
     if (isUpdatingFromGridDataRef.current) {
+      console.log('[ExcelViewer] Skipping sessionState update (currently pushing changes)');
       return;
     }
 
@@ -928,6 +929,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
         console.log('[ExcelViewer] Updating from sessionState', {
           hasData: sessionState.data.length > 0,
           dirty: sessionState.dirty,
+          isUpdating: isUpdatingFromGridDataRef.current,
         });
         lastSessionDataRef.current = sessionState.data;
         setGridData(recalculateSheetData(sessionState.data));
@@ -960,10 +962,12 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
         data: gridData,
         dirty: hasLocalChanges,
       });
-      // Reset flag after a short delay to allow sessionState to update
+      // Reset flag after debounce completes (500ms + buffer)
+      // This prevents sessionState updates from overwriting gridData
       setTimeout(() => {
+        console.log('[ExcelViewer] Resetting isUpdating flag');
         isUpdatingFromGridDataRef.current = false;
-      }, 100);
+      }, 1000); // Wait for debounce (500ms) + save to complete
     }
   }, [gridData, hasLocalChanges, _onSessionChange]);
 
