@@ -110,6 +110,9 @@ export const CellItem = React.memo(
     const isActive = selectedCell?.row === rowIndex && selectedCell?.col === columnIndex;
     const isInRange = isCellInRange(rowIndex, columnIndex);
     const hasError = cell.value === '#ERROR'; // Assuming #ERROR signifies an error cell
+    
+    // Get style from cell data (Dexie) instead of separate cellStyles map
+    const cellStyle = cell.style as CellStyle | undefined;
 
     // ========================================================================
     // FIX: Use local state for editing to prevent first character loss
@@ -196,7 +199,7 @@ export const CellItem = React.memo(
         data-error={hasError ? 'true' : undefined}
         selected={isActive} // 'selected' prop already covers this for styling
         inRange={isInRange} // 'inRange' prop already covers this for styling
-        customStyle={cellStyles.get(cellKey)}
+        customStyle={cellStyle}
         matchState={matchState}
         onMouseDown={() => onCellMouseDown(rowIndex, columnIndex)}
         onMouseEnter={() => onCellMouseEnter(rowIndex, columnIndex)}
@@ -221,3 +224,19 @@ export const CellItem = React.memo(
     return false; // Always re-render for now to ensure updates
   }
 );
+
+// Export CellItemData type for ExcelGrid
+export interface CellItemData {
+  currentSheetName: string;
+  sheetData: any[][];
+  selectedCell: any;
+  selectionRange: any;
+  searchMatchMap: Map<string, boolean>;
+  currentSearchMatch: { row: number; col: number } | null;
+  onCellMouseDown: (row: number, col: number) => void;
+  onCellMouseEnter: (row: number, col: number) => void;
+  onCellChange: (row: number, col: number, value: string) => void;
+  getColumnLabel: (index: number) => string;
+  getCellKey: (row: number, col: number) => string;
+  createEmptyCell: () => any;
+}

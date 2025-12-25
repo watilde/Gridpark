@@ -767,7 +767,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
   const [selectionRange, setSelectionRange] = useState<CellRange | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [cellStyles, setCellStyles] = useState<Map<string, CellStyle>>(new Map());
   const [gridData, setGridData] = useState<CellData[][]>([]);
   // Dimensions state for dynamic expansion
   const [renderRowCount, setRenderRowCount] = useState(DEFAULT_RENDERED_ROWS);
@@ -1248,51 +1247,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
     handleCellChange(selectedCell.row, selectedCell.col, formulaCommit.value);
   }, [formulaCommit, selectedCell, handleCellChange]);
 
-  // Public API: Set cell style
-  const setCellStyle = useCallback((row: number, col: number, style: CellStyle) => {
-    setCellStyles(prev => {
-      const newStyles = new Map(prev);
-      newStyles.set(getCellKey(row, col), style);
-      return newStyles;
-    });
-  }, []);
-
-  // Public API: Set range style
-  const setRangeStyle = useCallback((range: CellRange, style: CellStyle) => {
-    setCellStyles(prev => {
-      const newStyles = new Map(prev);
-      for (
-        let row = Math.min(range.startRow, range.endRow);
-        row <= Math.max(range.startRow, range.endRow);
-        row++
-      ) {
-        for (
-          let col = Math.min(range.startCol, range.endCol);
-          col <= Math.max(range.startCol, range.endCol);
-          col++
-        ) {
-          newStyles.set(getCellKey(row, col), style);
-        }
-      }
-      return newStyles;
-    });
-  }, []);
-
-  // Public API: Clear cell style
-  const clearCellStyle = useCallback((row: number, col: number) => {
-    setCellStyles(prev => {
-      const newStyles = new Map(prev);
-      newStyles.delete(getCellKey(row, col));
-      return newStyles;
-    });
-  }, []);
-
-  // Public API: Clear all styles
-  const clearAllStyles = useCallback(() => {
-    setCellStyles(new Map());
-  }, []);
-
-  // Expose API via ref
+  // Expose API via ref (for backward compatibility - currently unused)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Get the root element of the Excel grid to scope queries
@@ -1301,10 +1256,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
 
       (window as any).gridparkAPI = {
         getCellValue,
-        setCellStyle,
-        setRangeStyle,
-        clearCellStyle,
-        clearAllStyles,
         getSelectedCell: () => selectedCell,
         getSelectionRange: () => selectionRange,
         // New CRUD
@@ -1452,7 +1403,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
       sheetData,
       selectedCell,
       selectionRange,
-      cellStyles,
       searchMatchMap,
       currentSearchMatch,
       onCellMouseDown: handleCellMouseDown,
@@ -1467,7 +1417,6 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
       sheetData,
       selectedCell,
       selectionRange,
-      cellStyles,
       searchMatchMap,
       currentSearchMatch,
       handleCellMouseDown,
