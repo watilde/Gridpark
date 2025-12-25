@@ -106,7 +106,7 @@ export const SpreadsheetToolbar: React.FC<SpreadsheetToolbarProps> = ({
     };
     
     loadStyle();
-  }, [selectedCell, styling]);
+  }, [selectedCell, styling.getCellStyle]);
   
   // ========================================================================
   // Apply font style changes

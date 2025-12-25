@@ -8,7 +8,7 @@
  * - Integration with Dexie.js storage
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { db, CellStyleData } from '../../lib/db';
 import { ExcelCellStyle, ExcelFont, ExcelFill, ExcelBorder, ExcelAlignment } from '../../lib/exceljs-types';
 
@@ -354,17 +354,29 @@ export function useCellStyling({ tabId }: UseCellStylingOptions): UseCellStyling
   );
   
   // ========================================================================
-  // Return
+  // Return memoized object to prevent infinite re-renders
   // ========================================================================
   
-  return {
-    applyFontStyle,
-    applyFillStyle,
-    applyBorderStyle,
-    applyAlignment,
-    applyCellStyle,
-    getCellStyle,
-    applyStyleToRange,
-    clearCellStyle,
-  };
+  return useMemo(
+    () => ({
+      applyFontStyle,
+      applyFillStyle,
+      applyBorderStyle,
+      applyAlignment,
+      applyCellStyle,
+      getCellStyle,
+      applyStyleToRange,
+      clearCellStyle,
+    }),
+    [
+      applyFontStyle,
+      applyFillStyle,
+      applyBorderStyle,
+      applyAlignment,
+      applyCellStyle,
+      getCellStyle,
+      applyStyleToRange,
+      clearCellStyle,
+    ]
+  );
 }
