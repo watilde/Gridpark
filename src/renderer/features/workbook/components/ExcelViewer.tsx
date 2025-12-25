@@ -913,6 +913,22 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   // Track if we're in the process of updating to prevent circular updates
   const isUpdatingFromGridDataRef = useRef(false);
   const lastSessionDataRef = useRef<CellData[][] | null>(null);
+  const lastSessionDataHashRef = useRef<string>('');
+
+  // Simple hash function to detect data changes
+  const hashData = useCallback((data: CellData[][]) => {
+    // Only hash non-empty cells to avoid performance issues
+    const nonEmptyCells: string[] = [];
+    for (let r = 0; r < Math.min(data.length, 100); r++) {
+      for (let c = 0; c < Math.min(data[r]?.length || 0, 50); c++) {
+        const cell = data[r]?.[c];
+        if (cell && cell.value !== null && cell.value !== undefined && cell.value !== '') {
+          nonEmptyCells.push(`${r},${c}:${cell.value}`);
+        }
+      }
+    }
+    return nonEmptyCells.join('|');
+  }, []);
 
   useEffect(() => {
     // Only update gridData from sessionState if we're not currently pushing changes
@@ -922,33 +938,38 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
       return;
     }
 
-    // Only update if sessionState.data reference actually changed
-    // This prevents overwriting local edits when Dexie saves complete
+    // Use hash to detect actual data changes (not just reference changes)
     if (sessionState && sessionState.data.length) {
-      if (lastSessionDataRef.current !== sessionState.data) {
-        console.log('[ExcelViewer] Updating from sessionState', {
+      const newHash = hashData(sessionState.data);
+      if (lastSessionDataHashRef.current !== newHash) {
+        console.log('[ExcelViewer] Updating from sessionState (data changed)', {
           hasData: sessionState.data.length > 0,
           dirty: sessionState.dirty,
-          isUpdating: isUpdatingFromGridDataRef.current,
+          oldHash: lastSessionDataHashRef.current.substring(0, 50),
+          newHash: newHash.substring(0, 50),
         });
         lastSessionDataRef.current = sessionState.data;
+        lastSessionDataHashRef.current = newHash;
         setGridData(recalculateSheetData(sessionState.data));
         setHasLocalChanges(sessionState.dirty);
       }
       return;
     }
     if (currentSheet) {
-      if (lastSessionDataRef.current !== currentSheet.data) {
+      const newHash = hashData(currentSheet.data);
+      if (lastSessionDataHashRef.current !== newHash) {
         lastSessionDataRef.current = currentSheet.data;
+        lastSessionDataHashRef.current = newHash;
         setGridData(recalculateSheetData(currentSheet.data));
         setHasLocalChanges(false);
       }
     } else {
       lastSessionDataRef.current = null;
+      lastSessionDataHashRef.current = '';
       setGridData([]);
       setHasLocalChanges(false);
     }
-  }, [currentSheet, sessionState]);
+  }, [currentSheet, sessionState, hashData]);
 
   useEffect(() => {
     latestGridDataRef.current = gridData;
