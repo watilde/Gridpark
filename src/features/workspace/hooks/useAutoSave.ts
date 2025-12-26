@@ -20,6 +20,7 @@ import {
 export interface UseAutoSaveParams {
   dirtyCount: number;
   onSaveAll: () => Promise<void>;
+  hasOpenFiles: boolean; // NEW: Only enable auto-save when files are open
 }
 
 export interface UseAutoSaveReturn {
@@ -29,7 +30,7 @@ export interface UseAutoSaveReturn {
 }
 
 export function useAutoSave(params: UseAutoSaveParams): UseAutoSaveReturn {
-  const { dirtyCount, onSaveAll } = params;
+  const { dirtyCount, onSaveAll, hasOpenFiles } = params;
 
   const dispatch = useAppDispatch();
   const autoSaveEnabled = useAppSelector(selectAutoSaveEnabled);
@@ -60,6 +61,16 @@ export function useAutoSave(params: UseAutoSaveParams): UseAutoSaveReturn {
   // ============================================
 
   useEffect(() => {
+    // Don't auto-save if no files are open
+    if (!hasOpenFiles) {
+      console.log('[AutoSave] skipped: no files open');
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      return;
+    }
+
     if (!autoSaveEnabled) {
       return;
     }
@@ -100,7 +111,7 @@ export function useAutoSave(params: UseAutoSaveParams): UseAutoSaveReturn {
         autoSaveTimerRef.current = null;
       }
     };
-  }, [autoSaveEnabled, dirtyCount, onSaveAll, autoSaveInterval]);
+  }, [hasOpenFiles, autoSaveEnabled, dirtyCount, onSaveAll, autoSaveInterval]);
 
   // ============================================
   // Return API

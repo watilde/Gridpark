@@ -301,6 +301,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   const autoSave = useAutoSave({
     dirtyCount: dirtyTabIds.size,
     onSaveAll: saveManager.saveAllDirtyTabs,
+    hasOpenFiles: openTabs.length > 0, // Only auto-save when files are open
   });
 
   // ============================================
