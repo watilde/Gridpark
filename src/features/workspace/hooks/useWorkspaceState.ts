@@ -158,19 +158,27 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   // Save Manager (Single Source of Truth: Database only)
   // ============================================
 
-  // Load dirty state from database (reactive)
+  // Load dirty state from database (event-driven, no polling!)
   const [allSheetMetadata, setAllSheetMetadata] = useState<any[]>([]);
 
   useEffect(() => {
-    const refreshMetadata = async () => {
+    // Initial load
+    const loadMetadata = async () => {
       const metadata = await db.getAllSheetMetadata();
       setAllSheetMetadata(metadata);
     };
 
-    refreshMetadata();
-    const interval = setInterval(refreshMetadata, 1000); // Refresh every 1s (reduced from 300ms)
+    loadMetadata();
 
-    return () => clearInterval(interval);
+    // Subscribe to database changes (event-driven)
+    const unsubscribe = db.subscribe((event) => {
+      if (event.type === 'metadata') {
+        console.log('[useWorkspaceState] Metadata change detected, reloading');
+        loadMetadata();
+      }
+    });
+
+    return unsubscribe;
   }, []);
 
   // Compute dirty tab IDs from database metadata

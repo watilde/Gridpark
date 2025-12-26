@@ -151,36 +151,35 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     };
   }, [tabId, workbookId, sheetName, sheetIndex]);
 
-  // Get sheet metadata (using state for reactivity)
+  // Get sheet metadata (using state for reactivity with event-driven updates)
   const [metadata, setMetadata] = useState<any>();
   const [cells, setCells] = useState<StoredCellData[]>([]);
 
-  // Refresh data periodically (with adaptive interval)
+  // Subscribe to database changes (event-driven, no polling!)
   useEffect(() => {
-    const refreshData = async () => {
+    // Initial load
+    const loadData = async () => {
       const meta = await db.getSheetMetadata(tabId);
       const cellData = await db.getCellsForSheet(tabId);
-      
-      // Log metadata changes
-      if (meta && meta.dirty !== metadata?.dirty) {
-        console.log('[useExcelSheet] === DIRTY STATE CHANGED ===', {
-          tabId,
-          oldDirty: metadata?.dirty,
-          newDirty: meta.dirty,
-        });
-      }
-      
       setMetadata(meta);
       setCells(cellData);
     };
-
-    refreshData();
     
-    // Adaptive polling: faster when dirty, slower when clean
-    const interval = setInterval(refreshData, metadata?.dirty ? 300 : 1000); // 300ms when dirty, 1s when clean
+    loadData();
 
-    return () => clearInterval(interval);
-  }, [tabId, metadata?.dirty]);
+    // Subscribe to changes for this specific tabId
+    const unsubscribe = db.subscribe((event) => {
+      // Only reload if the change affects THIS sheet
+      if (event.tabId === tabId) {
+        console.log('[useExcelSheet] Database change detected', { tabId, type: event.type, action: event.action });
+        
+        // Reload data immediately
+        loadData();
+      }
+    });
+
+    return unsubscribe;
+  }, [tabId]);
 
   // ========================================================================
   // Computed Values

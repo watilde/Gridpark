@@ -116,8 +116,14 @@ export interface WorkbookMetadata {
 }
 
 // ============================================================================
-// Database Class (In-Memory Storage)
+// Database Class (In-Memory Storage with Event System)
 // ============================================================================
+
+type ChangeListener = (event: {
+  type: 'metadata' | 'cells';
+  tabId: string;
+  action: 'create' | 'update' | 'delete';
+}) => void;
 
 export class AppDatabase {
   // In-memory storage
@@ -126,8 +132,39 @@ export class AppDatabase {
   private workbooksStore: Map<string, WorkbookMetadata> = new Map();
   private nextId = 1;
 
+  // Event system for reactive updates (replaces polling)
+  private listeners: Set<ChangeListener> = new Set();
+
   constructor() {
-    console.log('[DB] In-memory database initialized');
+    console.log('[DB] In-memory database initialized with event system');
+  }
+
+  // ==========================================================================
+  // Event System (Observer Pattern)
+  // ==========================================================================
+
+  /**
+   * Subscribe to database changes
+   */
+  subscribe(listener: ChangeListener): () => void {
+    this.listeners.add(listener);
+    // Return unsubscribe function
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  /**
+   * Notify all listeners of a change
+   */
+  private notify(event: { type: 'metadata' | 'cells'; tabId: string; action: 'create' | 'update' | 'delete' }) {
+    this.listeners.forEach(listener => {
+      try {
+        listener(event);
+      } catch (error) {
+        console.error('[DB] Error in change listener:', error);
+      }
+    });
   }
 
   // ==========================================================================
@@ -156,6 +193,7 @@ export class AppDatabase {
     data: Omit<SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>
   ): Promise<number> {
     const existing = this.sheetMetadataStore.get(data.tabId);
+    const action = existing ? 'update' : 'create';
 
     if (existing) {
       const updated = {
@@ -165,6 +203,10 @@ export class AppDatabase {
         lastAccessedAt: new Date(),
       };
       this.sheetMetadataStore.set(data.tabId, updated);
+      
+      // Notify listeners
+      this.notify({ type: 'metadata', tabId: data.tabId, action: 'update' });
+      
       return existing.id!;
     } else {
       const newMetadata: SheetMetadata = {
@@ -175,6 +217,10 @@ export class AppDatabase {
         lastAccessedAt: new Date(),
       };
       this.sheetMetadataStore.set(data.tabId, newMetadata);
+      
+      // Notify listeners
+      this.notify({ type: 'metadata', tabId: data.tabId, action: 'create' });
+      
       return newMetadata.id!;
     }
   }
@@ -233,6 +279,9 @@ export class AppDatabase {
     metadata.dirty = dirty;
     metadata.updatedAt = new Date();
     this.sheetMetadataStore.set(tabId, metadata);
+    
+    // Notify listeners of dirty state change
+    this.notify({ type: 'metadata', tabId, action: 'update' });
     
     // Verify the update
     const verified = await this.getSheetMetadata(tabId);
@@ -297,6 +346,7 @@ export class AppDatabase {
     const key = this.getCellKey(tabId, row, col);
     const existing = this.cellsStore.get(key);
     const now = new Date();
+    const action = existing ? 'update' : 'create';
 
     if (existing) {
       const updated = {
@@ -306,6 +356,10 @@ export class AppDatabase {
         version: (existing.version || 0) + 1,
       };
       this.cellsStore.set(key, updated);
+      
+      // Notify listeners
+      this.notify({ type: 'cells', tabId, action: 'update' });
+      
       return existing.id!;
     } else {
       const newCell: StoredCellData = {
@@ -320,6 +374,10 @@ export class AppDatabase {
         version: 1,
       };
       this.cellsStore.set(key, newCell);
+      
+      // Notify listeners
+      this.notify({ type: 'cells', tabId, action: 'create' });
+      
       return newCell.id!;
     }
   }
@@ -391,6 +449,9 @@ export class AppDatabase {
       }
 
       console.log('[db] bulkUpsertCells: completed', { tabId });
+
+      // Notify listeners (single event for bulk operation)
+      this.notify({ type: 'cells', tabId, action: 'update' });
 
       return cellUpdates.length;
     } catch (error) {
