@@ -207,11 +207,16 @@ export class AppDatabase {
    * Mark sheet as dirty (has unsaved changes)
    */
   async markSheetDirty(tabId: string, dirty = true): Promise<void> {
+    console.log('[db] markSheetDirty called', { tabId, dirty });
     const metadata = await this.getSheetMetadata(tabId);
     if (metadata) {
+      console.log('[db] Updating metadata dirty flag', { tabId, oldDirty: metadata.dirty, newDirty: dirty });
       metadata.dirty = dirty;
       metadata.updatedAt = new Date();
       this.sheetMetadataStore.set(tabId, metadata);
+      console.log('[db] Metadata updated successfully', { tabId, dirty: metadata.dirty });
+    } else {
+      console.warn('[db] No metadata found for tabId:', tabId);
     }
   }
 

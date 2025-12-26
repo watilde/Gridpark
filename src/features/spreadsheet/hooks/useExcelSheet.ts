@@ -160,6 +160,16 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     const refreshData = async () => {
       const meta = await db.getSheetMetadata(tabId);
       const cellData = await db.getCellsForSheet(tabId);
+      
+      // Log metadata changes
+      if (meta && meta.dirty !== metadata?.dirty) {
+        console.log('[useExcelSheet] Metadata dirty changed', {
+          tabId,
+          oldDirty: metadata?.dirty,
+          newDirty: meta.dirty,
+        });
+      }
+      
       setMetadata(meta);
       setCells(cellData);
     };
@@ -168,7 +178,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     const interval = setInterval(refreshData, 500); // Refresh every 500ms
 
     return () => clearInterval(interval);
-  }, [tabId]);
+  }, [tabId, metadata?.dirty]);
 
   // ========================================================================
   // Computed Values
