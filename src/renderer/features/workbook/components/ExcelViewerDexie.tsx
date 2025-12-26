@@ -72,6 +72,10 @@ export interface ExcelViewerDexieHandle {
    * Check if redo is available
    */
   canRedo: () => boolean;
+  /**
+   * Force save immediately (flush pending changes)
+   */
+  save: () => Promise<void>;
 }
 
 /**
@@ -125,7 +129,15 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     } = excelSheet;
 
     // ============================================================================
-    // Expose undo/redo methods via ref
+    // Performance Optimization - Debounce saves
+    // ============================================================================
+
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingDataRef = useRef<any[][] | null>(null);
+    const lastSavedDataRef = useRef<any[][] | null>(null);
+
+    // ============================================================================
+    // Expose undo/redo/save methods via ref
     // ============================================================================
 
     useImperativeHandle(
@@ -141,17 +153,28 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           // No logging here - called every 200ms
           return canRedo;
         },
+        save: async () => {
+          // Force save pending data immediately
+          if (pendingDataRef.current) {
+            console.log('[ExcelViewerDexie] Forcing immediate save', { tabId });
+            try {
+              await save2DArray(pendingDataRef.current);
+              lastSavedDataRef.current = pendingDataRef.current;
+              pendingDataRef.current = null;
+              
+              // Clear timeout if exists
+              if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+                saveTimeoutRef.current = null;
+              }
+            } catch (error) {
+              console.error('[ExcelViewerDexie] Force save error:', error);
+            }
+          }
+        },
       }),
-      [undo, redo, canUndo, canRedo, tabId]
+      [undo, redo, canUndo, canRedo, tabId, save2DArray]
     );
-
-    // ============================================================================
-    // Performance Optimization - Debounce saves
-    // ============================================================================
-
-    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const pendingDataRef = useRef<any[][] | null>(null);
-    const lastSavedDataRef = useRef<any[][] | null>(null);
 
     // Debounced save function
     const debouncedSave = useCallback(

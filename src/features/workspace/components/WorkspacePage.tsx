@@ -115,6 +115,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     }
 
     try {
+      // Force immediate save through EditorPanel
+      await editorPanelRef.current?.save();
+      
+      // Then mark as clean in saveManager
       await saveManager.saveTab(activeTab.id);
       console.log('[WorkspacePage] Save completed');
     } catch (error) {

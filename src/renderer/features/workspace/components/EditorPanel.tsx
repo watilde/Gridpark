@@ -53,6 +53,10 @@ export interface EditorPanelHandle {
    * Check if redo is available
    */
   canRedo: () => boolean;
+  /**
+   * Force save immediately
+   */
+  save: () => Promise<void>;
 }
 
 export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
@@ -91,7 +95,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
       onRangeSelect(range);
     };
 
-    // Expose undo/redo methods via ref
+    // Expose undo/redo/save methods via ref
     useImperativeHandle(
       ref,
       () => ({
@@ -106,6 +110,9 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
         },
         canRedo: () => {
           return sheetViewerRef.current?.canRedo() ?? false;
+        },
+        save: async () => {
+          await sheetViewerRef.current?.save();
         },
       }),
       []
