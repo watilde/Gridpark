@@ -86,13 +86,27 @@ export const useSaveWorkbook = () => {
           try {
             // Load 2D array from database
             const data = await db.getCellsAs2DArray(tabId);
+            
+            // Verify data was loaded
+            if (!data || data.length === 0) {
+              console.error(`[useSaveWorkbook] No data loaded from database for ${sheet.name}`, {
+                tabId,
+                sheetIndex: index,
+              });
+              throw new Error(`No data in database for sheet ${sheet.name} (${tabId})`);
+            }
+            
             console.log(`[useSaveWorkbook] Loaded ${data.length} rows for sheet ${index}`);
             
             // DEBUG: Log first few cells to verify data
             const nonEmptyCells = data.flatMap((row, r) => 
               row.map((cell, c) => ({ r, c, cell }))
             ).filter(({ cell }) => cell.value !== null && cell.value !== '');
-            console.log(`[useSaveWorkbook] Non-empty cells in sheet ${index}:`, nonEmptyCells.slice(0, 10));
+            console.log(`[useSaveWorkbook] Non-empty cells in sheet ${index}:`, nonEmptyCells.length);
+            
+            if (nonEmptyCells.length === 0) {
+              console.warn(`[useSaveWorkbook] Sheet ${index} (${sheet.name}) has no non-empty cells`);
+            }
 
             return {
               ...sheet,
@@ -101,11 +115,12 @@ export const useSaveWorkbook = () => {
               colCount: data[0]?.length ?? sheet.colCount,
             };
           } catch (error) {
-            console.warn(
-              `[useSaveWorkbook] No data in database for ${sheet.name}, using original`,
+            console.error(
+              `[useSaveWorkbook] Failed to load data for ${sheet.name}:`,
               error
             );
-            return sheet;
+            // Re-throw error instead of silently using original (which may not have data)
+            throw new Error(`Failed to save sheet ${sheet.name}: ${error instanceof Error ? error.message : String(error)}`);
           }
         })
       );

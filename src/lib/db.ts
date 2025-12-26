@@ -617,15 +617,17 @@ export class AppDatabase {
           if (!cell) return;
 
           // Save cells that:
-          // 1. Have a non-empty value, OR
+          // 1. Have a non-null/non-undefined value (including empty string ''), OR
           // 2. Have a formula, OR
-          // 3. Have a type other than 'empty'
-          const hasValue = cell.value !== null && cell.value !== undefined && cell.value !== '';
+          // 3. Have a non-empty type
+          // NOTE: We save empty strings because they're explicit user input
+          const hasValue = cell.value !== null && cell.value !== undefined;
           const hasFormula =
             cell.formula !== null && cell.formula !== undefined && cell.formula !== '';
-          const hasType = cell.type && cell.type !== 'empty';
+          const hasNonEmptyType = cell.type && cell.type !== 'empty';
 
-          if (hasValue || hasFormula || hasType) {
+          // Save if any of these conditions are true
+          if (hasValue || hasFormula || hasNonEmptyType) {
             cellUpdates.push({
               row: rowIndex,
               col: colIndex,
