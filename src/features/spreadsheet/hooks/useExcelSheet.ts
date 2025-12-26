@@ -163,7 +163,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       
       // Log metadata changes
       if (meta && meta.dirty !== metadata?.dirty) {
-        console.log('[useExcelSheet] Metadata dirty changed', {
+        console.log('[useExcelSheet] === DIRTY STATE CHANGED ===', {
           tabId,
           oldDirty: metadata?.dirty,
           newDirty: meta.dirty,
@@ -175,7 +175,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     };
 
     refreshData();
-    const interval = setInterval(refreshData, 500); // Refresh every 500ms
+    const interval = setInterval(refreshData, 200); // Refresh every 200ms (faster detection)
 
     return () => clearInterval(interval);
   }, [tabId, metadata?.dirty]);

@@ -207,17 +207,40 @@ export class AppDatabase {
    * Mark sheet as dirty (has unsaved changes)
    */
   async markSheetDirty(tabId: string, dirty = true): Promise<void> {
-    console.log('[db] markSheetDirty called', { tabId, dirty });
+    console.log('[db] === MARK SHEET DIRTY ===', { tabId, dirty });
+    
     const metadata = await this.getSheetMetadata(tabId);
-    if (metadata) {
-      console.log('[db] Updating metadata dirty flag', { tabId, oldDirty: metadata.dirty, newDirty: dirty });
-      metadata.dirty = dirty;
-      metadata.updatedAt = new Date();
-      this.sheetMetadataStore.set(tabId, metadata);
-      console.log('[db] Metadata updated successfully', { tabId, dirty: metadata.dirty });
-    } else {
-      console.warn('[db] No metadata found for tabId:', tabId);
+    
+    if (!metadata) {
+      console.error('[db] No metadata found for tabId:', tabId);
+      console.error('[db] Available tabIds:', Array.from(this.sheetMetadataStore.keys()));
+      throw new Error(`No metadata found for tabId: ${tabId}`);
     }
+
+    const oldDirty = metadata.dirty;
+    
+    if (oldDirty === dirty) {
+      console.log('[db] Dirty flag unchanged, skipping update', { tabId, dirty });
+      return;
+    }
+
+    console.log('[db] Updating dirty flag', { 
+      tabId, 
+      oldDirty, 
+      newDirty: dirty 
+    });
+    
+    metadata.dirty = dirty;
+    metadata.updatedAt = new Date();
+    this.sheetMetadataStore.set(tabId, metadata);
+    
+    // Verify the update
+    const verified = await this.getSheetMetadata(tabId);
+    console.log('[db] === DIRTY FLAG UPDATED ===', { 
+      tabId, 
+      dirty: verified?.dirty,
+      success: verified?.dirty === dirty 
+    });
   }
 
   // ==========================================================================

@@ -60,26 +60,33 @@ export const useSaveWorkbook = () => {
       throw new Error('File saving is only available in the desktop app');
     }
 
-    try {
-      console.log(`[useSaveWorkbook] Saving workbook: ${file.path}`);
+    console.log('[useSaveWorkbook] === SAVE START ===', { 
+      path: file.path, 
+      workbookId,
+      sheetCount: file.sheets.length 
+    });
 
-      // Load all sheets from in-memory database
+    // Keep track of which sheets were marked clean for rollback on error
+    const cleanedSheets: string[] = [];
+
+    try {
+      // STEP 1: Load all sheets from database and prepare for save
       const updatedSheets = await Promise.all(
         file.sheets.map(async (sheet: any, index: number) => {
           // Generate tabId (must match the ID used in createWorkbookNode)
-          // If workbookId is provided, use it; otherwise fall back to file.path
           const tabId = workbookId 
             ? `${workbookId}-sheet-${index}`
             : `${file.path}-sheet-${index}`;
 
-          console.log(`[useSaveWorkbook] Loading sheet ${index} with tabId: ${tabId}`);
+          console.log(`[useSaveWorkbook] Processing sheet ${index}`, {
+            sheetName: sheet.name,
+            tabId,
+          });
 
           try {
             // Load 2D array from database
             const data = await db.getCellsAs2DArray(tabId);
-
-            // Mark sheet as clean in DB
-            await db.markSheetDirty(tabId, false);
+            console.log(`[useSaveWorkbook] Loaded ${data.length} rows for sheet ${index}`);
 
             return {
               ...sheet,
@@ -99,17 +106,55 @@ export const useSaveWorkbook = () => {
 
       const updatedFile = { ...file, sheets: updatedSheets };
 
-      // Save using new electron API (ExcelJS-powered for full style support)
+      // STEP 2: Save to file system
+      console.log('[useSaveWorkbook] Writing to file system...');
       const result = await electronAPI.saveFile(updatedFile);
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to save file');
       }
 
-      console.log(`[useSaveWorkbook] Successfully saved: ${file.path}`);
+      console.log('[useSaveWorkbook] File written successfully');
+
+      // STEP 3: Mark all sheets as clean ONLY after successful file write
+      console.log('[useSaveWorkbook] Marking sheets as clean...');
+      await Promise.all(
+        file.sheets.map(async (sheet: any, index: number) => {
+          const tabId = workbookId 
+            ? `${workbookId}-sheet-${index}`
+            : `${file.path}-sheet-${index}`;
+
+          try {
+            await db.markSheetDirty(tabId, false);
+            cleanedSheets.push(tabId);
+            console.log(`[useSaveWorkbook] Marked sheet ${index} (${tabId}) as clean`);
+          } catch (error) {
+            console.error(`[useSaveWorkbook] Failed to mark sheet ${index} as clean:`, error);
+          }
+        })
+      );
+
+      console.log('[useSaveWorkbook] === SAVE COMPLETE ===', { 
+        path: file.path,
+        cleanedSheets: cleanedSheets.length 
+      });
+
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('[useSaveWorkbook] Failed to save workbook:', error);
+      console.error('[useSaveWorkbook] === SAVE FAILED ===', {
+        path: file.path,
+        error: message,
+        cleanedSheets: cleanedSheets.length,
+      });
+
+      // Rollback: Mark any cleaned sheets as dirty again
+      if (cleanedSheets.length > 0) {
+        console.warn('[useSaveWorkbook] Rolling back cleaned sheets...');
+        await Promise.all(
+          cleanedSheets.map(tabId => db.markSheetDirty(tabId, true))
+        );
+      }
+
       throw new Error(`Failed to save workbook ${file.name}: ${message}`);
     }
   }, []);

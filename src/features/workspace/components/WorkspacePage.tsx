@@ -104,9 +104,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   // ============================================
 
   const handleSave = useCallback(async () => {
-    console.log('[WorkspacePage] handleSave called', {
+    console.log('[WorkspacePage] === SAVE REQUESTED ===', {
       hasActiveTab: !!activeTab,
       tabKind: activeTab?.kind,
+      tabId: activeTab?.id,
     });
 
     if (!activeTab) {
@@ -116,13 +117,22 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
     try {
       // Force immediate save through EditorPanel
+      console.log('[WorkspacePage] Calling EditorPanel.save()...');
       await editorPanelRef.current?.save();
+      console.log('[WorkspacePage] EditorPanel.save() completed');
       
-      // Then mark as clean in saveManager
+      // Then save through saveManager (which writes to file)
+      console.log('[WorkspacePage] Calling saveManager.saveTab()...');
       await saveManager.saveTab(activeTab.id);
-      console.log('[WorkspacePage] Save completed');
+      console.log('[WorkspacePage] saveManager.saveTab() completed');
+      
+      console.log('[WorkspacePage] === SAVE SUCCESS ===');
     } catch (error) {
-      console.error('[WorkspacePage] Save failed:', error);
+      console.error('[WorkspacePage] === SAVE ERROR ===', error);
+      
+      // Show error to user (you can replace this with a toast/snackbar)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to save: ${errorMessage}`);
     }
   }, [activeTab, saveManager]);
 
