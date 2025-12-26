@@ -14,6 +14,10 @@ app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-software-rasterizer');
 
+// Suppress DevTools Autofill errors (harmless but noisy)
+// DevTools tries to use Autofill API which isn't implemented in Electron
+app.commandLine.appendSwitch('disable-features', 'Autofill');
+
 // Injected by Electron Forge's Vite plugin at build time.
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const _MAIN_WINDOW_VITE_NAME: string;
@@ -103,18 +107,30 @@ const createMainWindow = (): void => {
   if (process.env.NODE_ENV === 'development') {
     window.webContents.openDevTools({ mode: 'detach' });
     
-    // Suppress DevTools protocol errors
+    // Suppress DevTools Autofill protocol errors
+    // These errors are harmless but noisy - DevTools tries to use Autofill API which isn't implemented in Electron
+    window.webContents.session.webRequest.onBeforeRequest({ urls: ['devtools://*'] }, (details, callback) => {
+      // Allow all DevTools requests
+      callback({});
+    });
+    
+    // Also suppress console errors in the renderer process
     window.webContents.on('devtools-opened', () => {
-      // Filter out unnecessary console errors from DevTools
-      const originalConsoleError = console.error;
-      console.error = (...args: any[]) => {
-        const message = args.join(' ');
-        // Ignore Autofill protocol errors
-        if (message.includes('Autofill.enable') || message.includes('Autofill.setAddresses')) {
-          return;
-        }
-        originalConsoleError.apply(console, args);
-      };
+      window.webContents.executeJavaScript(`
+        (function() {
+          const originalError = console.error;
+          console.error = function(...args) {
+            const message = args.join(' ');
+            // Filter out DevTools Autofill errors
+            if (message.includes('Autofill.enable') || 
+                message.includes('Autofill.setAddresses') ||
+                message.includes("wasn't found")) {
+              return;
+            }
+            originalError.apply(console, args);
+          };
+        })();
+      `);
     });
   }
   setupMenu(window);
