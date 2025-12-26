@@ -196,18 +196,38 @@ export const ExcelViewerDB = forwardRef<ExcelViewerDBHandle, ExcelViewerDBProps>
         saveTimeoutRef.current = setTimeout(async () => {
           const dataToSave = pendingDataRef.current;
           if (dataToSave && dataToSave !== lastSavedDataRef.current) {
+            // Count non-empty cells for debugging
+            const nonEmptyCells = dataToSave.flatMap((row, r) => 
+              row.map((cell, c) => ({ r, c, cell }))
+            ).filter(({ cell }) => 
+              cell && (cell.value !== null && cell.value !== '' && cell.value !== undefined)
+            );
+            
             console.log('[ExcelViewerDB] Debounced save executing', {
               tabId,
               rows: dataToSave.length,
               cols: dataToSave[0]?.length || 0,
+              nonEmptyCellCount: nonEmptyCells.length,
+              sampleCells: nonEmptyCells.slice(0, 5).map(({ r, c, cell }) => ({
+                position: `[${r}, ${c}]`,
+                value: cell.value,
+                type: cell.type,
+              })),
             });
 
             try {
               await save2DArray(dataToSave);
               lastSavedDataRef.current = dataToSave;
+              console.log('[ExcelViewerDB] Save completed successfully');
             } catch (error) {
               console.error('[ExcelViewerDB] Error saving data:', error);
             }
+          } else {
+            console.log('[ExcelViewerDB] Skipping save (no changes or same data)', {
+              tabId,
+              hasData: !!dataToSave,
+              isSame: dataToSave === lastSavedDataRef.current,
+            });
           }
 
           pendingDataRef.current = null;
@@ -361,15 +381,27 @@ export const ExcelViewerDB = forwardRef<ExcelViewerDBHandle, ExcelViewerDBProps>
      */
     const handleSessionChange = useCallback(
       (newState: any) => {
-        if (!newState?.data) return;
+        if (!newState?.data) {
+          console.log('[ExcelViewerDB] handleSessionChange: no data', { tabId });
+          return;
+        }
+
+        console.log('[ExcelViewerDB] handleSessionChange called', {
+          tabId,
+          dirty: newState.dirty,
+          dataRows: newState.data.length,
+          dataCols: newState.data[0]?.length || 0,
+        });
 
         // Only trigger save if data actually changed (dirty flag is true)
         if (newState.dirty) {
           // Use debounced save instead of immediate save
           debouncedSave(newState.data);
+        } else {
+          console.log('[ExcelViewerDB] Skipping save (not dirty)');
         }
       },
-      [debouncedSave]
+      [debouncedSave, tabId]
     );
 
     /**

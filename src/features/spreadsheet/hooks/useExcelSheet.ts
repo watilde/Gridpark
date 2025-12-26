@@ -201,9 +201,19 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     const metaMaxRow = metadata?.maxRow ?? 0;
     const metaMaxCol = metadata?.maxCol ?? 0;
 
-    // Ensure minimum dimensions
-    const rows = Math.max(minRows, metaMaxRow + 1);
-    const cols = Math.max(minCols, metaMaxCol + 1);
+    // Calculate actual data dimensions from cells (for infinite scroll support)
+    let actualMaxRow = metaMaxRow;
+    let actualMaxCol = metaMaxCol;
+    cells.forEach(cell => {
+      if (cell.row > actualMaxRow) actualMaxRow = cell.row;
+      if (cell.col > actualMaxCol) actualMaxCol = cell.col;
+    });
+
+    // CRITICAL FIX: Support infinite scroll by adding buffer beyond actual data
+    // This allows users to scroll and edit cells beyond the current data range
+    // Adding +100 rows and +10 cols buffer for smooth scrolling experience
+    const rows = Math.max(minRows, actualMaxRow + 100); // +100 row buffer for infinite scroll
+    const cols = Math.max(minCols, actualMaxCol + 10);  // +10 col buffer
 
     // Create empty 2D array
     const result: CellData[][] = Array(rows)

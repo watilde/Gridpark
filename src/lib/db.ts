@@ -559,9 +559,18 @@ export class AppDatabase {
     const cells = await this.getCellsForSheet(tabId);
     const metadata = await this.getSheetMetadata(tabId);
 
-    // Determine dimensions
-    const rows = Math.max(minRows, metadata?.maxRow ?? 0) + 1;
-    const cols = Math.max(minCols, metadata?.maxCol ?? 0) + 1;
+    // Calculate ACTUAL dimensions from cells (don't trust metadata - it may be stale!)
+    let actualMaxRow = metadata?.maxRow ?? 0;
+    let actualMaxCol = metadata?.maxCol ?? 0;
+    
+    cells.forEach(cell => {
+      if (cell.row > actualMaxRow) actualMaxRow = cell.row;
+      if (cell.col > actualMaxCol) actualMaxCol = cell.col;
+    });
+
+    // Determine dimensions (use actual cell data, not just metadata)
+    const rows = Math.max(minRows, actualMaxRow + 1);
+    const cols = Math.max(minCols, actualMaxCol + 1);
 
     // Create empty 2D array
     const result: CellData[][] = Array(rows)
