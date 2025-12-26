@@ -385,18 +385,43 @@ ipcMain.handle('excel:save-file', async (_event, excelFile: ExcelFile) => {
       return { success: false, error: 'Invalid file or no file path provided' };
     }
 
+    console.log(`[Main] === SAVE FILE START ===`, {
+      path: excelFile.path,
+      sheetCount: excelFile.sheets.length,
+    });
+
+    // Log first sheet data for debugging
+    if (excelFile.sheets[0]?.data) {
+      const firstSheet = excelFile.sheets[0];
+      const nonEmptyCells = firstSheet.data.flatMap((row, r) => 
+        row.map((cell, c) => ({ r, c, cell }))
+      ).filter(({ cell }) => cell && cell.value !== null && cell.value !== '');
+      console.log(`[Main] First sheet "${firstSheet.name}" has ${nonEmptyCells.length} non-empty cells`);
+      console.log(`[Main] First 5 cells:`, nonEmptyCells.slice(0, 5));
+    }
+
     // Serialize the ExcelFile to ArrayBuffer using ExcelJS
     const buffer = await serializeExcelFile(excelFile);
+    
+    console.log(`[Main] Serialized to buffer of ${buffer.byteLength} bytes`);
     
     // Write to file system
     writeFileSync(excelFile.path, Buffer.from(buffer));
 
-    console.log(`[Main] Saved file: ${excelFile.path}`);
+    console.log(`[Main] === SAVE FILE COMPLETE === ${excelFile.path}`);
     
     return {
       success: true,
       path: excelFile.path,
     };
+  } catch (error) {
+    console.error('[Main] Failed to save file:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
   } catch (error) {
     console.error('Failed to save file:', error);
     return {

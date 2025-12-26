@@ -87,6 +87,12 @@ export const useSaveWorkbook = () => {
             // Load 2D array from database
             const data = await db.getCellsAs2DArray(tabId);
             console.log(`[useSaveWorkbook] Loaded ${data.length} rows for sheet ${index}`);
+            
+            // DEBUG: Log first few cells to verify data
+            const nonEmptyCells = data.flatMap((row, r) => 
+              row.map((cell, c) => ({ r, c, cell }))
+            ).filter(({ cell }) => cell.value !== null && cell.value !== '');
+            console.log(`[useSaveWorkbook] Non-empty cells in sheet ${index}:`, nonEmptyCells.slice(0, 10));
 
             return {
               ...sheet,
