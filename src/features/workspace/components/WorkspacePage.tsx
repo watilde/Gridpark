@@ -131,10 +131,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
       onUndo();
     } else {
       editorPanelRef.current?.undo();
-      // Update undo/redo state after operation
+      // Update undo/redo state after operation (only if changed)
       setTimeout(() => {
-        setCanUndo(editorPanelRef.current?.canUndo() ?? false);
-        setCanRedo(editorPanelRef.current?.canRedo() ?? false);
+        const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
+        const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
+        setCanUndo(prev => prev !== newCanUndo ? newCanUndo : prev);
+        setCanRedo(prev => prev !== newCanRedo ? newCanRedo : prev);
       }, 0);
     }
   }, [onUndo]);
@@ -144,10 +146,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
       onRedo();
     } else {
       editorPanelRef.current?.redo();
-      // Update undo/redo state after operation
+      // Update undo/redo state after operation (only if changed)
       setTimeout(() => {
-        setCanUndo(editorPanelRef.current?.canUndo() ?? false);
-        setCanRedo(editorPanelRef.current?.canRedo() ?? false);
+        const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
+        const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
+        setCanUndo(prev => prev !== newCanUndo ? newCanUndo : prev);
+        setCanRedo(prev => prev !== newCanRedo ? newCanRedo : prev);
       }, 0);
     }
   }, [onRedo]);
@@ -277,8 +281,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     const updateUndoRedoState = () => {
       const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
       const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-      setCanUndo(newCanUndo);
-      setCanRedo(newCanRedo);
+      
+      // Only update state if values actually changed
+      setCanUndo(prev => prev !== newCanUndo ? newCanUndo : prev);
+      setCanRedo(prev => prev !== newCanRedo ? newCanRedo : prev);
     };
 
     updateUndoRedoState();
