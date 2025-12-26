@@ -160,6 +160,19 @@ ipcMain.on('app:set-title', (event, title: string) => {
 
 const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null> => {
   try {
+    console.log('[Main] ========================================');
+    console.log('[Main] Environment:', {
+      platform: process.platform,
+      arch: process.arch,
+      isWSL: process.env.WSL_DISTRO_NAME || process.platform === 'linux' && require('fs').existsSync('/proc/version') && require('fs').readFileSync('/proc/version', 'utf8').includes('microsoft'),
+      nodePath: process.execPath,
+    });
+    console.log('[Main] Loading file:', filePath);
+    console.log('[Main] File path type:', {
+      isWindowsPath: /^[A-Za-z]:/.test(filePath),
+      isMountedPath: filePath.startsWith('/mnt/'),
+      isWSLPath: filePath.startsWith('/home/') || filePath.startsWith('/root/'),
+    });
     console.time(`[Main] Load Excel: ${basename(filePath)}`);
     
     const buffer = readFileSync(filePath);
@@ -174,6 +187,7 @@ const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null
     console.timeLog(`[Main] Load Excel: ${basename(filePath)}`, 'Parse complete');
     
     console.timeEnd(`[Main] Load Excel: ${basename(filePath)}`);
+    console.log('[Main] ========================================');
     
     return { ...workbook, path: filePath };
   } catch (error) {
@@ -345,30 +359,69 @@ ipcMain.handle('excel:create-new-file', async () => {
  */
 ipcMain.handle('excel:open-file', async () => {
   try {
+    console.log('[Main] ===== OPEN FILE DIALOG START =====');
+    console.log('[Main] Environment:', {
+      platform: process.platform,
+      isWSL: process.env.WSL_DISTRO_NAME !== undefined,
+      display: process.env.DISPLAY,
+      wayland: process.env.WAYLAND_DISPLAY,
+    });
+    
     const mainWindow = BrowserWindow.getFocusedWindow();
     if (!mainWindow) {
+      console.error('[Main] No active window');
       return { success: false, error: 'No active window' };
     }
 
+    console.log('[Main] Showing dialog...');
+    console.time('[Main] Dialog duration');
+    
+    // WSL-specific warning
+    const isWSL = process.env.WSL_DISTRO_NAME !== undefined || 
+                  (process.platform === 'linux' && require('fs').existsSync('/proc/version') && 
+                   require('fs').readFileSync('/proc/version', 'utf8').toLowerCase().includes('microsoft'));
+    
+    if (isWSL) {
+      console.warn('[Main] ⚠️ Running in WSL - File dialog may be slow or unresponsive');
+      console.warn('[Main] 💡 Recommendation: Run Gridpark natively on Windows for better performance');
+    }
+    
     const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
       title: 'Open Excel File',
       properties: ['openFile', 'multiSelections'],
       filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
     });
+    
+    console.timeEnd('[Main] Dialog duration');
+    console.log('[Main] Dialog result:', { canceled, fileCount: filePaths.length });
 
     if (canceled || !filePaths.length) {
+      console.log('[Main] Dialog canceled or no files selected');
       return { success: false, canceled: true };
     }
 
+    console.log('[Main] Loading files:', filePaths);
+    console.time('[Main] Total file loading');
+    
     const files = (await Promise.all(filePaths.map(loadExcelFileFromPath)))
       .filter((file): file is ExcelFile => Boolean(file));
+    
+    console.timeEnd('[Main] Total file loading');
+    console.log('[Main] Files loaded:', files.length);
 
     if (!files.length) {
+      console.error('[Main] No valid Excel files found');
       return { success: false, error: 'No valid Excel files found' };
     }
 
+    console.log('[Main] Sending files to renderer...');
+    console.time('[Main] Send to renderer');
+    
     // Send to renderer
     sendFilesToRenderer(mainWindow, { files });
+    
+    console.timeEnd('[Main] Send to renderer');
+    console.log('[Main] ===== OPEN FILE DIALOG COMPLETE =====');
 
     return {
       success: true,
@@ -376,7 +429,7 @@ ipcMain.handle('excel:open-file', async () => {
       count: files.length,
     };
   } catch (error) {
-    console.error('Failed to open file:', error);
+    console.error('[Main] Failed to open file:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),
