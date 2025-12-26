@@ -24,7 +24,8 @@ const TreeItem = styled(Box, {
   display: 'flex',
   alignItems: 'center',
   padding: `${theme.spacing(0.5)} ${theme.spacing(1)}`,
-  paddingLeft: `${theme.spacing(1 + depth * 2)}`,
+  paddingLeft: `${theme.spacing(1)}`,
+  position: 'relative',
   cursor: 'pointer',
   borderRadius: theme.radius.sm,
   backgroundColor: selected ? theme.palette.primary.softBg : 'transparent',
@@ -33,6 +34,17 @@ const TreeItem = styled(Box, {
   '&:hover': {
     backgroundColor: selected ? theme.palette.primary.softBg : theme.palette.neutral.softHoverBg,
   },
+  // Indent guides (VSCode style)
+  '&::before': depth > 0 ? {
+    content: '""',
+    position: 'absolute',
+    left: `${theme.spacing(1 + (depth - 1) * 2 + 0.9)}`,
+    top: 0,
+    bottom: 0,
+    width: '1px',
+    backgroundColor: theme.palette.divider,
+    opacity: 0.3,
+  } : {},
 }));
 
 const ItemIcon = styled(Box)(({ theme }) => ({
@@ -65,6 +77,35 @@ const DirtyDot = styled('span')(({ theme }) => ({
     '0%': { transform: 'scale(0.9)', opacity: 0.6 },
     '50%': { transform: 'scale(1.2)', opacity: 1 },
     '100%': { transform: 'scale(0.9)', opacity: 0.6 },
+  },
+}));
+
+const IndentGuide = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  position: 'relative',
+  width: '20px',
+  height: '100%',
+  flexShrink: 0,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: '10px',
+    top: 0,
+    bottom: '50%',
+    width: '1px',
+    backgroundColor: theme.palette.divider,
+    opacity: 0.3,
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    left: '10px',
+    top: '50%',
+    width: '10px',
+    height: '1px',
+    backgroundColor: theme.palette.divider,
+    opacity: 0.3,
   },
 }));
 
@@ -120,6 +161,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   return (
     <>
       <TreeItem depth={depth} selected={isSelected} onClick={handleClick}>
+        {/* Indent guides for nested items */}
+        {depth > 0 && Array.from({ length: depth }).map((_, i) => (
+          <IndentGuide key={i} />
+        ))}
+        
         {hasChildren && (
           <IconButton
             size="sm"
@@ -133,6 +179,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             {expanded ? <ExpandMoreIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
           </IconButton>
         )}
+        {!hasChildren && <Box sx={{ width: '28px' }} />}
+        
         <ItemIcon>
           {node.type === 'folder' ? (
             expanded ? (
