@@ -7,19 +7,19 @@ import { ExcelFile } from '../renderer/types/excel';
 import ExcelJS from 'exceljs';
 import { themeOptions, DEFAULT_THEME_ID } from '../renderer/theme/theme';
 
-// Filter console output to suppress DevTools Autofill errors
-// These are harmless but noisy messages from DevTools internal protocol
-const originalConsoleError = console.error;
-console.error = (...args: any[]) => {
-  const message = String(args[0] || '');
-  // Suppress DevTools Autofill protocol errors (harmless)
-  if (message.includes('Autofill.enable') || 
-      message.includes('Autofill.setAddresses') ||
-      message.includes('devtools://devtools')) {
-    return;
-  }
-  originalConsoleError.apply(console, args);
-};
+// ============================================================================
+// Suppress Chromium Console Logging
+// ============================================================================
+// This prevents [ERROR:CONSOLE:1] messages from appearing in terminal
+// Specifically suppresses DevTools Autofill protocol errors
+// NOTE: This must be set BEFORE app.whenReady() or any Chromium initialization
+
+// Completely disable Chromium's internal console logging to stderr
+// This is the nuclear option but necessary for DevTools Autofill errors
+// which cannot be suppressed any other way
+if (!process.env.ELECTRON_ENABLE_LOGGING) {
+  process.env.ELECTRON_ENABLE_LOGGING = '0';
+}
 
 // Disable hardware acceleration to prevent GPU errors in sandbox environments
 app.disableHardwareAcceleration();
