@@ -13,7 +13,7 @@
  * All business logic is encapsulated here.
  */
 
-import { useMemo, useCallback, useReducer } from 'react';
+import { useMemo, useCallback, useReducer, useState } from 'react';
 import { useWorkspace } from '../../../renderer/hooks/useWorkspace';
 import { useSaveWorkbook } from '../../../renderer/hooks/useFileSessions';
 import { useFormulaBarOptimized } from '../../../renderer/hooks/useFormulaBarOptimized';
@@ -154,27 +154,62 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   );
 
   // ============================================
-  // Save Manager (Simplified - Dirty tracking is now in Dexie)
+  // Save Manager (Dexie-powered dirty tracking)
   // ============================================
 
-  // TODO: Refactor to use Dexie dirty state instead of Redux
-  const saveManager = {
-    dirtyMap: {},
-    dirtyIds: [],
-    isDirty: (_id: string) => false,
-    markTabDirty: (_id: string) => {},
-    markTabClean: (_id: string) => {},
-    saveTab: async (_tabId: string) => {},
-    saveAllDirtyTabs: async () => {},
-    tabIsDirty: (_tab: any) => false,
-  };
+  // Track dirty tabs with Dexie state
+  const [dirtyTabIds, setDirtyTabIds] = useState<Set<string>>(new Set());
+
+  const saveManager = useMemo(
+    () => ({
+      dirtyMap: Array.from(dirtyTabIds).reduce(
+        (acc, id) => {
+          acc[id] = true;
+          return acc;
+        },
+        {} as Record<string, boolean>
+      ),
+      dirtyIds: Array.from(dirtyTabIds),
+      isDirty: (id: string) => dirtyTabIds.has(id),
+      markTabDirty: (id: string) => {
+        setDirtyTabIds(prev => {
+          const next = new Set(prev);
+          next.add(id);
+          return next;
+        });
+      },
+      markTabClean: (id: string) => {
+        setDirtyTabIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      },
+      saveTab: async (tabId: string) => {
+        // Saving is handled automatically by ExcelViewerDexie
+        // Just mark as clean
+        setDirtyTabIds(prev => {
+          const next = new Set(prev);
+          next.delete(tabId);
+          return next;
+        });
+      },
+      saveAllDirtyTabs: async () => {
+        // Saving is handled automatically by ExcelViewerDexie
+        // Just clear all dirty flags
+        setDirtyTabIds(new Set());
+      },
+      tabIsDirty: (tab: any) => dirtyTabIds.has(tab?.id || ''),
+    }),
+    [dirtyTabIds]
+  );
 
   // ============================================
   // Auto-Save
   // ============================================
 
   const autoSave = useAutoSave({
-    dirtyCount: 0, // TODO: Use Dexie dirty state
+    dirtyCount: dirtyTabIds.size,
     onSaveAll: saveManager.saveAllDirtyTabs,
   });
 
