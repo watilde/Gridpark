@@ -7,7 +7,9 @@
  * Pages should import THIS component, not implement logic directly.
  */
 
-import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useRef } from 'react';
+import { useAppSelector, useAppDispatch } from '../../../stores';
+import { updateUndoRedo, selectCanUndo, selectCanRedo } from '../../../stores/spreadsheetSlice';
 import { AppLayout } from '../../../renderer/components/layout/AppLayout';
 import { SidebarExplorer } from '../../../renderer/components/layout/SidebarExplorer';
 import { WorkspaceHeader } from '../../../renderer/features/workspace/components/WorkspaceHeader';
@@ -32,9 +34,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   const state = useWorkspaceState();
   const editorPanelRef = useRef<EditorPanelHandle>(null);
 
-  // Track undo/redo availability
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
+  // Get undo/redo state from Redux
+  const dispatch = useAppDispatch();
+  const canUndo = useAppSelector(selectCanUndo);
+  const canRedo = useAppSelector(selectCanRedo);
 
   const {
     workbookNodes,
@@ -141,30 +144,32 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
       onUndo();
     } else {
       editorPanelRef.current?.undo();
-      // Update undo/redo state after operation (only if changed)
+      // Update undo/redo state after operation
       setTimeout(() => {
         const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
         const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-        setCanUndo(prev => prev !== newCanUndo ? newCanUndo : prev);
-        setCanRedo(prev => prev !== newCanRedo ? newCanRedo : prev);
+        if (newCanUndo !== canUndo || newCanRedo !== canRedo) {
+          dispatch(updateUndoRedo({ canUndo: newCanUndo, canRedo: newCanRedo }));
+        }
       }, 0);
     }
-  }, [onUndo]);
+  }, [onUndo, canUndo, canRedo, dispatch]);
 
   const handleRedo = useCallback(() => {
     if (onRedo) {
       onRedo();
     } else {
       editorPanelRef.current?.redo();
-      // Update undo/redo state after operation (only if changed)
+      // Update undo/redo state after operation
       setTimeout(() => {
         const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
         const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-        setCanUndo(prev => prev !== newCanUndo ? newCanUndo : prev);
-        setCanRedo(prev => prev !== newCanRedo ? newCanRedo : prev);
+        if (newCanUndo !== canUndo || newCanRedo !== canRedo) {
+          dispatch(updateUndoRedo({ canUndo: newCanUndo, canRedo: newCanRedo }));
+        }
       }, 0);
     }
-  }, [onRedo]);
+  }, [onRedo, canUndo, canRedo, dispatch]);
 
   const handleCellSelect = useCallback((_pos: any) => {
     // TODO: Implement cell selection handling
@@ -294,9 +299,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
       const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
       const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
       
-      // Only update state if values actually changed
-      setCanUndo(prev => prev !== newCanUndo ? newCanUndo : prev);
-      setCanRedo(prev => prev !== newCanRedo ? newCanRedo : prev);
+      // Only update Redux if values actually changed
+      if (newCanUndo !== canUndo || newCanRedo !== canRedo) {
+        dispatch(updateUndoRedo({ canUndo: newCanUndo, canRedo: newCanRedo }));
+      }
     };
 
     updateUndoRedoState();
@@ -305,7 +311,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     const interval = setInterval(updateUndoRedoState, 200);
 
     return () => clearInterval(interval);
-  }, [activeTab]);
+  }, [activeTab, canUndo, canRedo, dispatch]);
 
   // ============================================================================
   // Render

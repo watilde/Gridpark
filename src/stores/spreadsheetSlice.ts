@@ -30,9 +30,11 @@ export type { WorkbookTab };
  * Redux manages UI state:
  * - Workspace navigation (tabs, nodes, selection)
  * - UI preferences (auto-save, settings)
+ * - Formula bar state (centralized)
+ * - Undo/redo state (centralized)
  *
  * NOTE: Dirty tracking is now EXCLUSIVELY in database (sheetMetadata.dirty)
- * Use useLiveQuery to reactively read dirty state from database
+ * Use db.subscribe to reactively read dirty state from database
  */
 export interface SpreadsheetState {
   // ========================================================================
@@ -47,6 +49,24 @@ export interface SpreadsheetState {
   // ========================================================================
   openTabs: WorkbookTab[];
   activeTabId: string;
+
+  // ========================================================================
+  // Formula Bar State (Centralized)
+  // ========================================================================
+  formulaBar: {
+    activeCellAddress: string;
+    formulaBarValue: string;
+    formulaBaselineValue: string;
+    isEditing: boolean;
+  };
+
+  // ========================================================================
+  // Undo/Redo State (Centralized)
+  // ========================================================================
+  undoRedo: {
+    canUndo: boolean;
+    canRedo: boolean;
+  };
 
   // ========================================================================
   // UI Preferences
@@ -65,6 +85,16 @@ const initialState: SpreadsheetState = {
   selectedNodeId: '',
   openTabs: [],
   activeTabId: '',
+  formulaBar: {
+    activeCellAddress: '',
+    formulaBarValue: '',
+    formulaBaselineValue: '',
+    isEditing: false,
+  },
+  undoRedo: {
+    canUndo: false,
+    canRedo: false,
+  },
   autoSaveEnabled: false,
   autoSaveInterval: 2000,
 };
@@ -192,6 +222,61 @@ const spreadsheetSlice = createSlice({
     },
 
     // ========================================================================
+    // Formula Bar Actions
+    // ========================================================================
+
+    setFormulaBarAddress: (state, action: PayloadAction<string>) => {
+      state.formulaBar.activeCellAddress = action.payload;
+    },
+
+    setFormulaBarValue: (state, action: PayloadAction<string>) => {
+      state.formulaBar.formulaBarValue = action.payload;
+    },
+
+    setFormulaBaselineValue: (state, action: PayloadAction<string>) => {
+      state.formulaBar.formulaBaselineValue = action.payload;
+    },
+
+    setFormulaBarEditing: (state, action: PayloadAction<boolean>) => {
+      state.formulaBar.isEditing = action.payload;
+    },
+
+    updateFormulaBar: (
+      state,
+      action: PayloadAction<{
+        address?: string;
+        value?: string;
+        baseline?: string;
+        isEditing?: boolean;
+      }>
+    ) => {
+      const { address, value, baseline, isEditing } = action.payload;
+      if (address !== undefined) state.formulaBar.activeCellAddress = address;
+      if (value !== undefined) state.formulaBar.formulaBarValue = value;
+      if (baseline !== undefined) state.formulaBar.formulaBaselineValue = baseline;
+      if (isEditing !== undefined) state.formulaBar.isEditing = isEditing;
+    },
+
+    // ========================================================================
+    // Undo/Redo Actions
+    // ========================================================================
+
+    setCanUndo: (state, action: PayloadAction<boolean>) => {
+      state.undoRedo.canUndo = action.payload;
+    },
+
+    setCanRedo: (state, action: PayloadAction<boolean>) => {
+      state.undoRedo.canRedo = action.payload;
+    },
+
+    updateUndoRedo: (
+      state,
+      action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>
+    ) => {
+      state.undoRedo = action.payload;
+    },
+
+    // ========================================================================
     // Bulk Operations
     // ========================================================================
 
@@ -215,6 +300,18 @@ export const {
   closeTab,
   setActiveTab,
   focusTab,
+
+  // Formula Bar
+  setFormulaBarAddress,
+  setFormulaBarValue,
+  setFormulaBaselineValue,
+  setFormulaBarEditing,
+  updateFormulaBar,
+
+  // Undo/Redo
+  setCanUndo,
+  setCanRedo,
+  updateUndoRedo,
 
   // Auto-save
   setAutoSaveEnabled,
@@ -249,3 +346,17 @@ export const selectActiveTab = (state: RootState) => {
 // Auto-save selectors
 export const selectAutoSaveEnabled = (state: RootState) => state.spreadsheet.autoSaveEnabled;
 export const selectAutoSaveInterval = (state: RootState) => state.spreadsheet.autoSaveInterval;
+
+// Formula Bar selectors
+export const selectFormulaBar = (state: RootState) => state.spreadsheet.formulaBar;
+export const selectFormulaBarAddress = (state: RootState) =>
+  state.spreadsheet.formulaBar.activeCellAddress;
+export const selectFormulaBarValue = (state: RootState) =>
+  state.spreadsheet.formulaBar.formulaBarValue;
+export const selectFormulaBarEditing = (state: RootState) =>
+  state.spreadsheet.formulaBar.isEditing;
+
+// Undo/Redo selectors
+export const selectUndoRedo = (state: RootState) => state.spreadsheet.undoRedo;
+export const selectCanUndo = (state: RootState) => state.spreadsheet.undoRedo.canUndo;
+export const selectCanRedo = (state: RootState) => state.spreadsheet.undoRedo.canRedo;
