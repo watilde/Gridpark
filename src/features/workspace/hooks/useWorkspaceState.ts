@@ -194,8 +194,9 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
       const workbookNode = findWorkbookNode(tab.workbookId);
       if (workbookNode?.file) {
         try {
-          console.log('[useWorkspaceState] Saving workbook:', workbookNode.file.path);
-          await saveWorkbookFile(workbookNode.file);
+          console.log('[useWorkspaceState] Saving workbook:', workbookNode.file.path, 'with workbookId:', tab.workbookId);
+          // Pass workbookId so the correct tabIds are used
+          await saveWorkbookFile(workbookNode.file, tab.workbookId);
           console.log('[useWorkspaceState] Workbook saved successfully');
         } catch (error) {
           console.error('[useWorkspaceState] Failed to save workbook:', error);
@@ -224,7 +225,8 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
         const workbookNode = findWorkbookNode(tab.workbookId);
         if (workbookNode?.file) {
           try {
-            await saveWorkbookFile(workbookNode.file);
+            // Pass workbookId so the correct tabIds are used
+            await saveWorkbookFile(workbookNode.file, tab.workbookId);
           } catch (error) {
             console.error('[useWorkspaceState] Failed to save workbook:', error);
           }

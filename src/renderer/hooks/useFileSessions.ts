@@ -49,7 +49,7 @@ const isManifestSessionDirty = (session?: ManifestSession) => {
  * Loads all sheet data from Dexie and serializes to .xlsx
  */
 export const useSaveWorkbook = () => {
-  const saveWorkbookFile = useCallback(async (file: ExcelFile) => {
+  const saveWorkbookFile = useCallback(async (file: ExcelFile, workbookId?: string) => {
     if (!file.path) {
       throw new Error('Cannot save workbook without a file path');
     }
@@ -66,8 +66,13 @@ export const useSaveWorkbook = () => {
       // Load all sheets from in-memory database
       const updatedSheets = await Promise.all(
         file.sheets.map(async (sheet: any, index: number) => {
-          // Generate tabId (must match the ID used when opening the file)
-          const tabId = `${file.path}-sheet-${index}`;
+          // Generate tabId (must match the ID used in createWorkbookNode)
+          // If workbookId is provided, use it; otherwise fall back to file.path
+          const tabId = workbookId 
+            ? `${workbookId}-sheet-${index}`
+            : `${file.path}-sheet-${index}`;
+
+          console.log(`[useSaveWorkbook] Loading sheet ${index} with tabId: ${tabId}`);
 
           try {
             // Load 2D array from database
