@@ -122,6 +122,31 @@ export const useWorkspace = (
           db.batchUpsertSheetMetadata(metadataArray)
             .then((ids) => {
               console.log('[useWorkspace] All sheet metadata initialized in batch:', { count: ids.length });
+              
+              // CRITICAL: Also save initial data to database
+              // This ensures data is available when saving
+              console.log('[useWorkspace] Saving initial sheet data to database...');
+              const dataPromises = files.flatMap((file, fileIndex) => {
+                const workbookId = `workbook-${timestamp}-${fileIndex}`;
+                return file.sheets.map(async (sheet, sheetIndex) => {
+                  const tabId = `${workbookId}-sheet-${sheetIndex}`;
+                  
+                  // Only save if sheet has data
+                  if (sheet.data && sheet.data.length > 0) {
+                    try {
+                      await db.save2DArrayAsCells(tabId, sheet.data);
+                      console.log(`[useWorkspace] Initial data saved for ${sheet.name}`);
+                    } catch (error) {
+                      console.error(`[useWorkspace] Failed to save initial data for ${sheet.name}:`, error);
+                    }
+                  }
+                });
+              });
+              
+              return Promise.all(dataPromises);
+            })
+            .then(() => {
+              console.log('[useWorkspace] All initial data saved to database');
             })
             .catch(error => {
               console.error('[useWorkspace] Failed to batch initialize metadata:', error);
