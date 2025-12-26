@@ -154,29 +154,42 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   );
 
   // ============================================
-  // Save Manager (Dexie-powered dirty tracking)
+  // Save Manager (Single Source of Truth: Database only)
   // ============================================
 
-  // Track dirty tabs with Dexie state
-  const [dirtyTabIds, setDirtyTabIds] = useState<Set<string>>(new Set());
+  // Load dirty state from database (reactive)
+  const [allSheetMetadata, setAllSheetMetadata] = useState<any[]>([]);
 
-  // Individual callbacks with stable references
-  const markTabDirty = useCallback((id: string) => {
-    setDirtyTabIds(prev => {
-      if (prev.has(id)) return prev; // Prevent unnecessary updates
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
+  useEffect(() => {
+    const refreshMetadata = async () => {
+      const metadata = await db.getAllSheetMetadata();
+      setAllSheetMetadata(metadata);
+    };
+
+    refreshMetadata();
+    const interval = setInterval(refreshMetadata, 300); // Refresh every 300ms
+
+    return () => clearInterval(interval);
   }, []);
 
-  const markTabClean = useCallback((id: string) => {
-    setDirtyTabIds(prev => {
-      if (!prev.has(id)) return prev; // Prevent unnecessary updates
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
+  // Compute dirty tab IDs from database metadata
+  const dirtyTabIds = useMemo(() => {
+    return new Set(
+      allSheetMetadata
+        .filter(meta => meta.dirty)
+        .map(meta => meta.tabId)
+    );
+  }, [allSheetMetadata]);
+
+  // Individual callbacks that work directly with database
+  const markTabDirty = useCallback(async (id: string) => {
+    console.log('[useWorkspaceState] markTabDirty', { id });
+    await db.markSheetDirty(id, true);
+  }, []);
+
+  const markTabClean = useCallback(async (id: string) => {
+    console.log('[useWorkspaceState] markTabClean', { id });
+    await db.markSheetDirty(id, false);
   }, []);
 
   const saveTab = useCallback(async (tabId: string) => {
@@ -216,11 +229,10 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
       }
     }
     
-    // Mark as clean ONLY if save was successful
-    markTabClean(tabId);
+    // No need to markTabClean - saveWorkbookFile already does it
     
     console.log('[useWorkspaceState] === TAB SAVED ===', { tabId });
-  }, [openTabs, findWorkbookNode, saveWorkbookFile, markTabClean]);
+  }, [openTabs, findWorkbookNode, saveWorkbookFile]);
 
   const saveAllDirtyTabs = useCallback(async () => {
     console.log('[useWorkspaceState] saveAllDirtyTabs called', {
@@ -237,6 +249,18 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
         if (workbookNode?.file) {
           try {
             // Pass workbookId so the correct tabIds are used
+            await saveWorkbookFile(workbookNode.file, tab.workbookId);
+          } catch (error) {
+            console.error('[useWorkspaceState] Failed to save workbook:', error);
+          }
+        }
+      }
+    });
+
+    await Promise.all(savePromises);
+    
+    console.log('[useWorkspaceState] All tabs saved');
+  }, [dirtyTabIds, openTabs, findWorkbookNode, saveWorkbookFile]);
             await saveWorkbookFile(workbookNode.file, tab.workbookId);
           } catch (error) {
             console.error('[useWorkspaceState] Failed to save workbook:', error);
