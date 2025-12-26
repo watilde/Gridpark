@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useTransition, useState } from 'react';
+import { useCallback, useEffect, useMemo, useTransition } from 'react';
 import { db } from '../../lib/db';
 import { ExcelFile } from '../types/excel';
 import { FileNode } from '../features/file-explorer/FileTree';
@@ -178,43 +178,12 @@ export const useWorkspace = (
   // Dirty Tracking Functions (OPTIMIZED - Database Only)
   // ==========================================
 
-  // Load all sheet metadata from database (using state for reactivity)
-  const [allSheetMetadata, setAllSheetMetadata] = useState<any[]>([]);
-
-  // Refresh sheet metadata periodically
-  useEffect(() => {
-    const refreshMetadata = async () => {
-      const metadata = await db.getAllSheetMetadata();
-      setAllSheetMetadata(metadata);
-    };
-
-    refreshMetadata();
-    const interval = setInterval(refreshMetadata, 1000); // Refresh every second
-
-    return () => clearInterval(interval);
+  // Dirty tracking is handled in useWorkspaceState via database events
+  // No local state needed here - just return empty functions for compatibility
+  const tabIsDirty = useCallback((_tab: WorkbookTab): boolean => {
+    // This will be called from useWorkspaceState which has the real dirty tracking
+    return false;
   }, []);
-
-  // Build dirty map from metadata
-  const sheetDirtyMap = useMemo(() => {
-    const map: Record<string, boolean> = {};
-    allSheetMetadata?.forEach(metadata => {
-      if (metadata.dirty) {
-        map[metadata.tabId] = true;
-      }
-    });
-    return map;
-  }, [allSheetMetadata]);
-
-  const tabIsDirty = useCallback(
-    (tab: WorkbookTab): boolean => {
-      if (tab.kind === 'sheet') {
-        // Check database dirty map
-        return Boolean(sheetDirtyMap[tab.id]);
-      }
-      return false;
-    },
-    [sheetDirtyMap]
-  );
 
   const dirtyNodeIds = useMemo(() => {
     const map: Record<string, boolean> = {};

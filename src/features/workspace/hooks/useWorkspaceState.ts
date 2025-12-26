@@ -273,6 +273,8 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
   const saveManager = useMemo(
     () => ({
+      // Simplified: just expose the Set directly
+      dirtyTabIds,
       dirtyMap: Array.from(dirtyTabIds).reduce(
         (acc, id) => {
           acc[id] = true;
