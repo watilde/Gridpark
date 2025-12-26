@@ -23,6 +23,7 @@ const TreeItem = styled(Box, {
 })<{ depth: number; selected?: boolean }>(({ theme, depth, selected }) => ({
   display: 'flex',
   alignItems: 'center',
+  minHeight: '28px',
   padding: `${theme.spacing(0.5)} ${theme.spacing(1)}`,
   paddingLeft: `${theme.spacing(1)}`,
   position: 'relative',
@@ -34,17 +35,6 @@ const TreeItem = styled(Box, {
   '&:hover': {
     backgroundColor: selected ? theme.palette.primary.softBg : theme.palette.neutral.softHoverBg,
   },
-  // Indent guides (VSCode style)
-  '&::before': depth > 0 ? {
-    content: '""',
-    position: 'absolute',
-    left: `${theme.spacing(1 + (depth - 1) * 2 + 0.9)}`,
-    top: 0,
-    bottom: 0,
-    width: '1px',
-    backgroundColor: theme.palette.divider,
-    opacity: 0.3,
-  } : {},
 }));
 
 const ItemIcon = styled(Box)(({ theme }) => ({

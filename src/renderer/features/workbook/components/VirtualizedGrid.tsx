@@ -162,6 +162,17 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
       endRow: Math.min(50, rowCount),
     });
 
+    // Store latest function refs to prevent handleScroll from changing
+    const columnWidthRef = useRef(columnWidth);
+    const rowHeightRef = useRef(rowHeight);
+    const onScrollRef = useRef(onScroll);
+    
+    useEffect(() => {
+      columnWidthRef.current = columnWidth;
+      rowHeightRef.current = rowHeight;
+      onScrollRef.current = onScroll;
+    });
+
     // Calculate total dimensions
     let totalWidth = rowHeaderWidth;
     for (let i = 0; i < columnCount; i++) {
@@ -214,7 +225,7 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
       let endCol = columnCount;
 
       for (let i = 0; i < columnCount; i++) {
-        const width = columnWidth(i);
+        const width = columnWidthRef.current(i);
         if (currentX + width < scrollLeft) {
           startCol = i + 1;
         }
@@ -231,7 +242,7 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
       let endRow = rowCount;
 
       for (let i = 0; i < rowCount; i++) {
-        const height = rowHeight(i);
+        const height = rowHeightRef.current(i);
         if (currentY + height < scrollTop) {
           startRow = i + 1;
         }
@@ -249,8 +260,8 @@ export const VirtualizedGrid = forwardRef<VirtualizedGridRef, VirtualizedGridPro
         endRow: Math.min(rowCount, endRow + overscanCount),
       });
 
-      onScroll?.({ scrollLeft, scrollTop });
-    }, [columnCount, rowCount, columnWidth, rowHeight, headerHeight, rowHeaderWidth, onScroll]);
+      onScrollRef.current?.({ scrollLeft, scrollTop });
+    }, [columnCount, rowCount, headerHeight, rowHeaderWidth]);
 
     useEffect(() => {
       const container = containerRef.current;
