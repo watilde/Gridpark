@@ -13,12 +13,13 @@
  * All business logic is encapsulated here.
  */
 
-import { useMemo, useCallback, useReducer, useState } from 'react';
+import { useMemo, useCallback, useReducer, useState, useEffect } from 'react';
 import { useWorkspace } from '../../../renderer/hooks/useWorkspace';
 import { useSaveWorkbook } from '../../../renderer/hooks/useFileSessions';
 import { useFormulaBarOptimized } from '../../../renderer/hooks/useFormulaBarOptimized';
 import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
 import { useAutoSave } from './useAutoSave';
+import { db } from '../../../lib/db';
 import type { ExcelFile } from '../../../renderer/types/excel';
 import type {
   SearchNavigationCommand,
