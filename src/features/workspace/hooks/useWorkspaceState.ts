@@ -159,6 +159,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   // ============================================
 
   // Load dirty state from database (event-driven, no polling!)
+  // OPTIMIZED: Only subscribe to metadata changes (not cells)
   const [allSheetMetadata, setAllSheetMetadata] = useState<any[]>([]);
 
   useEffect(() => {
@@ -171,12 +172,11 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     loadMetadata();
 
     // Subscribe to database changes (event-driven)
+    // FILTER: Only metadata changes (ignore cell changes for performance)
     const unsubscribe = db.subscribe((event) => {
-      if (event.type === 'metadata') {
-        console.log('[useWorkspaceState] Metadata change detected, reloading');
-        loadMetadata();
-      }
-    });
+      console.log('[useWorkspaceState] Metadata change detected, reloading');
+      loadMetadata();
+    }, { type: 'metadata' }); // ← FILTER: Only metadata, not cells
 
     return unsubscribe;
   }, []);

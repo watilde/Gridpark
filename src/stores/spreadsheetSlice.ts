@@ -51,6 +51,11 @@ export interface SpreadsheetState {
   activeTabId: string;
 
   // ========================================================================
+  // Dirty Tracking (Computed from Database)
+  // ========================================================================
+  dirtyTabIds: string[]; // Array of dirty tab IDs (synced from database)
+
+  // ========================================================================
   // Formula Bar State (Centralized)
   // ========================================================================
   formulaBar: {
@@ -85,6 +90,7 @@ const initialState: SpreadsheetState = {
   selectedNodeId: '',
   openTabs: [],
   activeTabId: '',
+  dirtyTabIds: [],
   formulaBar: {
     activeCellAddress: '',
     formulaBarValue: '',
@@ -222,6 +228,24 @@ const spreadsheetSlice = createSlice({
     },
 
     // ========================================================================
+    // Dirty Tracking Actions
+    // ========================================================================
+
+    setDirtyTabIds: (state, action: PayloadAction<string[]>) => {
+      state.dirtyTabIds = action.payload;
+    },
+
+    addDirtyTab: (state, action: PayloadAction<string>) => {
+      if (!state.dirtyTabIds.includes(action.payload)) {
+        state.dirtyTabIds.push(action.payload);
+      }
+    },
+
+    removeDirtyTab: (state, action: PayloadAction<string>) => {
+      state.dirtyTabIds = state.dirtyTabIds.filter(id => id !== action.payload);
+    },
+
+    // ========================================================================
     // Formula Bar Actions
     // ========================================================================
 
@@ -317,6 +341,11 @@ export const {
   setAutoSaveEnabled,
   setAutoSaveInterval,
 
+  // Dirty Tracking
+  setDirtyTabIds,
+  addDirtyTab,
+  removeDirtyTab,
+
   // Bulk
   resetSpreadsheetState,
 } = spreadsheetSlice.actions;
@@ -360,3 +389,9 @@ export const selectFormulaBarEditing = (state: RootState) =>
 export const selectUndoRedo = (state: RootState) => state.spreadsheet.undoRedo;
 export const selectCanUndo = (state: RootState) => state.spreadsheet.undoRedo.canUndo;
 export const selectCanRedo = (state: RootState) => state.spreadsheet.undoRedo.canRedo;
+
+// Dirty Tracking selectors
+export const selectDirtyTabIds = (state: RootState) => state.spreadsheet.dirtyTabIds;
+export const selectIsDirty = (tabId: string) => (state: RootState) =>
+  state.spreadsheet.dirtyTabIds.includes(tabId);
+export const selectDirtyCount = (state: RootState) => state.spreadsheet.dirtyTabIds.length;

@@ -156,6 +156,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   const [cells, setCells] = useState<StoredCellData[]>([]);
 
   // Subscribe to database changes (event-driven, no polling!)
+  // OPTIMIZED: Only subscribe to changes for THIS specific tabId
   useEffect(() => {
     // Initial load
     const loadData = async () => {
@@ -167,16 +168,18 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     
     loadData();
 
-    // Subscribe to changes for this specific tabId
+    // Subscribe to changes for this specific tabId only (filtered)
     const unsubscribe = db.subscribe((event) => {
-      // Only reload if the change affects THIS sheet
-      if (event.tabId === tabId) {
-        console.log('[useExcelSheet] Database change detected', { tabId, type: event.type, action: event.action });
-        
-        // Reload data immediately
-        loadData();
-      }
-    });
+      console.log('[useExcelSheet] Database change detected', { 
+        tabId, 
+        eventTabId: event.tabId,
+        type: event.type, 
+        action: event.action 
+      });
+      
+      // Reload data immediately (only called for matching tabId)
+      loadData();
+    }, { tabId }); // ← FILTER: Only listen to this tabId
 
     return unsubscribe;
   }, [tabId]);

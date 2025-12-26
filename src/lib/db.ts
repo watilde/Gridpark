@@ -119,11 +119,18 @@ export interface WorkbookMetadata {
 // Database Class (In-Memory Storage with Event System)
 // ============================================================================
 
-type ChangeListener = (event: {
+type ChangeEvent = {
   type: 'metadata' | 'cells';
   tabId: string;
   action: 'create' | 'update' | 'delete';
-}) => void;
+};
+
+type ChangeListener = (event: ChangeEvent) => void;
+
+type SubscriptionOptions = {
+  tabId?: string; // Subscribe to specific tabId only
+  type?: 'metadata' | 'cells'; // Subscribe to specific type only
+};
 
 export class AppDatabase {
   // In-memory storage
@@ -133,21 +140,25 @@ export class AppDatabase {
   private nextId = 1;
 
   // Event system for reactive updates (replaces polling)
-  private listeners: Set<ChangeListener> = new Set();
+  // Optimized: Store listeners with their filter options
+  private listeners: Map<ChangeListener, SubscriptionOptions> = new Map();
 
   constructor() {
-    console.log('[DB] In-memory database initialized with event system');
+    console.log('[DB] In-memory database initialized with optimized event system');
   }
 
   // ==========================================================================
-  // Event System (Observer Pattern)
+  // Event System (Observer Pattern with Selective Subscription)
   // ==========================================================================
 
   /**
-   * Subscribe to database changes
+   * Subscribe to database changes with optional filters
+   * @param listener - Callback function
+   * @param options - Filter options (tabId, type)
+   * @returns Unsubscribe function
    */
-  subscribe(listener: ChangeListener): () => void {
-    this.listeners.add(listener);
+  subscribe(listener: ChangeListener, options: SubscriptionOptions = {}): () => void {
+    this.listeners.set(listener, options);
     // Return unsubscribe function
     return () => {
       this.listeners.delete(listener);
@@ -155,14 +166,20 @@ export class AppDatabase {
   }
 
   /**
-   * Notify all listeners of a change
+   * Notify listeners of a change (only matching filters)
    */
-  private notify(event: { type: 'metadata' | 'cells'; tabId: string; action: 'create' | 'update' | 'delete' }) {
-    this.listeners.forEach(listener => {
-      try {
-        listener(event);
-      } catch (error) {
-        console.error('[DB] Error in change listener:', error);
+  private notify(event: ChangeEvent) {
+    this.listeners.forEach((options, listener) => {
+      // Filter: only notify if event matches subscription options
+      const matchesTabId = !options.tabId || options.tabId === event.tabId;
+      const matchesType = !options.type || options.type === event.type;
+      
+      if (matchesTabId && matchesType) {
+        try {
+          listener(event);
+        } catch (error) {
+          console.error('[DB] Error in change listener:', error);
+        }
       }
     });
   }
