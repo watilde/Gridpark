@@ -70,13 +70,38 @@ export const useWorkspace = (
   );
 
   const resetWorkbooks = useCallback(
-    (files: ExcelFile[], directoryName?: string) => {
+    async (files: ExcelFile[], directoryName?: string) => {
       // Use startTransition to keep UI responsive during heavy file processing
-      startFileTransition(() => {
+      startFileTransition(async () => {
         const timestamp = Date.now();
         const nodes = files.map((file, index) =>
           createWorkbookNode(file, `workbook-${timestamp}-${index}`)
         );
+
+        // Initialize metadata for ALL sheets in ALL workbooks
+        for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
+          const file = files[fileIndex];
+          const workbookId = `workbook-${timestamp}-${fileIndex}`;
+          
+          for (let sheetIndex = 0; sheetIndex < file.sheets.length; sheetIndex++) {
+            const sheet = file.sheets[sheetIndex];
+            const tabId = `${workbookId}-sheet-${sheetIndex}`;
+            
+            // Initialize sheet metadata
+            await db.upsertSheetMetadata({
+              tabId,
+              workbookId,
+              sheetName: sheet.name,
+              sheetIndex,
+              maxRow: sheet.rowCount || 100,
+              maxCol: sheet.colCount || 26,
+              cellCount: 0,
+              dirty: false,
+            });
+            
+            console.log('[useWorkspace] Initialized metadata for', { tabId, sheetName: sheet.name });
+          }
+        }
 
         // Open first sheet by default
         const firstSheetNode = nodes[0]?.children?.find(child => child.type === 'sheet');

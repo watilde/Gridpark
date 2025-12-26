@@ -212,9 +212,9 @@ export class AppDatabase {
     const metadata = await this.getSheetMetadata(tabId);
     
     if (!metadata) {
-      console.error('[db] No metadata found for tabId:', tabId);
-      console.error('[db] Available tabIds:', Array.from(this.sheetMetadataStore.keys()));
-      throw new Error(`No metadata found for tabId: ${tabId}`);
+      console.warn('[db] No metadata found for tabId (skipping):', tabId);
+      console.warn('[db] Available tabIds:', Array.from(this.sheetMetadataStore.keys()));
+      return; // Silently skip if metadata doesn't exist
     }
 
     const oldDirty = metadata.dirty;
