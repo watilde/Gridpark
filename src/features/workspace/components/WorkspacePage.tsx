@@ -224,6 +224,32 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   }, [handleSave]);
 
   // ============================================================================
+  // Menu Save/Save As handlers
+  // ============================================================================
+
+  useEffect(() => {
+    const electronAPI = window.electronAPI;
+    if (!electronAPI) return;
+
+    // Listen for menu save event
+    const unsubscribeSave = electronAPI.onMenuSave?.(() => {
+      console.log('[WorkspacePage] Menu Save triggered');
+      handleSave();
+    });
+
+    // Listen for menu save as event
+    const unsubscribeSaveAs = electronAPI.onMenuSaveAs?.(() => {
+      console.log('[WorkspacePage] Menu Save As triggered');
+      // TODO: Implement Save As functionality
+    });
+
+    return () => {
+      unsubscribeSave?.();
+      unsubscribeSaveAs?.();
+    };
+  }, [handleSave]);
+
+  // ============================================================================
   // Update window title
   // ============================================================================
 

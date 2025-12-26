@@ -1,9 +1,10 @@
 import { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } from 'electron';
 import type { AboutPanelOptionsOptions } from 'electron';
 import { join, basename, extname, dirname } from 'path';
-import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { parseExcelFile, serializeExcelFile } from '../renderer/utils/excelUtils';
 import { ExcelFile } from '../renderer/types/excel';
+import ExcelJS from 'exceljs';
 import { themeOptions, DEFAULT_THEME_ID } from '../renderer/theme/theme';
 
 // Disable hardware acceleration to prevent GPU errors in sandbox environments
@@ -230,6 +231,16 @@ const setupMenu = (window: BrowserWindow) => {
           accelerator: 'CmdOrCtrl+O',
           click: () => handleOpenFiles(window),
         },
+        {
+          label: 'Save',
+          accelerator: 'CmdOrCtrl+S',
+          click: () => window.webContents.send('menu:save'),
+        },
+        {
+          label: 'Save As…',
+          accelerator: 'CmdOrCtrl+Shift+S',
+          click: () => window.webContents.send('menu:save-as'),
+        },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' },
       ],
@@ -357,6 +368,81 @@ ipcMain.handle('excel:open-file', async () => {
     };
   } catch (error) {
     console.error('Failed to open file:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+/**
+ * Save Excel File
+ * Saves the current workbook data to a file
+ */
+ipcMain.handle('excel:save-file', async (_event, excelFile: ExcelFile) => {
+  try {
+    if (!excelFile || !excelFile.path) {
+      return { success: false, error: 'Invalid file or no file path provided' };
+    }
+
+    // Serialize the ExcelFile to ArrayBuffer using ExcelJS
+    const buffer = await serializeExcelFile(excelFile);
+    
+    // Write to file system
+    writeFileSync(excelFile.path, Buffer.from(buffer));
+
+    console.log(`[Main] Saved file: ${excelFile.path}`);
+    
+    return {
+      success: true,
+      path: excelFile.path,
+    };
+  } catch (error) {
+    console.error('Failed to save file:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+/**
+ * Save Excel File As
+ * Shows save dialog and saves to a new location
+ */
+ipcMain.handle('excel:save-file-as', async (_event, excelFile: ExcelFile) => {
+  try {
+    const mainWindow = BrowserWindow.getFocusedWindow();
+    if (!mainWindow) {
+      return { success: false, error: 'No active window' };
+    }
+
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Excel File As',
+      defaultPath: excelFile.name || 'Untitled.xlsx',
+      filters: [{ name: 'Excel Files', extensions: ['xlsx'] }],
+      properties: ['createDirectory', 'showOverwriteConfirmation'],
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, canceled: true };
+    }
+
+    // Serialize the ExcelFile to ArrayBuffer using ExcelJS
+    const buffer = await serializeExcelFile(excelFile);
+    
+    // Write to file system
+    writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(`[Main] Saved file as: ${filePath}`);
+    
+    return {
+      success: true,
+      path: filePath,
+      name: basename(filePath),
+    };
+  } catch (error) {
+    console.error('Failed to save file as:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),

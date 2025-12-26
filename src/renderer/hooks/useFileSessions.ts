@@ -54,22 +54,23 @@ export const useSaveWorkbook = () => {
       throw new Error('Cannot save workbook without a file path');
     }
 
-    const gridparkApi = window.electronAPI?.gridpark;
-    if (!gridparkApi?.writeBinaryFile) {
-      throw new Error('Binary file saving is only available in the desktop app');
+    // Use the new electron API for saving
+    const electronAPI = window.electronAPI;
+    if (!electronAPI?.saveFile) {
+      throw new Error('File saving is only available in the desktop app');
     }
 
     try {
       console.log(`[useSaveWorkbook] Saving workbook: ${file.path}`);
 
-      // Load all sheets from Dexie
+      // Load all sheets from in-memory database
       const updatedSheets = await Promise.all(
         file.sheets.map(async (sheet: any, index: number) => {
           // Generate tabId (must match the ID used when opening the file)
           const tabId = `${file.path}-sheet-${index}`;
 
           try {
-            // Load 2D array from Dexie
+            // Load 2D array from database
             const data = await db.getCellsAs2DArray(tabId);
 
             // Mark sheet as clean in DB
@@ -83,7 +84,7 @@ export const useSaveWorkbook = () => {
             };
           } catch (error) {
             console.warn(
-              `[useSaveWorkbook] No data in Dexie for ${sheet.name}, using original`,
+              `[useSaveWorkbook] No data in database for ${sheet.name}, using original`,
               error
             );
             return sheet;
@@ -93,13 +94,12 @@ export const useSaveWorkbook = () => {
 
       const updatedFile = { ...file, sheets: updatedSheets };
 
-      // Serialize and write (ExcelJS-powered for full style support)
-      const buffer = await serializeExcelFile(updatedFile);
-      await gridparkApi.writeBinaryFile({
-        path: file.path,
-        rootDir: file.path,
-        data: new Uint8Array(buffer),
-      });
+      // Save using new electron API (ExcelJS-powered for full style support)
+      const result = await electronAPI.saveFile(updatedFile);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save file');
+      }
 
       console.log(`[useSaveWorkbook] Successfully saved: ${file.path}`);
     } catch (error) {
