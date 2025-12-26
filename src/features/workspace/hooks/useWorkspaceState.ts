@@ -168,7 +168,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     };
 
     refreshMetadata();
-    const interval = setInterval(refreshMetadata, 300); // Refresh every 300ms
+    const interval = setInterval(refreshMetadata, 1000); // Refresh every 1s (reduced from 300ms)
 
     return () => clearInterval(interval);
   }, []);

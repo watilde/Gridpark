@@ -155,7 +155,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   const [metadata, setMetadata] = useState<any>();
   const [cells, setCells] = useState<StoredCellData[]>([]);
 
-  // Refresh data periodically
+  // Refresh data periodically (with adaptive interval)
   useEffect(() => {
     const refreshData = async () => {
       const meta = await db.getSheetMetadata(tabId);
@@ -175,7 +175,9 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     };
 
     refreshData();
-    const interval = setInterval(refreshData, 200); // Refresh every 200ms (faster detection)
+    
+    // Adaptive polling: faster when dirty, slower when clean
+    const interval = setInterval(refreshData, metadata?.dirty ? 300 : 1000); // 300ms when dirty, 1s when clean
 
     return () => clearInterval(interval);
   }, [tabId, metadata?.dirty]);

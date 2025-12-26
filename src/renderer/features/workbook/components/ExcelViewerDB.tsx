@@ -247,9 +247,25 @@ export const ExcelViewerDB = forwardRef<ExcelViewerDBHandle, ExcelViewerDBProps>
 
       // Check if we need to load initial data
       const loadInitialData = async () => {
-        // Check if database already has data for this sheet
-        // Query database directly to avoid depending on useLiveQuery timing
         const { db: _db } = await import('../../../../lib/db');
+        
+        // CRITICAL: Ensure metadata exists first (lazy initialization)
+        const metadata = await _db.getSheetMetadata(tabId);
+        if (!metadata) {
+          console.log('[ExcelViewerDB] Creating metadata for sheet', { tabId, sheetName: sheet.name });
+          await _db.upsertSheetMetadata({
+            tabId,
+            workbookId: file.path || 'unknown',
+            sheetName: sheet.name,
+            sheetIndex: sheetIndex,
+            maxRow: sheet.rowCount || 100,
+            maxCol: sheet.colCount || 26,
+            cellCount: 0,
+            dirty: false,
+          });
+        }
+        
+        // Check if database already has data for this sheet
         const existingCells = await _db.getCellsForSheet(tabId);
         const hasCellsInDB = existingCells.length > 0;
 
@@ -276,7 +292,7 @@ export const ExcelViewerDB = forwardRef<ExcelViewerDBHandle, ExcelViewerDBProps>
               cellsLoaded: sheet.data.length * (sheet.data[0]?.length || 0),
             });
 
-            // Wait a bit for useLiveQuery to update
+            // Wait a bit for state to update
             await new Promise(resolve => setTimeout(resolve, 100));
 
             setIsLoadingInitialData(false);
@@ -292,11 +308,14 @@ export const ExcelViewerDB = forwardRef<ExcelViewerDBHandle, ExcelViewerDBProps>
             cellCount: existingCells.length,
           });
           initialDataLoadedRef.current[tabId] = true;
+        } else {
+          // No data in file or database, just mark as loaded
+          initialDataLoadedRef.current[tabId] = true;
         }
       };
 
       loadInitialData();
-    }, [file, sheet, isLoading, save2DArray, tabId]);
+    }, [file, sheet, isLoading, save2DArray, tabId, sheetIndex]);
 
     // ============================================================================
     // Dirty State Synchronization

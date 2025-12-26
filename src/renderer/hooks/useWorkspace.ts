@@ -70,38 +70,13 @@ export const useWorkspace = (
   );
 
   const resetWorkbooks = useCallback(
-    async (files: ExcelFile[], directoryName?: string) => {
+    (files: ExcelFile[], directoryName?: string) => {
       // Use startTransition to keep UI responsive during heavy file processing
-      startFileTransition(async () => {
+      startFileTransition(() => {
         const timestamp = Date.now();
         const nodes = files.map((file, index) =>
           createWorkbookNode(file, `workbook-${timestamp}-${index}`)
         );
-
-        // Initialize metadata for ALL sheets in ALL workbooks
-        for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
-          const file = files[fileIndex];
-          const workbookId = `workbook-${timestamp}-${fileIndex}`;
-          
-          for (let sheetIndex = 0; sheetIndex < file.sheets.length; sheetIndex++) {
-            const sheet = file.sheets[sheetIndex];
-            const tabId = `${workbookId}-sheet-${sheetIndex}`;
-            
-            // Initialize sheet metadata
-            await db.upsertSheetMetadata({
-              tabId,
-              workbookId,
-              sheetName: sheet.name,
-              sheetIndex,
-              maxRow: sheet.rowCount || 100,
-              maxCol: sheet.colCount || 26,
-              cellCount: 0,
-              dirty: false,
-            });
-            
-            console.log('[useWorkspace] Initialized metadata for', { tabId, sheetName: sheet.name });
-          }
-        }
 
         // Open first sheet by default
         const firstSheetNode = nodes[0]?.children?.find(child => child.type === 'sheet');
@@ -114,6 +89,45 @@ export const useWorkspace = (
             firstTab,
           })
         );
+
+        // Initialize metadata for ALL sheets in ALL workbooks in BACKGROUND (non-blocking)
+        // This prevents UI freeze when opening large files
+        setTimeout(() => {
+          const initPromises: Promise<void>[] = [];
+          
+          for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
+            const file = files[fileIndex];
+            const workbookId = `workbook-${timestamp}-${fileIndex}`;
+            
+            for (let sheetIndex = 0; sheetIndex < file.sheets.length; sheetIndex++) {
+              const sheet = file.sheets[sheetIndex];
+              const tabId = `${workbookId}-sheet-${sheetIndex}`;
+              
+              // Queue initialization (parallel)
+              const initPromise = db.upsertSheetMetadata({
+                tabId,
+                workbookId,
+                sheetName: sheet.name,
+                sheetIndex,
+                maxRow: sheet.rowCount || 100,
+                maxCol: sheet.colCount || 26,
+                cellCount: 0,
+                dirty: false,
+              }).then(() => {
+                console.log('[useWorkspace] Initialized metadata for', { tabId, sheetName: sheet.name });
+              }).catch(error => {
+                console.error('[useWorkspace] Failed to initialize metadata', { tabId, error });
+              });
+              
+              initPromises.push(initPromise);
+            }
+          }
+          
+          // Wait for all initializations (in background)
+          Promise.all(initPromises).then(() => {
+            console.log('[useWorkspace] All sheet metadata initialized');
+          });
+        }, 0); // Run after UI update
       });
     },
     [startFileTransition, dispatch]
