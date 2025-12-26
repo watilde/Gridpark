@@ -2,7 +2,7 @@
  * Formula Worker (Phase 3 - HyperFormula Integration)
  *
  * Calculates formulas in a separate thread to avoid blocking the UI.
- * Uses IndexedDB for data access (Dexie works in Workers!)
+ * Uses message passing for data access (simplified from Dexie)
  *
  * Supported functions:
  * - Phase 2: Basic functions (SUM, AVERAGE, COUNT, MIN, MAX)
@@ -19,11 +19,10 @@
  * - Batch calculation optimization
  */
 
-import Dexie from 'dexie';
 import { HyperFormula, ConfigParams as _ConfigParams } from 'hyperformula';
 
 // ============================================================================
-// IndexedDB Setup (Same schema as main thread)
+// In-Memory Cell Data Store (Simplified)
 // ============================================================================
 
 interface StoredCellData {
@@ -39,21 +38,20 @@ interface StoredCellData {
   version: number;
 }
 
-class WorkerDatabase extends Dexie {
-  cells!: Dexie.Table<StoredCellData, number>;
-  sheetMetadata!: Dexie.Table<any, number>;
+// In-memory cell storage (will be populated via messages)
+const cellDataStore = new Map<string, StoredCellData[]>();
 
-  constructor() {
-    super('ExcelAppDatabase');
-
-    this.version(2).stores({
-      sheetMetadata: '++id, tabId, workbookId, &[tabId], lastAccessedAt',
-      cells: '++id, &[tabId+row+col], tabId, [tabId+row], [tabId+col], version',
-    });
-  }
+function getCellKey(tabId: string): string {
+  return tabId;
 }
 
-const db = new WorkerDatabase();
+function getCellsForSheet(tabId: string): StoredCellData[] {
+  return cellDataStore.get(getCellKey(tabId)) || [];
+}
+
+function setCellsForSheet(tabId: string, cells: StoredCellData[]): void {
+  cellDataStore.set(getCellKey(tabId), cells);
+}
 
 // ============================================================================
 // HyperFormula Setup
@@ -209,7 +207,7 @@ function setCachedResult(
 }
 
 /**
- * Load sheet data from IndexedDB into HyperFormula
+ * Load sheet data from in-memory store into HyperFormula
  */
 async function loadSheetIntoHyperFormula(tabId: string): Promise<number> {
   // Check if already loaded
@@ -218,8 +216,8 @@ async function loadSheetIntoHyperFormula(tabId: string): Promise<number> {
     return existingSheetId;
   }
 
-  // Get all cells from IndexedDB
-  const cells = await db.cells.where('tabId').equals(tabId).toArray();
+  // Get all cells from in-memory store
+  const cells = getCellsForSheet(tabId);
 
   // Determine sheet dimensions
   let maxRow = 0;
@@ -323,6 +321,7 @@ interface LoadSheetMessage {
   type: 'LOAD_SHEET';
   id: string;
   tabId: string;
+  cells?: StoredCellData[]; // Optional: provide cells data
 }
 
 interface LoadSheetResponseMessage {
@@ -330,6 +329,13 @@ interface LoadSheetResponseMessage {
   id: string;
   tabId: string;
   sheetId: number;
+}
+
+interface LoadCellDataMessage {
+  type: 'LOAD_CELL_DATA';
+  id: string;
+  tabId: string;
+  cells: StoredCellData[];
 }
 
 interface GetDependenciesMessage {
@@ -437,16 +443,17 @@ function parseFormula(formula: string): { function: string; range: CellRange } |
 // ============================================================================
 
 /**
- * Get cells in range from IndexedDB
+ * Get cells in range from in-memory store
  */
 async function getCellsInRange(tabId: string, range: CellRange): Promise<StoredCellData[]> {
-  const cells = await db.cells
-    .where('[tabId+row]')
-    .between([tabId, range.startRow], [tabId, range.endRow])
-    .and(cell => cell.col >= range.startCol && cell.col <= range.endCol)
-    .toArray();
-
-  return cells;
+  const cells = getCellsForSheet(tabId);
+  return cells.filter(
+    cell =>
+      cell.row >= range.startRow &&
+      cell.row <= range.endRow &&
+      cell.col >= range.startCol &&
+      cell.col <= range.endCol
+  );
 }
 
 // ============================================================================
@@ -722,7 +729,19 @@ self.addEventListener('message', async (event: MessageEvent) => {
   const startTime = performance.now();
 
   try {
-    if (message.type === 'CALCULATE') {
+    if (message.type === 'LOAD_CELL_DATA') {
+      const { id, tabId, cells } = message as LoadCellDataMessage;
+
+      console.log('[FormulaWorker] Loading cell data:', tabId, cells.length, 'cells');
+
+      setCellsForSheet(tabId, cells);
+
+      self.postMessage({
+        type: 'CELL_DATA_LOADED',
+        id,
+        tabId,
+      });
+    } else if (message.type === 'CALCULATE') {
       const { id, tabId, formula, cellRef } = message as CalculateMessage;
 
       console.log('[FormulaWorker] Calculating:', { cellRef, formula });
@@ -762,9 +781,14 @@ self.addEventListener('message', async (event: MessageEvent) => {
 
       self.postMessage(response);
     } else if (message.type === 'LOAD_SHEET') {
-      const { id, tabId } = message as LoadSheetMessage;
+      const { id, tabId, cells } = message as LoadSheetMessage;
 
       console.log('[FormulaWorker] Loading sheet:', tabId);
+
+      // Load cells if provided
+      if (cells && cells.length > 0) {
+        setCellsForSheet(tabId, cells);
+      }
 
       const sheetId = await loadSheetIntoHyperFormula(tabId);
       const _duration = performance.now() - startTime;

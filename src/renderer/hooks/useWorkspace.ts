@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useTransition } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useCallback, useEffect, useMemo, useTransition, useState } from 'react';
 import { db } from '../../lib/db';
 import { ExcelFile } from '../types/excel';
 import { FileNode } from '../features/file-explorer/FileTree';
@@ -140,10 +139,23 @@ export const useWorkspace = (
   // Dirty Tracking Functions (OPTIMIZED - Dexie Only)
   // ==========================================
 
-  // Load all sheet metadata from Dexie (reactive)
-  const allSheetMetadata = useLiveQuery(() => db.sheetMetadata.toArray(), []);
+  // Load all sheet metadata from database (using state for reactivity)
+  const [allSheetMetadata, setAllSheetMetadata] = useState<any[]>([]);
 
-  // Build dirty map from Dexie metadata
+  // Refresh sheet metadata periodically
+  useEffect(() => {
+    const refreshMetadata = async () => {
+      const metadata = await db.getAllSheetMetadata();
+      setAllSheetMetadata(metadata);
+    };
+
+    refreshMetadata();
+    const interval = setInterval(refreshMetadata, 1000); // Refresh every second
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Build dirty map from metadata
   const sheetDirtyMap = useMemo(() => {
     const map: Record<string, boolean> = {};
     allSheetMetadata?.forEach(metadata => {

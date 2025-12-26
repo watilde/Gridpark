@@ -21,8 +21,7 @@
  * - No Redux dirty state (removed to prevent data inconsistency)
  */
 
-import { useMemo, useCallback, useEffect, useRef } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { db, StoredCellData, CellData, CellValue, CellStyleData } from '../../../lib/db';
 import { useExcelUndoRedo, CellChange } from './useExcelUndoRedo';
 import { debounce } from '../../../lib/utils';
@@ -152,14 +151,23 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     };
   }, [tabId, workbookId, sheetName, sheetIndex]);
 
-  // Get sheet metadata (read-only reactive query)
-  const metadata = useLiveQuery(async () => {
-    return await db.getSheetMetadata(tabId);
-  }, [tabId]);
+  // Get sheet metadata (using state for reactivity)
+  const [metadata, setMetadata] = useState<any>();
+  const [cells, setCells] = useState<StoredCellData[]>([]);
 
-  // Get all cells for this sheet (read-only reactive query)
-  const cells = useLiveQuery(async () => {
-    return await db.getCellsForSheet(tabId);
+  // Refresh data periodically
+  useEffect(() => {
+    const refreshData = async () => {
+      const meta = await db.getSheetMetadata(tabId);
+      const cellData = await db.getCellsForSheet(tabId);
+      setMetadata(meta);
+      setCells(cellData);
+    };
+
+    refreshData();
+    const interval = setInterval(refreshData, 500); // Refresh every 500ms
+
+    return () => clearInterval(interval);
   }, [tabId]);
 
   // ========================================================================
