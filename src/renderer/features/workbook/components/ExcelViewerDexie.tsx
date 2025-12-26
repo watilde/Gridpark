@@ -104,6 +104,12 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
 
     const sheet = file?.sheets?.[sheetIndex];
 
+    // Keep onDirtyChange ref to always call the latest version
+    const onDirtyChangeRef = useRef(onDirtyChange);
+    useEffect(() => {
+      onDirtyChangeRef.current = onDirtyChange;
+    }, [onDirtyChange]);
+
     // PERFORMANCE FIX: Reduce initial array size to prevent memory issues
     // - Old: 1000×100 = 100,000 cells (caused DataCloneError in React DevTools)
     // - New: 100×26 = 2,600 cells (reasonable default)
@@ -302,10 +308,10 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
       // Only notify if dirty state actually changed
       if (prevIsDirtyRef.current !== isDirty) {
         console.log('[ExcelViewerDexie] Dirty state changed', { tabId, isDirty });
-        onDirtyChange?.(isDirty);
+        onDirtyChangeRef.current?.(isDirty);
         prevIsDirtyRef.current = isDirty;
       }
-    }, [isDirty, onDirtyChange, tabId]);
+    }, [isDirty, tabId]);
 
     // ============================================================================
     // Session State for ExcelViewer (backward compatibility)

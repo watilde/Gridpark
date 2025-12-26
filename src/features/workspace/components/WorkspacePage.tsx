@@ -206,16 +206,18 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
   // ExcelViewerDexie calls this directly when sheet is edited
   const handleDirtyChange = useCallback(
-    (dirty: boolean) => {
+    async (dirty: boolean) => {
       if (!activeTab) return;
       console.log('[WorkspacePage] Sheet dirty state changed', { tabId: activeTab.id, dirty });
+      
+      // Await to ensure state is updated before next call
       if (dirty) {
-        saveManager.markTabDirty(activeTab.id);
+        await saveManager.markTabDirty(activeTab.id);
       } else {
-        saveManager.markTabClean(activeTab.id);
+        await saveManager.markTabClean(activeTab.id);
       }
     },
-    [activeTab, saveManager]
+    [activeTab?.id, saveManager.markTabDirty, saveManager.markTabClean]
   );
 
   // ============================================================================

@@ -503,30 +503,29 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   // Auto-update sheet metadata last accessed time (with debounce)
   // ========================================================================
 
-  // Create debounced update function (only once per hook instance)
-  const debouncedUpdateLastAccessed = useRef(
-    debounce((metadataId: number) => {
-      db.sheetMetadata
-        .update(metadataId, {
-          lastAccessedAt: new Date(),
-        })
-        .catch(error => {
-          console.error('[useExcelSheet] Failed to update lastAccessedAt:', error);
-        });
-    }, 2000) // Update at most once every 2 seconds
-  );
-
   // Update last accessed time when metadata changes
   useEffect(() => {
-    if (metadata?.id) {
-      debouncedUpdateLastAccessed.current(metadata.id);
-    }
+    if (!metadata?.tabId) return;
 
-    // Cleanup: cancel pending debounced calls on unmount
-    return () => {
-      debouncedUpdateLastAccessed.current.cancel();
+    const updateLastAccessed = async () => {
+      try {
+        const currentMetadata = await db.getSheetMetadata(metadata.tabId);
+        if (currentMetadata) {
+          await db.upsertSheetMetadata({
+            ...currentMetadata,
+            lastAccessedAt: new Date(),
+          });
+        }
+      } catch (error) {
+        console.error('[useExcelSheet] Failed to update lastAccessedAt:', error);
+      }
     };
-  }, [metadata?.id]);
+
+    // Debounce: update at most once every 2 seconds
+    const timeout = setTimeout(updateLastAccessed, 2000);
+
+    return () => clearTimeout(timeout);
+  }, [metadata?.tabId]);
 
   // ========================================================================
   // Return API
