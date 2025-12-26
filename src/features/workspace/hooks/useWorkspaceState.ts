@@ -186,22 +186,70 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
         });
       },
       saveTab: async (tabId: string) => {
-        // Saving is handled automatically by ExcelViewerDexie
-        // Just mark as clean
+        console.log('[useWorkspaceState] saveTab called', { tabId });
+        
+        // Find the tab to determine what to save
+        const tab = openTabs.find(t => t.id === tabId);
+        if (!tab) {
+          console.warn('[useWorkspaceState] Tab not found:', tabId);
+          return;
+        }
+
+        // For sheet tabs, save the workbook file
+        if (tab.kind === 'sheet') {
+          const workbookNode = findWorkbookNode(tab.workbookId);
+          if (workbookNode?.file) {
+            try {
+              console.log('[useWorkspaceState] Saving workbook:', workbookNode.file.path);
+              await saveWorkbookFile(workbookNode.file);
+              console.log('[useWorkspaceState] Workbook saved successfully');
+            } catch (error) {
+              console.error('[useWorkspaceState] Failed to save workbook:', error);
+              throw error;
+            }
+          }
+        }
+        
+        // Mark as clean
         setDirtyTabIds(prev => {
           const next = new Set(prev);
           next.delete(tabId);
           return next;
         });
+        
+        console.log('[useWorkspaceState] Tab marked as clean:', tabId);
       },
       saveAllDirtyTabs: async () => {
-        // Saving is handled automatically by ExcelViewerDexie
-        // Just clear all dirty flags
+        console.log('[useWorkspaceState] saveAllDirtyTabs called', {
+          dirtyCount: dirtyTabIds.size,
+        });
+        
+        // Save all dirty tabs
+        const savePromises = Array.from(dirtyTabIds).map(async tabId => {
+          const tab = openTabs.find(t => t.id === tabId);
+          if (!tab) return;
+
+          if (tab.kind === 'sheet') {
+            const workbookNode = findWorkbookNode(tab.workbookId);
+            if (workbookNode?.file) {
+              try {
+                await saveWorkbookFile(workbookNode.file);
+              } catch (error) {
+                console.error('[useWorkspaceState] Failed to save workbook:', error);
+              }
+            }
+          }
+        });
+
+        await Promise.all(savePromises);
+        
+        // Clear all dirty flags
         setDirtyTabIds(new Set());
+        console.log('[useWorkspaceState] All tabs saved and marked clean');
       },
       tabIsDirty: (tab: any) => dirtyTabIds.has(tab?.id || ''),
     }),
-    [dirtyTabIds]
+    [dirtyTabIds, openTabs, findWorkbookNode, saveWorkbookFile]
   );
 
   // ============================================
