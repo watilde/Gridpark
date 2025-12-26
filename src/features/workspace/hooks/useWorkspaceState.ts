@@ -261,20 +261,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     
     console.log('[useWorkspaceState] All tabs saved');
   }, [dirtyTabIds, openTabs, findWorkbookNode, saveWorkbookFile]);
-            await saveWorkbookFile(workbookNode.file, tab.workbookId);
-          } catch (error) {
-            console.error('[useWorkspaceState] Failed to save workbook:', error);
-          }
-        }
-      }
-    });
-
-    await Promise.all(savePromises);
-    
-    // Clear all dirty flags
-    setDirtyTabIds(new Set());
-    console.log('[useWorkspaceState] All tabs saved and marked clean');
-  }, [dirtyTabIds, openTabs, findWorkbookNode, saveWorkbookFile]);
 
   const saveManager = useMemo(
     () => ({
