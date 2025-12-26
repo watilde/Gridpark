@@ -92,8 +92,9 @@ export const useWorkspace = (
 
         // Initialize metadata for ALL sheets in ALL workbooks in BACKGROUND (non-blocking)
         // This prevents UI freeze when opening large files
+        // OPTIMIZED: Use batch API to minimize event notifications
         setTimeout(() => {
-          const initPromises: Promise<void>[] = [];
+          const metadataArray: Array<Omit<import('../../lib/db').SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>> = [];
           
           for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
             const file = files[fileIndex];
@@ -103,8 +104,8 @@ export const useWorkspace = (
               const sheet = file.sheets[sheetIndex];
               const tabId = `${workbookId}-sheet-${sheetIndex}`;
               
-              // Queue initialization (parallel)
-              const initPromise = db.upsertSheetMetadata({
+              // Queue metadata for batch insert
+              metadataArray.push({
                 tabId,
                 workbookId,
                 sheetName: sheet.name,
@@ -113,20 +114,18 @@ export const useWorkspace = (
                 maxCol: sheet.colCount || 26,
                 cellCount: 0,
                 dirty: false,
-              }).then(() => {
-                console.log('[useWorkspace] Initialized metadata for', { tabId, sheetName: sheet.name });
-              }).catch(error => {
-                console.error('[useWorkspace] Failed to initialize metadata', { tabId, error });
               });
-              
-              initPromises.push(initPromise);
             }
           }
           
-          // Wait for all initializations (in background)
-          Promise.all(initPromises).then(() => {
-            console.log('[useWorkspace] All sheet metadata initialized');
-          });
+          // Batch insert all metadata (single event notification)
+          db.batchUpsertSheetMetadata(metadataArray)
+            .then((ids) => {
+              console.log('[useWorkspace] All sheet metadata initialized in batch:', { count: ids.length });
+            })
+            .catch(error => {
+              console.error('[useWorkspace] Failed to batch initialize metadata:', error);
+            });
         }, 0); // Run after UI update
       });
     },

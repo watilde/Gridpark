@@ -114,7 +114,9 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   // Database State (Single source of truth for both data and dirty flag)
   // ========================================================================
 
-  // Initialize sheet metadata on mount (separate from useLiveQuery)
+  // Initialize sheet metadata on mount (only if not exists)
+  // NOTE: resetWorkbooks already batch-initializes all sheets
+  // This is a fallback for edge cases (direct navigation, etc.)
   useEffect(() => {
     let cancelled = false;
 
@@ -122,7 +124,8 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       try {
         const existing = await db.getSheetMetadata(tabId);
         if (!existing && !cancelled) {
-          // Create initial metadata
+          console.log('[useExcelSheet] Metadata not found, initializing lazily:', tabId);
+          // Create initial metadata (silent mode to avoid event storm)
           await db.upsertSheetMetadata({
             tabId,
             workbookId,
@@ -132,7 +135,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
             maxCol: 0,
             cellCount: 0,
             dirty: false,
-          });
+          }, { silent: true }); // ← SILENT: Don't trigger events (batch already did)
         }
       } catch (error: any) {
         // Ignore ConstraintError (likely from React Strict Mode double invoke)
@@ -177,9 +180,9 @@ export function useExcelSheet(params: UseExcelSheetParams) {
         action: event.action 
       });
       
-      // Reload data immediately (only called for matching tabId)
+      // Reload data immediately (only called for matching tabId OR batch events)
       loadData();
-    }, { tabId }); // ← FILTER: Only listen to this tabId
+    }, { tabId }); // ← FILTER: Only listen to this tabId (batch events will also match)
 
     return unsubscribe;
   }, [tabId]);

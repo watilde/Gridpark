@@ -171,7 +171,9 @@ export class AppDatabase {
   private notify(event: ChangeEvent) {
     this.listeners.forEach((options, listener) => {
       // Filter: only notify if event matches subscription options
-      const matchesTabId = !options.tabId || options.tabId === event.tabId;
+      // Special case: _batch_ events match ALL tabId filters for that type
+      const isBatchEvent = event.tabId === '_batch_';
+      const matchesTabId = !options.tabId || options.tabId === event.tabId || isBatchEvent;
       const matchesType = !options.type || options.type === event.type;
       
       if (matchesTabId && matchesType) {
@@ -207,7 +209,8 @@ export class AppDatabase {
    * Create or update sheet metadata
    */
   async upsertSheetMetadata(
-    data: Omit<SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>
+    data: Omit<SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>,
+    options: { silent?: boolean } = {}
   ): Promise<number> {
     const existing = this.sheetMetadataStore.get(data.tabId);
     const action = existing ? 'update' : 'create';
@@ -221,8 +224,10 @@ export class AppDatabase {
       };
       this.sheetMetadataStore.set(data.tabId, updated);
       
-      // Notify listeners
-      this.notify({ type: 'metadata', tabId: data.tabId, action: 'update' });
+      // Notify listeners (unless silent mode)
+      if (!options.silent) {
+        this.notify({ type: 'metadata', tabId: data.tabId, action: 'update' });
+      }
       
       return existing.id!;
     } else {
@@ -235,11 +240,40 @@ export class AppDatabase {
       };
       this.sheetMetadataStore.set(data.tabId, newMetadata);
       
-      // Notify listeners
-      this.notify({ type: 'metadata', tabId: data.tabId, action: 'create' });
+      // Notify listeners (unless silent mode)
+      if (!options.silent) {
+        this.notify({ type: 'metadata', tabId: data.tabId, action: 'create' });
+      }
       
       return newMetadata.id!;
     }
+  }
+
+  /**
+   * Batch initialize sheet metadata for multiple sheets
+   * Optimized: Single event notification after all inserts
+   */
+  async batchUpsertSheetMetadata(
+    dataArray: Array<Omit<SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>>
+  ): Promise<number[]> {
+    console.log(`[db] Batch upsert started: ${dataArray.length} sheets`);
+    
+    const ids: number[] = [];
+    
+    // Insert all metadata WITHOUT triggering events
+    for (const data of dataArray) {
+      const id = await this.upsertSheetMetadata(data, { silent: true });
+      ids.push(id);
+    }
+    
+    // Single event notification after all inserts (for refresh)
+    // Use first tabId as representative (listeners should refresh all)
+    if (dataArray.length > 0) {
+      this.notify({ type: 'metadata', tabId: '_batch_', action: 'create' });
+    }
+    
+    console.log(`[db] Batch upsert completed: ${ids.length} sheets`);
+    return ids;
   }
 
   /**
