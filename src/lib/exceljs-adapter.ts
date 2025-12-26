@@ -156,6 +156,73 @@ function applyStyleToCell(cell: ExcelJS.Cell, style: ExcelCellStyle): void {
 
 export class ExcelJSAdapter {
   /**
+   * Read workbook metadata only (NO data loading)
+   * Fast: Only sheet names and dimensions
+   */
+  static async readWorkbookMetadata(
+    buffer: ArrayBuffer
+  ): Promise<{
+    sheets: Array<{
+      name: string;
+      rowCount: number;
+      colCount: number;
+      properties?: ExcelSheetProperties;
+    }>;
+  }> {
+    console.time('[ExcelJS] Load metadata');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    console.timeLog('[ExcelJS] Load metadata', 'Workbook loaded');
+    
+    const sheets = workbook.worksheets.map(worksheet => {
+      // Find actual data dimensions (fast scan, no data extraction)
+      let maxRow = 0;
+      let maxCol = 0;
+      
+      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        maxRow = Math.max(maxRow, rowNumber);
+        row.eachCell({ includeEmpty: false }, (_cell, colNumber) => {
+          maxCol = Math.max(maxCol, colNumber);
+        });
+      });
+      
+      // Extract sheet properties (lightweight)
+      const properties: ExcelSheetProperties = {
+        columns: worksheet.columns?.map(col => ({
+          width: col.width,
+          hidden: col.hidden,
+          style: undefined,
+        })),
+        views: worksheet.views?.map(view => ({
+          state: view.state,
+          xSplit: view.xSplit,
+          ySplit: view.ySplit,
+          topLeftCell: view.topLeftCell,
+          activeCell: view.activeCell,
+          showGridLines: view.showGridLines,
+          showRowColHeaders: view.showRowColHeaders,
+          zoomScale: view.zoomScale,
+        })),
+        autoFilter: worksheet.autoFilter ? {
+          ref: typeof worksheet.autoFilter === 'string' 
+            ? worksheet.autoFilter 
+            : (worksheet.autoFilter as any).ref,
+        } : undefined,
+      };
+      
+      return {
+        name: worksheet.name,
+        rowCount: maxRow,
+        colCount: maxCol,
+        properties,
+      };
+    });
+    
+    console.timeEnd('[ExcelJS] Load metadata');
+    return { sheets };
+  }
+
+  /**
    * Read Excel file from ArrayBuffer and convert to CellData format
    */
   static async readWorkbook(
@@ -182,9 +249,10 @@ export class ExcelJSAdapter {
         });
       });
       
-      // Create 2D array (at least 100x100)
-      const rows = Math.max(100, maxRow);
-      const cols = Math.max(100, maxCol);
+      // Create 2D array (DO NOT use default 100x100 - only actual size!)
+      // CRITICAL: Old code created 100x100 minimum, causing memory issues
+      const rows = Math.max(10, maxRow); // Minimum 10 rows (not 100!)
+      const cols = Math.max(10, maxCol); // Minimum 10 cols (not 100!)
       
       const data: CellData[][] = Array(rows)
         .fill(null)

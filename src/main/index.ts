@@ -160,12 +160,21 @@ ipcMain.on('app:set-title', (event, title: string) => {
 
 const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null> => {
   try {
+    console.time(`[Main] Load Excel: ${basename(filePath)}`);
+    
     const buffer = readFileSync(filePath);
+    console.timeLog(`[Main] Load Excel: ${basename(filePath)}`, 'File read complete');
+    
     const arrayBuffer = buffer.buffer.slice(
       buffer.byteOffset,
       buffer.byteOffset + buffer.byteLength
     );
+    
     const workbook = await parseExcelFile(arrayBuffer, basename(filePath));
+    console.timeLog(`[Main] Load Excel: ${basename(filePath)}`, 'Parse complete');
+    
+    console.timeEnd(`[Main] Load Excel: ${basename(filePath)}`);
+    
     return { ...workbook, path: filePath };
   } catch (error) {
     console.error('Failed to load Excel file:', filePath, error);
