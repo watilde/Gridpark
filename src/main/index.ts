@@ -422,14 +422,6 @@ ipcMain.handle('excel:save-file', async (_event, excelFile: ExcelFile) => {
     };
   }
 });
-  } catch (error) {
-    console.error('Failed to save file:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-});
 
 /**
  * Save Excel File As
