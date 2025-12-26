@@ -179,38 +179,17 @@ export const useWorkspace = (
   // ==========================================
 
   // Dirty tracking is handled in useWorkspaceState via database events
-  // No local state needed here - just return empty functions for compatibility
+  // No local state needed here - just return empty for compatibility
   const tabIsDirty = useCallback((_tab: WorkbookTab): boolean => {
     // This will be called from useWorkspaceState which has the real dirty tracking
     return false;
   }, []);
 
+  // dirtyNodeIds should be computed in useWorkspaceState, not here
+  // Return empty map for now (will be removed once useWorkspaceState handles this)
   const dirtyNodeIds = useMemo(() => {
-    const map: Record<string, boolean> = {};
-
-    const visit = (node: FileNode): boolean => {
-      let dirty = false;
-
-      if (node.type === 'sheet') {
-        // Check database dirty map
-        dirty = Boolean(sheetDirtyMap[node.id]);
-      }
-
-      if (node.children?.length) {
-        const childDirty = node.children.map(child => visit(child));
-        dirty = dirty || childDirty.some(Boolean);
-      }
-
-      if (dirty) {
-        map[node.id] = true;
-      }
-
-      return dirty;
-    };
-
-    workbookNodes.forEach(visit);
-    return map;
-  }, [workbookNodes, sheetDirtyMap]);
+    return {} as Record<string, boolean>;
+  }, []);
 
   // ==========================================
   // Tab Operations Functions

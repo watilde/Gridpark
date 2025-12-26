@@ -21,6 +21,7 @@ import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
 import { useAutoSave } from './useAutoSave';
 import { db } from '../../../lib/db';
 import type { ExcelFile } from '../../../renderer/types/excel';
+import type { FileNode } from '../../../renderer/features/file-explorer/FileTree';
 import type {
   SearchNavigationCommand,
   ReplaceCommand,
@@ -312,14 +313,35 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   );
 
   // ============================================
-  // Dirty Node IDs
+  // Dirty Node IDs (computed from dirtyTabIds and workbookNodes)
   // ============================================
 
   const dirtyNodeIds = useMemo(() => {
     const map: Record<string, boolean> = {};
-    // TODO: Query database sheetMetadata.dirty to populate this map
+
+    const visit = (node: FileNode): boolean => {
+      let dirty = false;
+
+      if (node.type === 'sheet') {
+        // Check if this sheet's tabId is dirty
+        dirty = dirtyTabIds.has(node.id);
+      }
+
+      if (node.children?.length) {
+        const childDirty = node.children.map(child => visit(child));
+        dirty = dirty || childDirty.some(Boolean);
+      }
+
+      if (dirty) {
+        map[node.id] = true;
+      }
+
+      return dirty;
+    };
+
+    workbookNodes.forEach(visit);
     return map;
-  }, []);
+  }, [dirtyTabIds, workbookNodes]);
 
   // ============================================
   // Formula Bar
