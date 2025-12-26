@@ -5,7 +5,7 @@
  * - Apply styles to selected cells
  * - Retrieve current cell styles
  * - Batch style updates
- * - Integration with Dexie.js storage
+ * - Integration with in-memory database storage
  */
 
 import { useCallback, useMemo } from 'react';

@@ -1,13 +1,13 @@
 /**
- * File Sessions (OPTIMIZED - Direct Dexie + File System)
+ * File Sessions (OPTIMIZED - Direct Database + File System)
  *
  * NO MORE useState! Data flows:
- * - Sheet data: Dexie.js (use useExcelSheet hook)
+ * - Sheet data: database (use useExcelSheet hook)
  * - Manifest: File system (read/write on demand)
  * - Code: File system (read/write on demand)
  *
  * This file provides:
- * - saveWorkbookFile: Writes Dexie data to .xlsx file
+ * - saveWorkbookFile: Writes database data to .xlsx file
  * - Manifest operations: Direct file system access
  * - Code operations: Direct file system access
  */
@@ -41,12 +41,12 @@ const isManifestSessionDirty = (session?: ManifestSession) => {
 };
 
 // ============================================================================
-// Sheet Operations (Dexie-powered)
+// Sheet Operations (Database-powered)
 // ============================================================================
 
 /**
  * Save workbook file to disk
- * Loads all sheet data from Dexie and serializes to .xlsx
+ * Loads all sheet data from database and serializes to .xlsx
  */
 export const useSaveWorkbook = () => {
   const saveWorkbookFile = useCallback(async (file: ExcelFile, workbookId?: string) => {

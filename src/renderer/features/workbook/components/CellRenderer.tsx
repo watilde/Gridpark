@@ -111,7 +111,7 @@ export const CellItem = React.memo(
     const isInRange = isCellInRange(rowIndex, columnIndex);
     const hasError = cell.value === '#ERROR'; // Assuming #ERROR signifies an error cell
     
-    // Get style from cell data (Dexie) instead of separate cellStyles map
+    // Get style from cell data (database) instead of separate cellStyles map
     const cellStyle = cell.style as CellStyle | undefined;
 
     // ========================================================================

@@ -2,7 +2,7 @@
  * Formula Worker (Phase 3 - HyperFormula Integration)
  *
  * Calculates formulas in a separate thread to avoid blocking the UI.
- * Uses message passing for data access (simplified from Dexie)
+ * Uses message passing for data access (simplified from database)
  *
  * Supported functions:
  * - Phase 2: Basic functions (SUM, AVERAGE, COUNT, MIN, MAX)

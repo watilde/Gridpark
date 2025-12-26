@@ -110,10 +110,10 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   const electron = useElectronIntegration();
 
   // ============================================
-  // File Sessions (OPTIMIZED - Direct Dexie + File System)
+  // File Sessions (OPTIMIZED - Direct Database + File System)
   // ============================================
 
-  // Sheet data: Managed by Dexie (use useExcelSheet hook in components)
+  // Sheet data: Managed by database (use useExcelSheet hook in components)
   const { saveWorkbookFile } = useSaveWorkbook();
 
   // Manifest & Code: File system access only (no useState caching)
@@ -307,7 +307,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
   const dirtyNodeIds = useMemo(() => {
     const map: Record<string, boolean> = {};
-    // TODO: Query Dexie sheetMetadata.dirty to populate this map
+    // TODO: Query database sheetMetadata.dirty to populate this map
     return map;
   }, []);
 

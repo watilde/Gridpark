@@ -41,8 +41,8 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
     text: string;
   } | null>(null);
 
-  // Reset Dexie database
-  const handleResetDexie = useCallback(async () => {
+  // Reset in-memory database
+  const handleResetDatabase = useCallback(async () => {
     if (
       !confirm(
         'Are you sure you want to reset the database? This will delete all table data (cells, sheets). This action cannot be undone.'
@@ -234,7 +234,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
           )}
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Typography level="body-sm">Reset Database (Dexie)</Typography>
+            <Typography level="body-sm">Reset Database</Typography>
             <Typography level="body-xs" color="neutral">
               Clears all table data (cells, sheets, workbooks) stored in IndexedDB.
             </Typography>
@@ -242,7 +242,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
               size="sm"
               color="danger"
               variant="outlined"
-              onClick={handleResetDexie}
+              onClick={handleResetDatabase}
               disabled={isResetting}
               loading={isResetting}
             >

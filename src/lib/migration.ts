@@ -1,7 +1,7 @@
 /**
  * Data Migration Utilities
  *
- * Handles migration from legacy useState storage to Dexie.js:
+ * Handles migration from legacy useState storage to in-memory database:
  * - Converts 2D arrays to sparse matrix
  * - Initializes sheet metadata
  * - Preserves dirty state
@@ -31,7 +31,7 @@ export interface MigrationResult {
 // ============================================================================
 
 /**
- * Migrate a single sheet session from legacy format to Dexie
+ * Migrate a single sheet session from legacy format to database
  */
 export async function migrateLegacySheetSession(
   tabId: string,

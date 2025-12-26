@@ -36,7 +36,7 @@ const ToolbarContainer = styled(Box)(({ theme }) => ({
 
 export interface SpreadsheetToolbarProps {
   /**
-   * Tab ID for Dexie storage
+   * Tab ID for database storage
    */
   tabId: string;
   

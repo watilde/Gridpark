@@ -1,5 +1,5 @@
 /**
- * Simple In-Memory Data Store (Simplified from Dexie)
+ * Simple In-Memory Data Store (Simplified in-memory storage)
  *
  * Manages all table data using in-memory storage for:
  * - Sheet data (cells, formulas, formatting)

@@ -1,12 +1,12 @@
 /**
- * useExcelSheet Hook (OPTIMIZED v3 - Dexie Only)
+ * useExcelSheet Hook (OPTIMIZED v3 - Database Only)
  *
  * This is the STATE LAYER that bridges:
- * - Dexie.js v2 (sparse matrix storage with useLiveQuery)
+ * - In-memory database (sparse matrix storage with useLiveQuery)
  *
  * Provides a clean API for components to:
  * - Read/write cell data reactively
- * - Track dirty state automatically (via Dexie only)
+ * - Track dirty state automatically (via Database only)
  * - Handle save operations
  * - Convert between sparse matrix and 2D array formats
  *
@@ -17,7 +17,7 @@
  * - Batch updates
  *
  * ARCHITECTURE:
- * - Dirty tracking: Dexie sheetMetadata.dirty (single source of truth)
+ * - Dirty tracking: database sheetMetadata.dirty (single source of truth)
  * - No Redux dirty state (removed to prevent data inconsistency)
  */
 
@@ -111,7 +111,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   const undoRedo = useExcelUndoRedo();
 
   // ========================================================================
-  // Dexie State (Single source of truth for both data and dirty flag)
+  // Database State (Single source of truth for both data and dirty flag)
   // ========================================================================
 
   // Initialize sheet metadata on mount (separate from useLiveQuery)
@@ -283,7 +283,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
         },
       ]);
 
-      // Mark sheet as dirty in Dexie only
+      // Mark sheet as dirty in Database only
       await db.markSheetDirty(tabId, true);
     },
     [tabId, getCell, undoRedo]
@@ -326,7 +326,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       // Record history
       undoRedo.pushHistory(changes);
 
-      // Mark sheet as dirty in Dexie only
+      // Mark sheet as dirty in Database only
       await db.markSheetDirty(tabId, true);
     },
     [tabId, getCell, undoRedo]
@@ -339,7 +339,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     async (row: number, col: number) => {
       await db.deleteCell(tabId, row, col);
 
-      // Mark as dirty in Dexie only
+      // Mark as dirty in Database only
       await db.markSheetDirty(tabId, true);
     },
     [tabId]
@@ -448,7 +448,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       // Bulk update database (without recording history)
       await db.bulkUpsertCells(tabId, cellUpdates);
 
-      // Mark sheet as dirty in Dexie only
+      // Mark sheet as dirty in Database only
       await db.markSheetDirty(tabId, true);
     },
     [tabId]
@@ -550,7 +550,7 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     save2DArray, // Save entire 2D array
     load2DArray, // Load as 2D array
 
-    // State (from Dexie only)
+    // State (from Database only)
     isDirty: metadata?.dirty ?? false,
 
     // Actions

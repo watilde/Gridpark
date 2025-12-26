@@ -1,7 +1,7 @@
 /**
  * HyperFormula Adapter
  *
- * Bridges HyperFormula calculation engine with Dexie.js IndexedDB storage.
+ * Bridges HyperFormula calculation engine with in-memory database storage.
  *
  * Features:
  * - Excel-compatible formula calculation (400+ functions)

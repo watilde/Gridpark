@@ -9,9 +9,9 @@ import {
   ActiveCellDetails,
 } from '../../workbook/components/ExcelViewer';
 import {
-  ExcelViewerDexie,
-  ExcelViewerDexieHandle,
-} from '../../workbook/components/ExcelViewerDexie';
+  ExcelViewerDB,
+  ExcelViewerDBHandle,
+} from '../../workbook/components/ExcelViewerDB';
 import { FormulaBar } from '../../formula-bar/FormulaBar';
 import { SpreadsheetToolbar } from '../../toolbar/SpreadsheetToolbar';
 import { WorkbookTab } from '../../../types/tabs';
@@ -76,7 +76,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
     },
     ref
   ) => {
-    const sheetViewerRef = useRef<ExcelViewerDexieHandle>(null);
+    const sheetViewerRef = useRef<ExcelViewerDBHandle>(null);
     
     // Track selected cell/range for toolbar
     const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
@@ -147,7 +147,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
             selectedRange={selectedRange}
           />
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <ExcelViewerDexie
+            <ExcelViewerDB
               ref={sheetViewerRef}
               tabId={activeTab.id}
               file={activeTab.file}

@@ -23,16 +23,16 @@ import {
 
 // ============================================================================
 // NOTE: Workspace state is now managed by Redux (spreadsheetSlice)
-// Dirty tracking for sheets is now EXCLUSIVELY in Dexie (sheetMetadata.dirty)
-// This hook serves as an adapter layer between Redux/Dexie and the component API
+// Dirty tracking for sheets is now EXCLUSIVELY in database (sheetMetadata.dirty)
+// This hook serves as an adapter layer between Redux/database and the component API
 // ============================================================================
 
 /**
- * Parameters for dirty tracking (OPTIMIZED - Dexie Only)
+ * Parameters for dirty tracking (OPTIMIZED - Database Only)
  * Note: Code and manifest dirty tracking removed - sheets only
  */
 export interface DirtyTrackingDeps {
-  // Empty for now - dirty tracking is in Dexie
+  // Empty for now - dirty tracking is in database
 }
 
 /**
@@ -161,7 +161,7 @@ export const useWorkspace = (
   );
 
   // ==========================================
-  // Dirty Tracking Functions (OPTIMIZED - Dexie Only)
+  // Dirty Tracking Functions (OPTIMIZED - Database Only)
   // ==========================================
 
   // Load all sheet metadata from database (using state for reactivity)
@@ -194,7 +194,7 @@ export const useWorkspace = (
   const tabIsDirty = useCallback(
     (tab: WorkbookTab): boolean => {
       if (tab.kind === 'sheet') {
-        // Check Dexie dirty map
+        // Check database dirty map
         return Boolean(sheetDirtyMap[tab.id]);
       }
       return false;
@@ -209,7 +209,7 @@ export const useWorkspace = (
       let dirty = false;
 
       if (node.type === 'sheet') {
-        // Check Dexie dirty map
+        // Check database dirty map
         dirty = Boolean(sheetDirtyMap[node.id]);
       }
 
@@ -255,13 +255,13 @@ export const useWorkspace = (
     async (tabId: string) => {
       const tabToClose = openTabs.find(tab => tab.id === tabId);
 
-      // Clean up Dexie data for sheet tabs
+      // Clean up database data for sheet tabs
       if (tabToClose?.kind === 'sheet') {
         try {
           const { db: _db } = await import('../../lib/db');
           // Optional: Keep data in DB for later, or delete it
           // await db.deleteSheet(tabId);
-          console.log(`[useWorkspace] Sheet tab closed: ${tabId}, data kept in Dexie`);
+          console.log(`[useWorkspace] Sheet tab closed: ${tabId}, data kept in database`);
         } catch (error) {
           console.error(`[useWorkspace] Failed to clean up sheet data:`, error);
         }

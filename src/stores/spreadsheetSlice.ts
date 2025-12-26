@@ -23,16 +23,16 @@ export type { WorkbookTab };
 /**
  * OPTIMIZED Redux State: UI State ONLY
  *
- * Data persistence is handled by Dexie.js:
- * - Sheet data → Dexie cells table (including dirty flags)
+ * Data persistence is handled by in-memory database:
+ * - Sheet data → database cells table (including dirty flags)
  * - Manifest/Code → File system (via Electron)
  *
  * Redux manages UI state:
  * - Workspace navigation (tabs, nodes, selection)
  * - UI preferences (auto-save, settings)
  *
- * NOTE: Dirty tracking is now EXCLUSIVELY in Dexie (sheetMetadata.dirty)
- * Use useLiveQuery to reactively read dirty state from Dexie
+ * NOTE: Dirty tracking is now EXCLUSIVELY in database (sheetMetadata.dirty)
+ * Use useLiveQuery to reactively read dirty state from database
  */
 export interface SpreadsheetState {
   // ========================================================================

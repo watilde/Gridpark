@@ -201,10 +201,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   );
 
   // ============================================================================
-  // Sheet dirty tracking (Dexie-powered)
+  // Sheet dirty tracking (Database-powered)
   // ============================================================================
 
-  // ExcelViewerDexie calls this directly when sheet is edited
+  // ExcelViewerDB calls this directly when sheet is edited
   const handleDirtyChange = useCallback(
     async (dirty: boolean) => {
       if (!activeTab) return;

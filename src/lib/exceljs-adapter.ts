@@ -2,7 +2,7 @@
  * ExcelJS Integration Layer
  * 
  * Provides a clean interface for reading/writing Excel files with full styling support
- * Integrates with Dexie.js for data persistence
+ * Integrates with in-memory database for data persistence
  */
 
 import ExcelJS from 'exceljs';

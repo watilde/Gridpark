@@ -1,8 +1,8 @@
 /**
- * ExcelViewerDexie - Dexie-powered Excel Viewer
+ * ExcelViewerDB - Database-powered Excel Viewer
  *
  * This is a wrapper around the existing ExcelViewer that:
- * 1. Uses useExcelSheet hook to load/save data from Dexie
+ * 1. Uses useExcelSheet hook to load/save data from in-memory database
  * 2. Automatically tracks dirty state in Redux
  * 3. Provides backward-compatible API
  *
@@ -29,7 +29,7 @@ import type {
   ActiveCellDetails,
 } from './ExcelViewer';
 
-export interface ExcelViewerDexieProps {
+export interface ExcelViewerDBProps {
   // Tab identification
   tabId: string;
 
@@ -53,9 +53,9 @@ export interface ExcelViewerDexieProps {
 }
 
 /**
- * Ref handle exposed by ExcelViewerDexie
+ * Ref handle exposed by ExcelViewerDB
  */
-export interface ExcelViewerDexieHandle {
+export interface ExcelViewerDBHandle {
   /**
    * Execute undo operation
    */
@@ -79,9 +79,9 @@ export interface ExcelViewerDexieHandle {
 }
 
 /**
- * Dexie-powered Excel Viewer
+ * Database-powered Excel Viewer
  */
-export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDexieProps>(
+export const ExcelViewerDB = forwardRef<ExcelViewerDBHandle, ExcelViewerDBProps>(
   (
     {
       tabId,
@@ -99,7 +99,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     ref
   ) => {
     // ============================================================================
-    // Dexie Integration
+    // Database Integration
     // ============================================================================
 
     const sheet = file?.sheets?.[sheetIndex];
@@ -162,7 +162,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
         save: async () => {
           // Force save pending data immediately
           if (pendingDataRef.current) {
-            console.log('[ExcelViewerDexie] Forcing immediate save', { tabId });
+            console.log('[ExcelViewerDB] Forcing immediate save', { tabId });
             try {
               await save2DArray(pendingDataRef.current);
               lastSavedDataRef.current = pendingDataRef.current;
@@ -174,7 +174,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
                 saveTimeoutRef.current = null;
               }
             } catch (error) {
-              console.error('[ExcelViewerDexie] Force save error:', error);
+              console.error('[ExcelViewerDB] Force save error:', error);
             }
           }
         },
@@ -196,7 +196,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
         saveTimeoutRef.current = setTimeout(async () => {
           const dataToSave = pendingDataRef.current;
           if (dataToSave && dataToSave !== lastSavedDataRef.current) {
-            console.log('[ExcelViewerDexie] Debounced save executing', {
+            console.log('[ExcelViewerDB] Debounced save executing', {
               tabId,
               rows: dataToSave.length,
               cols: dataToSave[0]?.length || 0,
@@ -206,7 +206,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
               await save2DArray(dataToSave);
               lastSavedDataRef.current = dataToSave;
             } catch (error) {
-              console.error('[ExcelViewerDexie] Error saving data:', error);
+              console.error('[ExcelViewerDB] Error saving data:', error);
             }
           }
 
@@ -236,7 +236,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     // Track loading state for UI
     const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
 
-    // Load initial data from file into Dexie (if not already loaded)
+    // Load initial data from file into database (if not already loaded)
     useEffect(() => {
       if (!file || !sheet || isLoading) return;
 
@@ -247,14 +247,14 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
 
       // Check if we need to load initial data
       const loadInitialData = async () => {
-        // Check if Dexie already has data for this sheet
-        // Query Dexie directly to avoid depending on useLiveQuery timing
+        // Check if database already has data for this sheet
+        // Query database directly to avoid depending on useLiveQuery timing
         const { db: _db } = await import('../../../../lib/db');
         const existingCells = await _db.getCellsForSheet(tabId);
-        const hasCellsInDexie = existingCells.length > 0;
+        const hasCellsInDB = existingCells.length > 0;
 
-        if (!hasCellsInDexie && sheet.data && sheet.data.length > 0) {
-          console.log('[ExcelViewerDexie] Loading initial data from file into Dexie', {
+        if (!hasCellsInDB && sheet.data && sheet.data.length > 0) {
+          console.log('[ExcelViewerDB] Loading initial data from file into database', {
             tabId,
             sheetName: sheet.name,
             rows: sheet.data.length,
@@ -271,7 +271,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
           try {
             await save2DArray(sheet.data, { recordHistory: false, markDirty: false });
 
-            console.log('[ExcelViewerDexie] Initial data saved to Dexie', {
+            console.log('[ExcelViewerDB] Initial data saved to database', {
               tabId,
               cellsLoaded: sheet.data.length * (sheet.data[0]?.length || 0),
             });
@@ -281,13 +281,13 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
 
             setIsLoadingInitialData(false);
           } catch (error) {
-            console.error('[ExcelViewerDexie] Failed to save initial data:', error);
+            console.error('[ExcelViewerDB] Failed to save initial data:', error);
             initialDataLoadedRef.current[tabId] = false;
             setIsLoadingInitialData(false);
           }
-        } else if (hasCellsInDexie) {
-          // Data already exists in Dexie, mark as loaded
-          console.log('[ExcelViewerDexie] Data already exists in Dexie, skipping initial load', {
+        } else if (hasCellsInDB) {
+          // Data already exists in database, mark as loaded
+          console.log('[ExcelViewerDB] Data already exists in database, skipping initial load', {
             tabId,
             cellCount: existingCells.length,
           });
@@ -307,7 +307,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     useEffect(() => {
       // Only notify if dirty state actually changed
       if (prevIsDirtyRef.current !== isDirty) {
-        console.log('[ExcelViewerDexie] Dirty state changed', { tabId, isDirty });
+        console.log('[ExcelViewerDB] Dirty state changed', { tabId, isDirty });
         onDirtyChangeRef.current?.(isDirty);
         prevIsDirtyRef.current = isDirty;
       }
@@ -359,7 +359,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
      */
     const handleSaveSession = useCallback(
       (state: any) => {
-        console.log('[ExcelViewerDexie] Save session (no-op, handled by workspace)', {
+        console.log('[ExcelViewerDB] Save session (no-op, handled by workspace)', {
           tabId,
           dirty: state?.dirty,
         });
@@ -381,7 +381,7 @@ export const ExcelViewerDexie = forwardRef<ExcelViewerDexieHandle, ExcelViewerDe
     }
 
     // ============================================================================
-    // Render ExcelViewer with Dexie data
+    // Render ExcelViewer with database data
     // ============================================================================
 
     return (
