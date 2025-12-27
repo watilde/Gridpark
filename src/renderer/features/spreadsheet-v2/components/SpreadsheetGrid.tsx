@@ -37,6 +37,10 @@ interface SpreadsheetGridProps {
   selectedCell: CellPosition | null;
   onCellSelect: (position: CellPosition) => void;
   
+  // Range selection
+  selectedRange: { start: CellPosition; end: CellPosition } | null;
+  onRangeSelect?: (range: { start: CellPosition; end: CellPosition }) => void;
+  
   // Editing
   onCellChange: (row: number, col: number, value: string) => void;
   
@@ -50,6 +54,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   visibleCols,
   selectedCell,
   onCellSelect,
+  selectedRange,
+  onRangeSelect,
   onCellChange,
   computedValues,
 }) => {
@@ -61,6 +67,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const [editingCell, setEditingCell] = useState<CellPosition | null>(null);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Range selection state
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
 
   // Calculate viewport
   const viewport = useMemo(() => {
@@ -105,6 +115,32 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     // Otherwise use raw value
     return cell.value !== null ? String(cell.value) : '';
   }, [cells, computedValues]);
+
+  // Get cell style
+  const getCellStyle = useCallback((row: number, col: number): CSSProperties => {
+    const key = `${row},${col}`;
+    const cell = cells.get(key);
+    
+    if (!cell || !cell.style) return {};
+    
+    // Convert CellStyleData to CSSProperties
+    return {
+      backgroundColor: cell.style.backgroundColor,
+      color: cell.style.color,
+      fontWeight: cell.style.fontWeight,
+      fontStyle: cell.style.fontStyle,
+      textDecoration: cell.style.textDecoration,
+      fontSize: cell.style.fontSize,
+      fontFamily: cell.style.fontFamily,
+      textAlign: cell.style.textAlign as any,
+      verticalAlign: cell.style.verticalAlign as any,
+      border: cell.style.border,
+      borderTop: cell.style.borderTop,
+      borderRight: cell.style.borderRight,
+      borderBottom: cell.style.borderBottom,
+      borderLeft: cell.style.borderLeft,
+    };
+  }, [cells]);
 
   // Get raw cell value for editing (formula or value)
   const getRawCellValue = useCallback((row: number, col: number): string => {
@@ -256,6 +292,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         } else {
           // Render regular cell
           const value = getCellValue(row, col);
+          const cellStyle = getCellStyle(row, col);
           
           const style: CSSProperties = {
             position: 'absolute',
@@ -271,6 +308,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             backgroundColor: isSelected ? '#e3f2fd' : 'white',
             cursor: 'cell',
             fontSize: '13px',
+            // Apply cell-specific styles (override defaults)
+            ...cellStyle,
+            // But always keep selection background
+            ...(isSelected && { backgroundColor: '#e3f2fd' }),
           };
 
           cellElements.push(
@@ -288,7 +329,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return cellElements;
-  }, [viewport, getCellValue, selectedCell, editingCell, editValue, onCellSelect, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
+  }, [viewport, getCellValue, getCellStyle, selectedCell, editingCell, editValue, onCellSelect, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
 
   // Render column headers
   const renderColumnHeaders = useMemo(() => {

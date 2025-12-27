@@ -10,7 +10,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, StoredCellData } from '../../../lib/db';
+import { db, StoredCellData, CellStyleData } from '../../../lib/db';
 import { FormulaEngine } from '../utils/FormulaEngine';
 
 interface CellPosition {
@@ -28,8 +28,8 @@ interface UseSpreadsheetParams {
 interface HistoryItem {
   row: number;
   col: number;
-  before: { value: any; formula?: string; type: string } | null;
-  after: { value: any; formula?: string; type: string };
+  before: { value: any; formula?: string; type: string; style?: CellStyleData } | null;
+  after: { value: any; formula?: string; type: string; style?: CellStyleData };
 }
 
 export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetParams) {
@@ -116,12 +116,17 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   }, [metadata]);
 
   // Update a single cell
-  const updateCell = useCallback(async (row: number, col: number, value: string) => {
+  const updateCell = useCallback(async (
+    row: number,
+    col: number,
+    value: string,
+    style?: CellStyleData
+  ) => {
     // Get current cell value for history
     const key = `${row},${col}`;
     const currentCell = cells?.get(key);
     const before = currentCell 
-      ? { value: currentCell.value, formula: currentCell.formula, type: currentCell.type }
+      ? { value: currentCell.value, formula: currentCell.formula, type: currentCell.type, style: currentCell.style }
       : null;
     
     // Parse value
@@ -136,8 +141,11 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       type = !isNaN(num) ? 'number' : 'string';
     }
     
+    // Use provided style or keep existing
+    const finalStyle = style || currentCell?.style || {};
+    
     // After state for history
-    const after = { value: rawValue, formula, type };
+    const after = { value: rawValue, formula, type, style: finalStyle };
     
     // Record history (if not undo/redo operation)
     if (!isUndoRedoRef.current) {
@@ -151,7 +159,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       value: rawValue,
       type,
       formula,
-      style: {},
+      style: finalStyle,
     });
     
     // Update formula engine (incremental) - HyperFormula does this automatically
@@ -186,7 +194,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
           value: item.before.value,
           type: item.before.type,
           formula: item.before.formula,
-          style: {},
+          style: item.before.style || {},
         });
         
         formulaEngine.setCell(item.row, item.col, {
@@ -224,7 +232,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
         value: item.after.value,
         type: item.after.type,
         formula: item.after.formula,
-        style: {},
+        style: item.after.style || {},
       });
       
       formulaEngine.setCell(item.row, item.col, {

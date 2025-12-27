@@ -39,20 +39,33 @@ export interface CellData {
  * Cell style data (subset of CSSProperties)
  */
 export interface CellStyleData {
+  // Background and foreground
   backgroundColor?: string;
   color?: string;
-  fontWeight?: string;
-  fontStyle?: string;
-  textAlign?: string;
-  verticalAlign?: string;
-  fontSize?: string;
-  fontFamily?: string;
+  
+  // Font styling
+  fontWeight?: string | number; // 'normal' | 'bold' | 100-900
+  fontStyle?: string; // 'normal' | 'italic'
+  textDecoration?: string; // 'none' | 'underline' | 'line-through'
+  fontSize?: string; // '12px', '14px', etc.
+  fontFamily?: string; // 'Arial', 'Helvetica', etc.
+  
+  // Text alignment
+  textAlign?: string; // 'left' | 'center' | 'right'
+  verticalAlign?: string; // 'top' | 'middle' | 'bottom'
+  
+  // Borders
   border?: string;
   borderTop?: string;
   borderRight?: string;
   borderBottom?: string;
   borderLeft?: string;
-  // Add more as needed
+  
+  // Number formatting
+  numberFormat?: string; // '0.00', '#,##0', etc.
+  
+  // Additional properties
+  [key: string]: string | number | undefined;
 }
 
 /**

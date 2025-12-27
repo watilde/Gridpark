@@ -14,7 +14,9 @@ import React, { forwardRef, useImperativeHandle, useState, useCallback, useEffec
 import { Box, CircularProgress } from '@mui/joy';
 import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
+import { StyleToolbar } from './StyleToolbar';
 import { useSpreadsheet } from '../hooks/useSpreadsheet';
+import { CellStyleData } from '../../../lib/db';
 
 // Re-export types for compatibility
 export type {
@@ -195,6 +197,33 @@ export const SpreadsheetContainerV2 = forwardRef<
       }
     }, [formulaCommit, selectedCell, handleCellChange]);
     
+    // Handle style change for selected cell
+    const handleStyleChange = useCallback(async (style: Partial<CellStyleData>) => {
+      if (!selectedCell) return;
+      
+      const key = `${selectedCell.row},${selectedCell.col}`;
+      const currentCell = cells.get(key);
+      
+      // Merge with existing style
+      const newStyle = {
+        ...(currentCell?.style || {}),
+        ...style,
+      };
+      
+      // Update cell with new style (keep existing value/formula)
+      await updateCell(
+        selectedCell.row,
+        selectedCell.col,
+        currentCell?.formula || currentCell?.value?.toString() || '',
+        newStyle
+      );
+    }, [selectedCell, cells, updateCell]);
+    
+    // Get selected cell style
+    const selectedCellStyle = selectedCell
+      ? cells.get(`${selectedCell.row},${selectedCell.col}`)?.style
+      : undefined;
+    
     // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y)
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -233,16 +262,22 @@ export const SpreadsheetContainerV2 = forwardRef<
 
     // Render grid
     return (
-      <Box sx={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-        <SpreadsheetGrid
-          cells={cells}
-          visibleRows={dimensions.rows}
-          visibleCols={dimensions.cols}
-          selectedCell={selectedCell}
-          onCellSelect={handleCellSelect}
-          onCellChange={handleCellChange}
-          computedValues={computedValues}
+      <Box sx={{ width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <StyleToolbar
+          selectedCellStyle={selectedCellStyle}
+          onStyleChange={handleStyleChange}
         />
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <SpreadsheetGrid
+            cells={cells}
+            visibleRows={dimensions.rows}
+            visibleCols={dimensions.cols}
+            selectedCell={selectedCell}
+            onCellSelect={handleCellSelect}
+            onCellChange={handleCellChange}
+            computedValues={computedValues}
+          />
+        </Box>
       </Box>
     );
   }
