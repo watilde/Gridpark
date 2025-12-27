@@ -303,7 +303,7 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
                 </IconButton>
               </Tooltip>
 
-              <Tooltip title="Chart">
+              <Tooltip title="Chart (Coming Soon)">
                 <IconButton size="sm" variant="plain" disabled sx={{ opacity: 0.5 }}>
                   <BarChartIcon fontSize="small" />
                 </IconButton>

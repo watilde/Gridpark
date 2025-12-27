@@ -11,12 +11,13 @@
  */
 
 import React, { forwardRef, useImperativeHandle, useState, useCallback, useEffect } from 'react';
-import { Box, CircularProgress } from '@mui/joy';
+import { Box, CircularProgress, Snackbar, Typography } from '@mui/joy';
 import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
 import { StyleToolbar } from './StyleToolbar';
 import { useSpreadsheet } from '../hooks/useSpreadsheet';
 import { CellStyleData } from '../../../../lib/db';
+import InfoIcon from '@mui/icons-material/Info';
 
 // Re-export types for compatibility
 export type { CellPosition, CellRange };
@@ -135,6 +136,25 @@ export const SpreadsheetContainerV2 = forwardRef<
     // Drawing state
     const [activeDrawTool, setActiveDrawTool] = useState<'pen' | 'highlighter' | 'eraser' | null>(null);
     const [penColor, setPenColor] = useState('#000000');
+
+    // UI Feedback state
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarType, setSnackbarType] = useState<'neutral' | 'warning' | 'danger'>('neutral');
+
+    // Handle Insert Actions
+    const handleInsert = useCallback((type: 'link' | 'note' | 'image' | 'table') => {
+      const messages = {
+        link: 'Insert Link is under development.',
+        note: 'Insert Note is under development.',
+        image: 'Insert Image is under development.',
+        table: 'Insert Table is under development.',
+      };
+      
+      setSnackbarMessage(messages[type] || 'This feature is coming soon!');
+      setSnackbarType('neutral');
+      setSnackbarOpen(true);
+    }, []);
 
     // Expose methods via ref
     useImperativeHandle(
@@ -312,6 +332,7 @@ export const SpreadsheetContainerV2 = forwardRef<
           onDrawToolChange={setActiveDrawTool}
           penColor={penColor}
           onPenColorChange={setPenColor}
+          onInsert={handleInsert}
         />
         <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
           <SpreadsheetGrid
@@ -330,6 +351,18 @@ export const SpreadsheetContainerV2 = forwardRef<
             penColor={penColor}
           />
         </Box>
+        
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={3000}
+          onClose={() => setSnackbarOpen(false)}
+          color={snackbarType}
+          variant="soft"
+          startDecorator={<InfoIcon />}
+          sx={{ maxWidth: 400 }}
+        >
+          <Typography level="body-sm">{snackbarMessage}</Typography>
+        </Snackbar>
       </Box>
     );
   }
