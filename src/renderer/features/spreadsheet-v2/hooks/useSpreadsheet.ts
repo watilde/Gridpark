@@ -374,6 +374,81 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     }
   }, [selectedCell, updateCell]);
 
+  // Update style for entire range
+  const updateRangeStyle = useCallback(async (style: CellStyleData) => {
+    // Apply to range if selected
+    if (selectedRange) {
+      const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
+      const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
+      const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
+      const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
+      
+      // Batch update all cells in range
+      for (let row = minRow; row <= maxRow; row++) {
+        for (let col = minCol; col <= maxCol; col++) {
+          const key = `${row},${col}`;
+          const cell = cells?.get(key);
+          
+          // Merge existing style with new style
+          const mergedStyle = { ...(cell?.style || {}), ...style };
+          
+          // Get current value or empty string
+          const currentValue = cell?.formula || cell?.value?.toString() || '';
+          
+          // Update cell with new style
+          await updateCell(row, col, currentValue, mergedStyle);
+        }
+      }
+      
+      console.log(`[Style] Range styled: ${maxRow - minRow + 1}x${maxCol - minCol + 1} cells`);
+      return;
+    }
+    
+    // Apply to single cell if selected
+    if (selectedCell) {
+      const key = `${selectedCell.row},${selectedCell.col}`;
+      const cell = cells?.get(key);
+      
+      // Merge existing style with new style
+      const mergedStyle = { ...(cell?.style || {}), ...style };
+      
+      // Get current value or empty string
+      const currentValue = cell?.formula || cell?.value?.toString() || '';
+      
+      // Update cell with new style
+      await updateCell(selectedCell.row, selectedCell.col, currentValue, mergedStyle);
+      
+      console.log('[Style] Cell styled');
+    }
+  }, [selectedCell, selectedRange, cells, updateCell]);
+
+  // Delete range (set all cells in range to empty)
+  const deleteRange = useCallback(async () => {
+    // Delete range if selected
+    if (selectedRange) {
+      const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
+      const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
+      const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
+      const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
+      
+      // Batch delete all cells in range
+      for (let row = minRow; row <= maxRow; row++) {
+        for (let col = minCol; col <= maxCol; col++) {
+          await updateCell(row, col, '');
+        }
+      }
+      
+      console.log(`[Delete] Range deleted: ${maxRow - minRow + 1}x${maxCol - minCol + 1} cells`);
+      return;
+    }
+    
+    // Delete single cell if selected
+    if (selectedCell) {
+      await updateCell(selectedCell.row, selectedCell.col, '');
+      console.log('[Delete] Cell deleted');
+    }
+  }, [selectedCell, selectedRange, updateCell]);
+
   return {
     // Data
     cells: cells ?? new Map(),
@@ -403,5 +478,9 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     // Copy/Paste
     copyCell,
     pasteCell,
+    
+    // Range operations
+    updateRangeStyle,
+    deleteRange,
   };
 }

@@ -123,6 +123,8 @@ export const SpreadsheetContainerV2 = forwardRef<
       canRedo,
       copyCell,
       pasteCell,
+      updateRangeStyle,
+      deleteRange,
     } = useSpreadsheet({
       tabId,
       workbookId: file?.path ?? '',
@@ -224,62 +226,12 @@ export const SpreadsheetContainerV2 = forwardRef<
       }
     }, [formulaCommit, selectedCell, handleCellChange]);
     
-    // Handle style change for selected cell or range
-    const handleStyleChange = useCallback(async (style: Partial<CellStyleData>) => {
-      // If range is selected, apply to all cells in range
-      if (selectedRange) {
-        const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
-        const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
-        const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
-        const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
-        
-        for (let row = minRow; row <= maxRow; row++) {
-          for (let col = minCol; col <= maxCol; col++) {
-            const key = `${row},${col}`;
-            const currentCell = cells.get(key);
-            
-            const newStyle = {
-              ...(currentCell?.style || {}),
-              ...style,
-            };
-            
-            await updateCell(
-              row,
-              col,
-              currentCell?.formula || currentCell?.value?.toString() || '',
-              newStyle
-            );
-          }
-        }
-        console.log(`[Style] Applied to range: ${maxRow - minRow + 1}x${maxCol - minCol + 1}`);
-        return;
-      }
-      
-      // Single cell styling
-      if (!selectedCell) return;
-      
-      const key = `${selectedCell.row},${selectedCell.col}`;
-      const currentCell = cells.get(key);
-      
-      const newStyle = {
-        ...(currentCell?.style || {}),
-        ...style,
-      };
-      
-      await updateCell(
-        selectedCell.row,
-        selectedCell.col,
-        currentCell?.formula || currentCell?.value?.toString() || '',
-        newStyle
-      );
-    }, [selectedCell, selectedRange, cells, updateCell]);
-    
     // Get selected cell style
     const selectedCellStyle = selectedCell
       ? cells.get(`${selectedCell.row},${selectedCell.col}`)?.style
       : undefined;
     
-    // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+C, Ctrl+V)
+    // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+C, Ctrl+V, Delete)
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
         // Undo/Redo
@@ -302,11 +254,20 @@ export const SpreadsheetContainerV2 = forwardRef<
           e.preventDefault();
           pasteCell();
         }
+        // Delete
+        else if (e.key === 'Delete' || e.key === 'Backspace') {
+          // Only delete if not editing
+          const activeElement = document.activeElement;
+          if (activeElement?.tagName !== 'INPUT' && activeElement?.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            deleteRange();
+          }
+        }
       };
       
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [undo, redo, copyCell, pasteCell]);
+    }, [undo, redo, copyCell, pasteCell, deleteRange]);
 
     // Loading state
     if (!file || !currentSheet) {
@@ -329,7 +290,7 @@ export const SpreadsheetContainerV2 = forwardRef<
       <Box sx={{ width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <StyleToolbar
           selectedCellStyle={selectedCellStyle}
-          onStyleChange={handleStyleChange}
+          onStyleChange={updateRangeStyle}
         />
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <SpreadsheetGrid
