@@ -10,8 +10,9 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, StoredCellData, CellStyleData } from '../../../lib/db';
+import { db, StoredCellData, CellStyleData, ConditionalFormattingRule } from '../../../lib/db';
 import { FormulaEngine } from '../utils/FormulaEngine';
+import { ConditionalFormattingEngine } from '../utils/ConditionalFormattingEngine';
 
 interface CellPosition {
   row: number;
@@ -35,6 +36,9 @@ interface HistoryItem {
 export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetParams) {
   // Formula engine instance (one per sheet)
   const [formulaEngine] = useState(() => new FormulaEngine());
+  
+  // Conditional formatting engine instance
+  const [cfEngine] = useState(() => new ConditionalFormattingEngine());
 
   // Selected cell
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
@@ -72,6 +76,12 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     [tabId]
   );
 
+  // Live query for conditional formatting rules
+  const conditionalFormattingRules = useLiveQuery(
+    () => db.getConditionalFormatting(tabId),
+    [tabId]
+  ) || [];
+
   // Compute all formulas when cells change
   const computedValues = useMemo(() => {
     if (!cells) return new Map<string, any>();
@@ -103,6 +113,39 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     
     return computed;
   }, [cells, formulaEngine]);
+
+  // Compute cell styles with conditional formatting
+  const cellStylesWithCF = useMemo(() => {
+    if (!cells) return new Map<string, CellStyleData>();
+    
+    const styles = new Map<string, CellStyleData>();
+    
+    // Apply conditional formatting to all cells
+    cells.forEach((cell, key) => {
+      // Base style from cell
+      let style = { ...cell.style };
+      
+      // Apply conditional formatting
+      if (conditionalFormattingRules.length > 0) {
+        const cfStyle = cfEngine.evaluateCell(
+          cell.row,
+          cell.col,
+          cell,
+          conditionalFormattingRules,
+          cells
+        );
+        
+        if (cfStyle) {
+          // Merge CF style with base style (CF takes precedence)
+          style = { ...style, ...cfStyle };
+        }
+      }
+      
+      styles.set(key, style);
+    });
+    
+    return styles;
+  }, [cells, conditionalFormattingRules, cfEngine]);
 
   // Dirty flag
   const isDirty = useMemo(() => metadata?.dirty ?? false, [metadata]);
@@ -449,10 +492,30 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     }
   }, [selectedCell, selectedRange, updateCell]);
 
+  // Conditional Formatting Management
+  const addConditionalFormattingRule = useCallback(async (rule: ConditionalFormattingRule) => {
+    await db.addConditionalFormattingRule(tabId, rule);
+    console.log('[CF] Rule added:', rule.id);
+  }, [tabId]);
+
+  const removeConditionalFormattingRule = useCallback(async (ruleId: string) => {
+    await db.removeConditionalFormattingRule(tabId, ruleId);
+    console.log('[CF] Rule removed:', ruleId);
+  }, [tabId]);
+
+  const updateConditionalFormattingRule = useCallback(
+    async (ruleId: string, updates: Partial<ConditionalFormattingRule>) => {
+      await db.updateConditionalFormattingRule(tabId, ruleId, updates);
+      console.log('[CF] Rule updated:', ruleId);
+    },
+    [tabId]
+  );
+
   return {
     // Data
     cells: cells ?? new Map(),
     computedValues,
+    cellStylesWithCF,
     metadata,
     
     // State
@@ -482,5 +545,11 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     // Range operations
     updateRangeStyle,
     deleteRange,
+    
+    // Conditional Formatting
+    conditionalFormattingRules,
+    addConditionalFormattingRule,
+    removeConditionalFormattingRule,
+    updateConditionalFormattingRule,
   };
 }

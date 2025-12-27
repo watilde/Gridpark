@@ -11,7 +11,7 @@
 
 import React, { useRef, useCallback, useMemo, CSSProperties, useState, useEffect } from 'react';
 import { Box, Input } from '@mui/joy';
-import { StoredCellData } from '../../../lib/db';
+import { StoredCellData, CellStyleData } from '../../../lib/db';
 
 // Constants
 const CELL_WIDTH = 100;
@@ -28,6 +28,9 @@ interface CellPosition {
 interface SpreadsheetGridProps {
   // Sparse cell data (only non-empty cells)
   cells: Map<string, StoredCellData>;
+  
+  // Cell styles with conditional formatting applied
+  cellStylesWithCF?: Map<string, CellStyleData>;
   
   // Grid dimensions
   visibleRows: number;
@@ -53,6 +56,7 @@ interface SpreadsheetGridProps {
 
 export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   cells,
+  cellStylesWithCF,
   visibleRows,
   visibleCols,
   selectedCell,
@@ -120,31 +124,33 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     return cell.value !== null ? String(cell.value) : '';
   }, [cells, computedValues]);
 
-  // Get cell style
+  // Get cell style (with conditional formatting applied)
   const getCellStyle = useCallback((row: number, col: number): CSSProperties => {
     const key = `${row},${col}`;
-    const cell = cells.get(key);
     
-    if (!cell || !cell.style) return {};
+    // Use cellStylesWithCF if available (includes conditional formatting)
+    const style = cellStylesWithCF?.get(key) || cells.get(key)?.style;
+    
+    if (!style) return {};
     
     // Convert CellStyleData to CSSProperties
     return {
-      backgroundColor: cell.style.backgroundColor,
-      color: cell.style.color,
-      fontWeight: cell.style.fontWeight,
-      fontStyle: cell.style.fontStyle,
-      textDecoration: cell.style.textDecoration,
-      fontSize: cell.style.fontSize,
-      fontFamily: cell.style.fontFamily,
-      textAlign: cell.style.textAlign as any,
-      verticalAlign: cell.style.verticalAlign as any,
-      border: cell.style.border,
-      borderTop: cell.style.borderTop,
-      borderRight: cell.style.borderRight,
-      borderBottom: cell.style.borderBottom,
-      borderLeft: cell.style.borderLeft,
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      fontWeight: style.fontWeight,
+      fontStyle: style.fontStyle,
+      textDecoration: style.textDecoration,
+      fontSize: style.fontSize,
+      fontFamily: style.fontFamily,
+      textAlign: style.textAlign as any,
+      verticalAlign: style.verticalAlign as any,
+      border: style.border,
+      borderTop: style.borderTop,
+      borderRight: style.borderRight,
+      borderBottom: style.borderBottom,
+      borderLeft: style.borderLeft,
     };
-  }, [cells]);
+  }, [cells, cellStylesWithCF]);
 
   // Check if cell matches search query
   const isSearchMatch = useCallback((row: number, col: number): boolean => {

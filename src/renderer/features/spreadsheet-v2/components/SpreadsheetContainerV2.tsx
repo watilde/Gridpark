@@ -109,6 +109,7 @@ export const SpreadsheetContainerV2 = forwardRef<
     const {
       cells,
       computedValues,
+      cellStylesWithCF,
       selectedCell,
       setSelectedCell,
       selectedRange: hookSelectedRange,
@@ -295,6 +296,7 @@ export const SpreadsheetContainerV2 = forwardRef<
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <SpreadsheetGrid
             cells={cells}
+            cellStylesWithCF={cellStylesWithCF}
             visibleRows={dimensions.rows}
             visibleCols={dimensions.cols}
             selectedCell={selectedCell}
