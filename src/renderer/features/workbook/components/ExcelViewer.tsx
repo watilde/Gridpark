@@ -1,3 +1,52 @@
+/**
+ * ExcelViewer Component
+ * 
+ * ARCHITECTURE OVERVIEW:
+ * =====================
+ * 
+ * Data Flow (Current - 8 stages):
+ * --------------------------------
+ * 1. User Edit → handleCellChange
+ * 2. setGridData (local state update)
+ * 3. useEffect detects gridData change
+ * 4. _onSessionChange propagates to ExcelViewerDB
+ * 5. handleSessionChange receives update
+ * 6. debouncedSave (500ms delay)
+ * 7. save2DArray (converts to sparse format)
+ * 8. db.save2DArrayAsCells (persists to DB)
+ * 
+ * State Management:
+ * -----------------
+ * - gridData: Local 2D array for fast UI rendering
+ * - hasLocalChanges: Immediate dirty flag for user feedback
+ * - sessionState.dirty: DB-backed dirty flag (single source of truth after save)
+ * 
+ * Synchronization:
+ * ----------------
+ * - Version tracking prevents circular updates (gridDataVersionRef / sessionDataVersionRef)
+ * - Hash-based change detection ensures accurate data sync
+ * - Dedicated useEffects separate concerns (data sync / dirty sync / change propagation)
+ * 
+ * FUTURE OPTIMIZATION (TODO):
+ * ===========================
+ * Simplified Data Flow (3 stages):
+ * --------------------------------
+ * 1. User Edit → db.upsertCell (direct DB update)
+ * 2. DB event → useExcelSheet updates
+ * 3. Component re-renders with new data
+ * 
+ * Benefits:
+ * - Eliminates intermediate state (gridData)
+ * - Single source of truth (DB only)
+ * - Simpler data flow
+ * 
+ * Challenges:
+ * - Performance: Every cell edit triggers DB + re-render
+ * - Complexity: Large refactoring required
+ * - Risk: Breaking existing functionality
+ * 
+ * Decision: Keep current architecture for stability, revisit in future.
+ */
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import {
@@ -768,7 +817,15 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   const latestGridDataRef = useRef<CellData[][]>([]);
   const dirtyRef = useRef<boolean>(sessionState?.dirty ?? false);
   const formulaCommitRef = useRef<number>(0);
+  
+  // NOTE: hasLocalChanges is the LOCAL dirty state (immediate user edits)
+  // It is synced with sessionState.dirty (DB state) via dedicated useEffect
+  // This dual-state approach is necessary because:
+  // 1. hasLocalChanges: Immediate feedback for user edits (no DB latency)
+  // 2. sessionState.dirty: Single source of truth after DB save
+  // They are kept in sync by the useEffect at line ~1022
   const [hasLocalChanges, setHasLocalChanges] = useState<boolean>(sessionState?.dirty ?? false);
+  
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
   const navigationRef = useRef<number>(0);
   const replaceRequestRef = useRef<number>(0);

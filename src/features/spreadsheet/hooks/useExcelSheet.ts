@@ -202,6 +202,8 @@ export function useExcelSheet(params: UseExcelSheetParams) {
     const metaMaxCol = metadata?.maxCol ?? 0;
 
     // Calculate actual data dimensions from cells (for infinite scroll support)
+    // NOTE: This O(n) scan is necessary because metadata may be stale
+    // Future optimization: Update metadata in bulkUpsertCells to eliminate this
     let actualMaxRow = metaMaxRow;
     let actualMaxCol = metaMaxCol;
     cells.forEach(cell => {

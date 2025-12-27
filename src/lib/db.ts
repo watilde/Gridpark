@@ -471,21 +471,23 @@ export class AppDatabase {
 
       console.log('[db] bulkUpsertCells: completed, updating dimensions', { tabId });
 
-      // Update sheet dimensions
-      let maxRow = 0;
-      let maxCol = 0;
-
-      cellUpdates.forEach(({ row, col }) => {
-        maxRow = Math.max(maxRow, row);
-        maxCol = Math.max(maxCol, col);
-      });
-
+      // Update sheet dimensions (preserve existing max if larger)
       const metadata = this.sheetMetadataStore.get(tabId);
+      let maxRow = metadata?.maxRow ?? 0;
+      let maxCol = metadata?.maxCol ?? 0;
+
+      // Calculate max from current updates
+      cellUpdates.forEach(({ row, col }) => {
+        if (row > maxRow) maxRow = row;
+        if (col > maxCol) maxCol = col;
+      });
 
       if (metadata) {
         metadata.maxRow = maxRow;
         metadata.maxCol = maxCol;
-        metadata.cellCount = cellUpdates.length;
+        // NOTE: cellCount should be total cells in sheet, not just updates
+        // It will be calculated correctly by updateSheetDimensions if needed
+        // For now, we don't update it here to avoid incorrect counts
         metadata.updatedAt = now;
         this.sheetMetadataStore.set(tabId, metadata);
         
@@ -493,7 +495,7 @@ export class AppDatabase {
           tabId,
           maxRow,
           maxCol,
-          cellCount: cellUpdates.length,
+          updatesCount: cellUpdates.length,
         });
       } else {
         console.warn('[db] bulkUpsertCells: metadata not found for', tabId);
