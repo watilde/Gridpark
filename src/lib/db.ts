@@ -197,6 +197,7 @@ export interface SheetMetadata {
   maxRow: number; // Highest row with data
   maxCol: number; // Highest column with data
   cellCount: number; // Total non-empty cells
+  merges?: string[]; // Merged cell ranges (e.g., "A1:B2")
 
   // State
   dirty: boolean; // Has unsaved changes

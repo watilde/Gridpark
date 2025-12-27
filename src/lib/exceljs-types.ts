@@ -346,6 +346,9 @@ export interface ExcelJSCellData {
 // ============================================================================
 
 export interface ExcelSheetProperties {
+  // Merged cells
+  merges?: string[];
+
   // Conditional formatting rules
   conditionalFormattings?: ExcelConditionalFormatting[];
   

@@ -288,6 +288,7 @@ export class ExcelJSAdapter {
       
       // Extract sheet properties
       const properties: ExcelSheetProperties = {
+        merges: (worksheet as any).model?.merges || [],
         columns: worksheet.columns?.map(col => ({
           width: col.width,
           hidden: col.hidden,

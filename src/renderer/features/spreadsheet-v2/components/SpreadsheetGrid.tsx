@@ -52,6 +52,10 @@ interface SpreadsheetGridProps {
 
   // Search
   searchQuery?: string;
+
+  // Drawing
+  activeDrawTool?: 'pen' | 'highlighter' | 'eraser' | null;
+  penColor?: string;
 }
 
 export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
@@ -66,9 +70,12 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   onCellChange,
   computedValues,
   searchQuery,
+  activeDrawTool,
+  penColor = '#000000',
 }) => {
   const theme = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
@@ -80,6 +87,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   // Range selection state
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
+
+  // Drawing state
+  const isDrawing = useRef(false);
+  const lastPos = useRef<{ x: number; y: number } | null>(null);
 
   // Calculate viewport
   const viewport = useMemo(() => {
@@ -106,6 +117,56 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     const target = e.target as HTMLDivElement;
     setScrollTop(target.scrollTop);
     setScrollLeft(target.scrollLeft);
+  }, []);
+
+  // Total content dimensions
+  const contentWidth = HEADER_WIDTH + visibleCols * CELL_WIDTH;
+  const contentHeight = HEADER_HEIGHT + visibleRows * CELL_HEIGHT;
+
+  // Handle canvas drawing
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!activeDrawTool || !canvasRef.current) return;
+    
+    isDrawing.current = true;
+    const rect = canvasRef.current.getBoundingClientRect();
+    lastPos.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }, [activeDrawTool]);
+
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDrawing.current || !activeDrawTool || !canvasRef.current || !lastPos.current) return;
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
+
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(currentX, currentY);
+    
+    if (activeDrawTool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineWidth = 20;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = activeDrawTool === 'highlighter' ? `${penColor}50` : penColor; // 50% opacity for highlighter
+      ctx.lineWidth = activeDrawTool === 'highlighter' ? 15 : 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+    
+    ctx.stroke();
+    lastPos.current = { x: currentX, y: currentY };
+  }, [activeDrawTool, penColor]);
+
+  const handleCanvasMouseUp = useCallback(() => {
+    isDrawing.current = false;
+    lastPos.current = null;
   }, []);
 
   // Get cell value (computed or raw)
@@ -138,16 +199,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
 
       if (!style) return {};
 
-      // Check if individual border properties are set
-      const hasIndividualBorders = !!(
-        style.borderTop ||
-        style.borderRight ||
-        style.borderBottom ||
-        style.borderLeft
-      );
-
       // Convert CellStyleData to CSSProperties
-      // Avoid mixing border shorthand with individual properties
       return {
         backgroundColor: style.backgroundColor,
         color: style.color,
@@ -158,17 +210,11 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         fontFamily: style.fontFamily,
         textAlign: style.textAlign as any,
         verticalAlign: style.verticalAlign as any,
-        // Only use border shorthand if no individual borders are set
-        ...(hasIndividualBorders
-          ? {
-              borderTop: style.borderTop,
-              borderRight: style.borderRight,
-              borderBottom: style.borderBottom,
-              borderLeft: style.borderLeft,
-            }
-          : {
-              border: style.border,
-            }),
+        borderTop: style.borderTop,
+        borderRight: style.borderRight,
+        borderBottom: style.borderBottom,
+        borderLeft: style.borderLeft,
+        border: style.border,
       };
     },
     [cells, cellStylesWithCF]
@@ -255,9 +301,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   // Handle double-click to edit
   const handleCellDoubleClick = useCallback(
     (row: number, col: number) => {
+      if (activeDrawTool) return; // Disable edit when drawing
       startEditing(row, col);
     },
-    [startEditing]
+    [startEditing, activeDrawTool]
   );
 
   // Handle Enter key on selected cell (start editing)
@@ -313,6 +360,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   // Handle cell mouse down (start selection)
   const handleCellMouseDown = useCallback(
     (row: number, col: number, e: React.MouseEvent) => {
+      if (activeDrawTool) return; // Disable selection when drawing
+      
       e.preventDefault();
 
       // If shift is held, extend selection from current selected cell
@@ -332,12 +381,14 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         onCellSelect({ row, col });
       }
     },
-    [selectedCell, onCellSelect, onRangeSelect]
+    [selectedCell, onCellSelect, onRangeSelect, activeDrawTool]
   );
 
   // Handle cell mouse enter (extend selection)
   const handleCellMouseEnter = useCallback(
     (row: number, col: number) => {
+      if (activeDrawTool) return; // Disable selection when drawing
+      
       if (isSelecting && selectionStart) {
         const range = {
           start: selectionStart,
@@ -348,7 +399,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         }
       }
     },
-    [isSelecting, selectionStart, onRangeSelect]
+    [isSelecting, selectionStart, onRangeSelect, activeDrawTool]
   );
 
   // Handle mouse up (end selection)
@@ -361,6 +412,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     window.addEventListener('mouseup', handleMouseUp);
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, [handleMouseUp]);
+  
   const getColumnLabel = useCallback((col: number): string => {
     let label = '';
     let num = col;
@@ -568,10 +620,6 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     return headers;
   }, [viewport, theme]);
 
-  // Total content dimensions
-  const contentWidth = HEADER_WIDTH + visibleCols * CELL_WIDTH;
-  const contentHeight = HEADER_HEIGHT + visibleRows * CELL_HEIGHT;
-
   return (
     <Box
       ref={containerRef}
@@ -582,6 +630,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         overflow: 'auto',
         position: 'relative',
         backgroundColor: theme.palette.background.body,
+        cursor: activeDrawTool ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewport="0 0 24 24" fill="black"><circle cx="12" cy="12" r="6" /></svg>') 12 12, auto` : 'default',
       }}
     >
       <div
@@ -591,6 +640,24 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
           height: contentHeight,
         }}
       >
+        {/* Drawing Canvas Overlay */}
+        <canvas
+          ref={canvasRef}
+          width={contentWidth}
+          height={contentHeight}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            pointerEvents: activeDrawTool ? 'auto' : 'none',
+            zIndex: 50, // Above cells
+          }}
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseUp}
+        />
+
         {/* Corner cell */}
         <div
           style={{

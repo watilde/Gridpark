@@ -79,6 +79,7 @@ export interface UseWorkspaceStateReturn {
     markTabDirty: (id: string) => void;
     markTabClean: (id: string) => void;
     saveTab: (tabId: string) => Promise<void>;
+    saveTabAs: (tabId: string) => Promise<void>;
     saveAllDirtyTabs: () => Promise<void>;
     tabIsDirty: (tab: any) => boolean;
   };
@@ -115,7 +116,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
   // ============================================
 
   // Sheet data: Managed by database (use useExcelSheet hook in components)
-  const { saveWorkbookFile } = useSaveWorkbook();
+  const { saveWorkbookFile, saveWorkbookFileAs } = useSaveWorkbook();
 
   // Manifest & Code: File system access only (no useState caching)
 
@@ -244,6 +245,30 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     console.log('[useWorkspaceState] === TAB SAVED ===', { tabId });
   }, [openTabs, findWorkbookNode, saveWorkbookFile]);
 
+  const saveTabAs = useCallback(async (tabId: string) => {
+    console.log('[useWorkspaceState] === SAVE TAB AS ===', { tabId });
+    
+    const tab = openTabs.find(t => t.id === tabId);
+    if (!tab) {
+      throw new Error(`Tab not found: ${tabId}`);
+    }
+
+    if (tab.kind === 'sheet') {
+      const workbookNode = findWorkbookNode(tab.workbookId);
+      if (!workbookNode?.file) {
+        throw new Error(`Workbook not found for tab: ${tabId}`);
+      }
+
+      try {
+        await saveWorkbookFileAs(workbookNode.file, tab.workbookId);
+        console.log('[useWorkspaceState] Workbook exported successfully');
+      } catch (error) {
+        console.error('[useWorkspaceState] Failed to export workbook:', error);
+        throw error;
+      }
+    }
+  }, [openTabs, findWorkbookNode, saveWorkbookFileAs]);
+
   const saveAllDirtyTabs = useCallback(async () => {
     console.log('[useWorkspaceState] saveAllDirtyTabs called', {
       dirtyCount: dirtyTabIds.size,
@@ -288,10 +313,11 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
       markTabDirty,
       markTabClean,
       saveTab,
+      saveTabAs,
       saveAllDirtyTabs,
       tabIsDirty: (tab: any) => dirtyTabIds.has(tab?.id || ''),
     }),
-    [dirtyTabIds, markTabDirty, markTabClean, saveTab, saveAllDirtyTabs]
+    [dirtyTabIds, markTabDirty, markTabClean, saveTab, saveTabAs, saveAllDirtyTabs]
   );
 
   // ============================================

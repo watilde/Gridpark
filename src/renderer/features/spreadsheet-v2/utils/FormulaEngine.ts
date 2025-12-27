@@ -30,7 +30,7 @@ export interface CalculationResult {
 
 export class FormulaEngine {
   private hf: HyperFormula;
-  private sheetId = 0;
+  private sheetId: number;
 
   constructor() {
     // Initialize HyperFormula with optimized config
@@ -43,7 +43,19 @@ export class FormulaEngine {
     };
 
     this.hf = HyperFormula.buildEmpty(config);
-    this.sheetId = this.hf.addSheet('Sheet1');
+    this.sheetId = this.initSheet();
+  }
+
+  private initSheet(): number {
+    const sheetName = 'Sheet1';
+    if (this.hf.getSheetId(sheetName) === undefined) {
+      this.hf.addSheet(sheetName);
+    }
+    const id = this.hf.getSheetId(sheetName);
+    if (id === undefined) {
+      throw new Error(`[FormulaEngine] Failed to initialize sheet '${sheetName}'`);
+    }
+    return id;
   }
 
   /**
@@ -121,9 +133,9 @@ export class FormulaEngine {
    */
   batchUpdate(cells: Array<{ row: number; col: number; cell: Cell }>) {
     // Ensure sheet exists before batch operation
-    if (this.sheetId === undefined || this.hf.getSheetId('Sheet1') === undefined) {
+    if (this.hf.getSheetId('Sheet1') === undefined) {
       console.warn(`[FormulaEngine] Sheet not initialized in batchUpdate, recreating...`);
-      this.sheetId = this.hf.addSheet('Sheet1');
+      this.sheetId = this.initSheet();
     }
 
     this.hf.batch(() => {
@@ -173,7 +185,7 @@ export class FormulaEngine {
       }
     });
     
-    this.sheetId = this.hf.addSheet('Sheet1');
+    this.sheetId = this.initSheet();
   }
 
   /**

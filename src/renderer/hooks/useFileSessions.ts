@@ -180,7 +180,76 @@ export const useSaveWorkbook = () => {
     }
   }, []);
 
-  return { saveWorkbookFile };
+  const saveWorkbookFileAs = useCallback(async (file: ExcelFile, workbookId?: string) => {
+    // Use the new electron API for saving
+    const electronAPI = window.electronAPI;
+    if (!electronAPI?.saveFileAs) {
+      throw new Error('File saving is only available in the desktop app');
+    }
+
+    console.log('[useSaveWorkbook] === SAVE AS START ===', { 
+      path: file.path, 
+      workbookId,
+      sheetCount: file.sheets.length 
+    });
+
+    try {
+      // STEP 1: Load all sheets from database and prepare for save
+      const updatedSheets = await Promise.all(
+        file.sheets.map(async (sheet: any, index: number) => {
+          const tabId = workbookId 
+            ? `${workbookId}-sheet-${index}`
+            : `${file.path}-sheet-${index}`;
+
+          // Load 2D array from database
+          const data = await db.getCellsAs2DArray(tabId);
+          
+          if (!data || data.length === 0) {
+            console.warn(`[useSaveWorkbook] No data for ${sheet.name}, saving empty sheet`);
+            return { ...sheet, data: [], rowCount: 0, colCount: sheet.colCount };
+          }
+
+          return {
+            ...sheet,
+            data,
+            rowCount: data.length,
+            colCount: data[0]?.length ?? sheet.colCount,
+          };
+        })
+      );
+
+      const updatedFile = { ...file, sheets: updatedSheets };
+
+      // STEP 2: Save As dialog
+      console.log('[useSaveWorkbook] Opening Save As dialog...');
+      const result = await electronAPI.saveFileAs(updatedFile);
+      
+      if (result.canceled) {
+        console.log('[useSaveWorkbook] Save As canceled');
+        return null;
+      }
+
+      if (!result.success || !result.file) {
+        throw new Error(result.error || 'Failed to save file');
+      }
+
+      console.log('[useSaveWorkbook] File saved as:', result.file.path);
+      
+      // Note: We do NOT mark sheets as clean here because the "Save As" creates a COPY.
+      // The original workbook in the editor is still open and potentially dirty.
+      // If we wanted to "switch" to the new file, we would need to reload the workspace with the new file.
+      // For a simple "Export", we don't change the active workspace state.
+
+      return result.file;
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('[useSaveWorkbook] === SAVE AS FAILED ===', message);
+      throw error;
+    }
+  }, []);
+
+  return { saveWorkbookFile, saveWorkbookFileAs };
 };
 
 // ============================================================================

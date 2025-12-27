@@ -72,6 +72,23 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
         const key = `${cell.row},${cell.col}`;
         cellMap.set(key, cell);
       });
+
+      // Populate Formula Engine (Batch)
+      formulaEngine.clear();
+      const cellUpdates = cellArray.map(cell => ({
+        row: cell.row,
+        col: cell.col,
+        cell: {
+          row: cell.row,
+          col: cell.col,
+          value: cell.value,
+          formula: cell.formula,
+          type: cell.type,
+        },
+      }));
+      formulaEngine.batchUpdate(cellUpdates);
+
+      // Set cells state after engine is ready
       setCells(cellMap);
 
       // Load metadata
@@ -86,36 +103,20 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     };
 
     loadData();
-  }, [tabId, reloadTrigger]);
+  }, [tabId, reloadTrigger, formulaEngine]);
 
   // Trigger reload manually
   const reloadData = useCallback(() => {
     setReloadTrigger(prev => prev + 1);
   }, []);
 
-  // Compute all formulas when cells change
+  // Compute all formulas when cells change (READ-ONLY from Engine)
   const computedValues = useMemo(() => {
     if (!cells) return new Map<string, any>();
     
-    // Clear previous data
-    formulaEngine.clear();
+    // Engine is already updated by loadData or updateCell
+    // We just read the computed values
     
-    // Batch update all cells (optimized)
-    const cellUpdates = Array.from(cells.entries()).map(([key, cell]) => ({
-      row: cell.row,
-      col: cell.col,
-      cell: {
-        row: cell.row,
-        col: cell.col,
-        value: cell.value,
-        formula: cell.formula,
-        type: cell.type,
-      },
-    }));
-    
-    formulaEngine.batchUpdate(cellUpdates);
-    
-    // Get computed values
     const computed = new Map<string, any>();
     cells.forEach((cell, key) => {
       const result = formulaEngine.getCell(cell.row, cell.col);
@@ -211,7 +212,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       setRedoStack([]); // Clear redo stack on new change
     }
     
-    // Update DB
+    // Update DB (Async)
     await db.upsertCell(tabId, row, col, {
       value: rawValue,
       type,
@@ -219,7 +220,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       style: finalStyle,
     });
     
-    // Update formula engine (incremental) - HyperFormula does this automatically
+    // Update formula engine (Synchronous & Incremental)
     formulaEngine.setCell(row, col, {
       row,
       col,
@@ -231,9 +232,27 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     // Mark dirty
     await db.markSheetDirty(tabId, true);
     
-    // Reload data to reflect changes
-    reloadData();
-  }, [tabId, formulaEngine, cells, reloadData]);
+    // Update Local State (Incremental) - Avoid full reload
+    const newCell: StoredCellData = {
+      id: currentCell?.id, // Keep ID if exists
+      tabId,
+      row,
+      col,
+      value: rawValue,
+      type,
+      formula,
+      style: finalStyle,
+      updatedAt: new Date(),
+      version: (currentCell?.version || 0) + 1,
+    };
+
+    setCells(prev => {
+      const next = new Map(prev);
+      next.set(key, newCell);
+      return next;
+    });
+    
+  }, [tabId, formulaEngine, cells]);
 
   // Save to disk (mark as clean)
   const save = useCallback(async () => {

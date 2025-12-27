@@ -13,7 +13,6 @@ import {
   SpreadsheetContainerV2Handle,
 } from '../../spreadsheet-v2/components/SpreadsheetContainerV2';
 import { FormulaBar } from '../../formula-bar/FormulaBar';
-import { SpreadsheetToolbar } from '../../toolbar/SpreadsheetToolbar';
 import { WorkbookTab } from '../../../types/tabs';
 import { CellPosition, CellRange } from '../../../types/excel';
 
@@ -77,23 +76,6 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
     ref
   ) => {
     const sheetViewerRef = useRef<SpreadsheetContainerV2Handle | null>(null);
-    
-    // Track selected cell/range for toolbar
-    const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
-    const [selectedRange, setSelectedRange] = useState<CellRange | null>(null);
-    
-    // Wrap cell/range selection handlers to update toolbar state
-    const handleCellSelect = (position: CellPosition) => {
-      setSelectedCell(position);
-      setSelectedRange(null);
-      onCellSelect(position);
-    };
-    
-    const handleRangeSelect = (range: CellRange) => {
-      setSelectedRange(range);
-      setSelectedCell(null);
-      onRangeSelect(range);
-    };
 
     // Expose undo/redo/save methods via ref
     useImperativeHandle(
@@ -141,20 +123,16 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <FormulaBar formulaBarState={formulaBarState} />
-          <SpreadsheetToolbar
-            tabId={activeTab.id}
-            selectedCell={selectedCell}
-            selectedRange={selectedRange}
-          />
           <Box sx={{ flex: 1, minHeight: 0 }}>
             <SpreadsheetContainerV2
+              key={activeTab.id}
               ref={sheetViewerRef}
               tabId={activeTab.id}
               file={activeTab.file}
               sheetIndex={activeTab.sheetIndex}
               onDirtyChange={onDirtyChange}
-              onCellSelect={handleCellSelect}
-              onRangeSelect={handleRangeSelect}
+              onCellSelect={onCellSelect}
+              onRangeSelect={onRangeSelect}
               searchQuery={sheetSearchQuery}
               searchNavigation={searchNavigation}
               replaceCommand={replaceCommand}

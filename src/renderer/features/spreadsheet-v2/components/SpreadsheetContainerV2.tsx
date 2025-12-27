@@ -132,6 +132,10 @@ export const SpreadsheetContainerV2 = forwardRef<
     // Use range from hook
     const selectedRange = hookSelectedRange;
 
+    // Drawing state
+    const [activeDrawTool, setActiveDrawTool] = useState<'pen' | 'highlighter' | 'eraser' | null>(null);
+    const [penColor, setPenColor] = useState('#000000');
+
     // Expose methods via ref
     useImperativeHandle(
       ref,
@@ -157,6 +161,9 @@ export const SpreadsheetContainerV2 = forwardRef<
     // Handle cell selection
     const handleCellSelect = useCallback(
       (position: { row: number; col: number }) => {
+        // If drawing, ignore selection
+        if (activeDrawTool) return;
+
         setSelectedCell(position);
         setHookSelectedRange(null); // Clear range when selecting single cell
 
@@ -176,12 +183,15 @@ export const SpreadsheetContainerV2 = forwardRef<
           });
         }
       },
-      [setSelectedCell, setHookSelectedRange, onCellSelect, onActiveCellDetails, cells]
+      [setSelectedCell, setHookSelectedRange, onCellSelect, onActiveCellDetails, cells, activeDrawTool]
     );
 
     // Handle range selection
     const handleRangeSelect = useCallback(
       (range: { start: CellPosition; end: CellPosition }) => {
+        // If drawing, ignore selection
+        if (activeDrawTool) return;
+
         setHookSelectedRange(range);
 
         if (onRangeSelect) {
@@ -194,7 +204,7 @@ export const SpreadsheetContainerV2 = forwardRef<
           onRangeSelect(cellRange);
         }
       },
-      [setHookSelectedRange, onRangeSelect]
+      [setHookSelectedRange, onRangeSelect, activeDrawTool]
     );
 
     // Handle cell change
@@ -295,8 +305,15 @@ export const SpreadsheetContainerV2 = forwardRef<
         }}
       >
         {/* Always show StyleToolbar (Excel-like ribbon) */}
-        <StyleToolbar selectedCellStyle={selectedCellStyle} onStyleChange={updateRangeStyle} />
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+        <StyleToolbar
+          selectedCellStyle={selectedCellStyle}
+          onStyleChange={updateRangeStyle}
+          activeDrawTool={activeDrawTool}
+          onDrawToolChange={setActiveDrawTool}
+          penColor={penColor}
+          onPenColorChange={setPenColor}
+        />
+        <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
           <SpreadsheetGrid
             cells={cells}
             cellStylesWithCF={cellStylesWithCF}
@@ -309,6 +326,8 @@ export const SpreadsheetContainerV2 = forwardRef<
             selectedRange={selectedRange}
             onRangeSelect={handleRangeSelect}
             searchQuery={searchQuery}
+            activeDrawTool={activeDrawTool}
+            penColor={penColor}
           />
         </Box>
       </Box>

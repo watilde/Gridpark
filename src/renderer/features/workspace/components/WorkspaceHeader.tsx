@@ -5,7 +5,7 @@ import {
   Redo as RedoIcon,
   Save as SaveIcon,
   Search as SearchIcon,
-  Settings as SettingsIcon,
+  SaveAs as ExportIcon,
 } from '@mui/icons-material';
 import iconImage from '../../../assets/icon.png';
 
@@ -13,6 +13,7 @@ interface HeaderProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onSave?: () => void;
+  onSaveAs?: () => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onOpenSettings: () => void;
@@ -21,6 +22,7 @@ interface HeaderProps {
   canUndo?: boolean;
   canRedo?: boolean;
   hasUnsavedChanges?: boolean;
+  disabled?: boolean;
 }
 
 // Excel-style header container
@@ -103,6 +105,14 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
 
   '&:hover': {
     backgroundColor: theme.palette.background.level1,
+  },
+
+  '&:disabled': {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    '&:hover': {
+      backgroundColor: 'transparent',
+    },
   },
 
   '&::before': {
@@ -196,6 +206,12 @@ const SearchInput = styled('input')(({ theme }) => ({
   '&:focus': {
     borderColor: theme.palette.primary.main,
   },
+
+  '&:disabled': {
+    backgroundColor: theme.palette.background.level1,
+    color: theme.palette.text.tertiary,
+    cursor: 'not-allowed',
+  },
 }));
 
 // Search icon overlay
@@ -214,43 +230,20 @@ const SearchIconOverlay = styled('div')(({ theme }) => ({
   },
 }));
 
-// Settings button (gear icon)
-const SettingsButton = styled('button')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '32px',
-  height: '32px',
-  padding: 0,
-  border: 'none',
-  backgroundColor: 'transparent',
-  color: theme.palette.text.secondary,
-  cursor: 'pointer',
-  borderRadius: '4px',
-  transition: 'background-color 0.15s ease',
-
-  '&:hover': {
-    backgroundColor: theme.palette.background.level1,
-  },
-
-  '& svg': {
-    fontSize: '20px',
-  },
-}));
-
 /**
  * Excel-Style WorkspaceHeader Component
  *
  * Minimalist header bar matching Excel's design:
  * - Left: Gridpark icon, AutoSave toggle, Save button, Undo, Redo
  * - Center: Search bar spanning across columns
- * - Right: Settings/user icon
+ * - Right: Export (Save As)
  * - Dark theme optimized with icon-based interface
  */
 export const WorkspaceHeader: React.FC<HeaderProps> = ({
   onUndo,
   onRedo,
   onSave,
+  onSaveAs,
   searchQuery,
   onSearchChange,
   onOpenSettings,
@@ -259,10 +252,12 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
   canUndo = false,
   canRedo = false,
   hasUnsavedChanges = false,
+  disabled = false,
 }) => {
   const [localAutoSave, setLocalAutoSave] = useState(autoSaveEnabled);
 
   const handleAutoSaveToggle = () => {
+    if (disabled) return;
     const newValue = !localAutoSave;
     setLocalAutoSave(newValue);
     onAutoSaveToggle?.(newValue);
@@ -279,6 +274,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           enabled={localAutoSave}
           onClick={handleAutoSaveToggle}
           title={`AutoSave: ${localAutoSave ? 'On' : 'Off'}`}
+          disabled={disabled}
         >
           AutoSave
         </AutoSaveToggle>
@@ -288,18 +284,18 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
             console.log('[WorkspaceHeader] Save button clicked', { hasUnsavedChanges });
             onSave?.();
           }}
-          disabled={!hasUnsavedChanges}
+          disabled={disabled || !hasUnsavedChanges}
           active={hasUnsavedChanges}
           title={hasUnsavedChanges ? 'Save (Ctrl+S)' : 'No changes to save'}
         >
           <SaveIcon />
         </ActionButton>
 
-        <ActionButton onClick={onUndo} disabled={!canUndo} title="Undo (Cmd+Z)">
+        <ActionButton onClick={onUndo} disabled={disabled || !canUndo} title="Undo (Cmd+Z)">
           <UndoIcon />
         </ActionButton>
 
-        <ActionButton onClick={onRedo} disabled={!canRedo} title="Redo (Cmd+Shift+Z)">
+        <ActionButton onClick={onRedo} disabled={disabled || !canRedo} title="Redo (Cmd+Shift+Z)">
           <RedoIcon />
         </ActionButton>
       </LeftSection>
@@ -316,14 +312,15 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
             onChange={e => onSearchChange(e.target.value)}
             spellCheck={false}
             autoComplete="off"
+            disabled={disabled}
           />
         </SearchContainer>
       </CenterSection>
 
       <RightSection>
-        <SettingsButton onClick={onOpenSettings} title="Settings">
-          <SettingsIcon />
-        </SettingsButton>
+        <ActionButton onClick={onSaveAs} title="Export (Save As)" disabled={disabled}>
+          <ExportIcon />
+        </ActionButton>
       </RightSection>
     </HeaderContainer>
   );

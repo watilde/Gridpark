@@ -3,15 +3,12 @@
  * 
  * VSCode-inspired left sidebar navigation
  * 
- * Top Section (Git operations):
- * - Git Commit View (split/inline diff)
- * - Git History View
- * - Git Branch View (merge support)
- * - Git Config
+ * Top Section:
+ * - Excel View (spreadsheet viewer) - FIRST
+ * - Git operations (optional/secondary)
  * 
- * Bottom Section (Main features):
- * - Excel View (spreadsheet viewer)
- * - Settings
+ * Bottom Section:
+ * - Settings - LAST
  */
 
 import React from 'react';
@@ -51,11 +48,12 @@ export interface ActivityBarProps {
 const ActivityBarContainer = styled(Box)(({ theme }) => ({
   width: '48px',
   height: '100%',
-  backgroundColor: theme.palette.mode === 'dark' ? '#2d2d30' : '#2c2c2c',
+  // Use specific VSCode activity bar colors or fallback to theme
+  backgroundColor: theme.palette.mode === 'dark' ? '#333333' : '#2c2c2c',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#454545' : '#3e3e42'}`,
+  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#252526' : '#3e3e42'}`,
   flexShrink: 0,
   zIndex: 1000,
 }));
@@ -66,8 +64,8 @@ const TopSection = styled(Box)({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  paddingTop: '4px',
-  gap: '4px',
+  paddingTop: '10px',
+  gap: '8px',
 });
 
 const BottomSection = styled(Box)({
@@ -75,16 +73,9 @@ const BottomSection = styled(Box)({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  paddingBottom: '8px',
-  gap: '4px',
+  paddingBottom: '10px',
+  gap: '8px',
 });
-
-const Divider = styled(Box)(({ theme }) => ({
-  width: '32px',
-  height: '1px',
-  backgroundColor: theme.palette.mode === 'dark' ? '#454545' : '#3e3e42',
-  margin: '8px 0',
-}));
 
 interface ActivityButtonProps {
   active?: boolean;
@@ -99,15 +90,11 @@ const ActivityButton = styled('button')<ActivityButtonProps>(({ theme, active })
   border: 'none',
   backgroundColor: 'transparent',
   color: active
-    ? theme.palette.mode === 'dark'
-      ? '#ffffff'
-      : '#ffffff'
-    : theme.palette.mode === 'dark'
-      ? '#cccccc'
-      : '#d4d4d4',
+    ? '#ffffff'
+    : 'rgba(255, 255, 255, 0.4)',
   cursor: 'pointer',
   position: 'relative',
-  transition: 'color 0.15s ease',
+  transition: 'color 0.1s ease',
   padding: 0,
   outline: 'none',
 
@@ -116,26 +103,20 @@ const ActivityButton = styled('button')<ActivityButtonProps>(({ theme, active })
     content: '""',
     position: 'absolute',
     left: 0,
-    top: '50%',
-    transform: 'translateY(-50%)',
+    top: 0,
+    bottom: 0,
     width: '2px',
-    height: active ? '24px' : '0px',
-    backgroundColor: theme.palette.mode === 'dark' ? '#007acc' : '#0066bf',
-    transition: 'height 0.15s ease',
+    backgroundColor: active ? (theme.palette.mode === 'dark' ? '#ffffff' : '#007acc') : 'transparent',
+    transition: 'background-color 0.1s ease',
   },
 
   '&:hover': {
-    color: theme.palette.mode === 'dark' ? '#ffffff' : '#ffffff',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-
-  '&:active': {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: '#ffffff',
   },
 
   '&:focus-visible': {
-    outline: `2px solid ${theme.palette.mode === 'dark' ? '#007acc' : '#0066bf'}`,
-    outlineOffset: '-2px',
+    outline: `1px solid ${theme.palette.focusVisible}`,
+    outlineOffset: '-1px',
   },
 
   '& svg': {
@@ -161,60 +142,8 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
   return (
     <ActivityBarContainer className={className}>
       <TopSection>
-        {/* Git Commit View */}
-        <Tooltip title="Git Commit (Split/Inline)" placement="right" arrow>
-          <ActivityButton
-            active={activeView === 'commit'}
-            onClick={() => handleViewChange('commit')}
-            aria-label="Git Commit View"
-            aria-pressed={activeView === 'commit'}
-          >
-            <CommitIcon />
-          </ActivityButton>
-        </Tooltip>
-
-        {/* Git History View */}
-        <Tooltip title="Git History" placement="right" arrow>
-          <ActivityButton
-            active={activeView === 'history'}
-            onClick={() => handleViewChange('history')}
-            aria-label="Git History View"
-            aria-pressed={activeView === 'history'}
-          >
-            <HistoryIcon />
-          </ActivityButton>
-        </Tooltip>
-
-        {/* Git Branch View */}
-        <Tooltip title="Git Branches & Merge" placement="right" arrow>
-          <ActivityButton
-            active={activeView === 'branch'}
-            onClick={() => handleViewChange('branch')}
-            aria-label="Git Branch View"
-            aria-pressed={activeView === 'branch'}
-          >
-            <BranchIcon />
-          </ActivityButton>
-        </Tooltip>
-
-        {/* Git Config */}
-        <Tooltip title="Git Configuration" placement="right" arrow>
-          <ActivityButton
-            active={activeView === 'git-config'}
-            onClick={() => handleViewChange('git-config')}
-            aria-label="Git Configuration"
-            aria-pressed={activeView === 'git-config'}
-          >
-            <GitHubIcon />
-          </ActivityButton>
-        </Tooltip>
-      </TopSection>
-
-      <BottomSection>
-        <Divider />
-
-        {/* Excel View */}
-        <Tooltip title="Excel View" placement="right" arrow>
+        {/* Excel View - Topmost item */}
+        <Tooltip title="Excel Explorer" placement="right" arrow>
           <ActivityButton
             active={activeView === 'excel'}
             onClick={() => handleViewChange('excel')}
@@ -225,7 +154,22 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
           </ActivityButton>
         </Tooltip>
 
-        {/* Settings */}
+        {/* Git Operations (Placeholder for future features) */}
+        <Tooltip title="Source Control" placement="right" arrow>
+          <ActivityButton
+            active={activeView === 'branch'}
+            onClick={() => handleViewChange('branch')}
+            aria-label="Source Control"
+            aria-pressed={activeView === 'branch'}
+          >
+            <BranchIcon />
+          </ActivityButton>
+        </Tooltip>
+
+      </TopSection>
+
+      <BottomSection>
+        {/* Settings - Bottommost item */}
         <Tooltip title="Settings" placement="right" arrow>
           <ActivityButton
             active={activeView === 'settings'}
