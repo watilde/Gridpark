@@ -51,12 +51,6 @@ export class FormulaEngine {
    */
   setCell(row: number, col: number, cell: Cell) {
     try {
-      // Ensure sheet exists
-      if (this.sheetId === undefined || this.hf.getSheetId('Sheet1') === undefined) {
-        console.warn(`[FormulaEngine] Sheet not initialized, recreating...`);
-        this.sheetId = this.hf.addSheet('Sheet1');
-      }
-
       if (cell.formula && cell.formula.startsWith('=')) {
         // Set formula (HyperFormula expects formulas without '=')
         const formula = cell.formula.slice(1);
@@ -126,6 +120,12 @@ export class FormulaEngine {
    * Batch update cells (optimized)
    */
   batchUpdate(cells: Array<{ row: number; col: number; cell: Cell }>) {
+    // Ensure sheet exists before batch operation
+    if (this.sheetId === undefined || this.hf.getSheetId('Sheet1') === undefined) {
+      console.warn(`[FormulaEngine] Sheet not initialized in batchUpdate, recreating...`);
+      this.sheetId = this.hf.addSheet('Sheet1');
+    }
+
     this.hf.batch(() => {
       cells.forEach(({ row, col, cell }) => {
         this.setCell(row, col, cell);
