@@ -9,8 +9,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, StoredCellData, CellStyleData, ConditionalFormattingRule } from '../../../../lib/db';
+import { db, StoredCellData, CellStyleData, ConditionalFormattingRule, SheetMetadata } from '../../../../lib/db';
 import { FormulaEngine } from '../utils/FormulaEngine';
 import { ConditionalFormattingEngine } from '../utils/ConditionalFormattingEngine';
 
@@ -53,34 +52,40 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   // Flag to prevent recording history during undo/redo
   const isUndoRedoRef = useRef(false);
 
-  // Live query for cells (sparse data only)
-  const cells = useLiveQuery(
-    async () => {
+  // State for cells, metadata, and CF rules (replacing useLiveQuery)
+  const [cells, setCells] = useState<Map<string, StoredCellData>>(new Map());
+  const [metadata, setMetadata] = useState<SheetMetadata | undefined>(undefined);
+  const [conditionalFormattingRules, setConditionalFormattingRules] = useState<ConditionalFormattingRule[]>([]);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+
+  // Load data from DB
+  useEffect(() => {
+    const loadData = async () => {
+      // Load cells
       const cellArray = await db.getCells(tabId);
-      
-      // Convert to Map for O(1) lookup
       const cellMap = new Map<string, StoredCellData>();
       cellArray.forEach(cell => {
         const key = `${cell.row},${cell.col}`;
         cellMap.set(key, cell);
       });
-      
-      return cellMap;
-    },
-    [tabId]
-  );
+      setCells(cellMap);
 
-  // Live query for metadata
-  const metadata = useLiveQuery(
-    () => db.getSheetMetadata(tabId),
-    [tabId]
-  );
+      // Load metadata
+      const meta = await db.getSheetMetadata(tabId);
+      setMetadata(meta);
 
-  // Live query for conditional formatting rules
-  const conditionalFormattingRules = useLiveQuery(
-    () => db.getConditionalFormatting(tabId),
-    [tabId]
-  ) || [];
+      // Load CF rules
+      const cfRules = await db.getConditionalFormatting(tabId);
+      setConditionalFormattingRules(cfRules);
+    };
+
+    loadData();
+  }, [tabId, reloadTrigger]);
+
+  // Trigger reload manually
+  const reloadData = useCallback(() => {
+    setReloadTrigger(prev => prev + 1);
+  }, []);
 
   // Compute all formulas when cells change
   const computedValues = useMemo(() => {
@@ -219,7 +224,10 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     
     // Mark dirty
     await db.markSheetDirty(tabId, true);
-  }, [tabId, formulaEngine, cells]);
+    
+    // Reload data to reflect changes
+    reloadData();
+  }, [tabId, formulaEngine, cells, reloadData]);
 
   // Save to disk (mark as clean)
   const save = useCallback(async () => {
@@ -260,10 +268,13 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       setUndoStack(prev => prev.slice(0, -1));
       
       await db.markSheetDirty(tabId, true);
+      
+      // Reload data to reflect changes
+      reloadData();
     } finally {
       isUndoRedoRef.current = false;
     }
-  }, [tabId, undoStack, formulaEngine]);
+  }, [tabId, undoStack, formulaEngine, reloadData]);
 
   // Redo
   const redo = useCallback(async () => {
@@ -294,10 +305,13 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       setRedoStack(prev => prev.slice(0, -1));
       
       await db.markSheetDirty(tabId, true);
+      
+      // Reload data to reflect changes
+      reloadData();
     } finally {
       isUndoRedoRef.current = false;
     }
-  }, [tabId, redoStack, formulaEngine]);
+  }, [tabId, redoStack, formulaEngine, reloadData]);
 
   // Copy selected cell or range to clipboard
   const copyCell = useCallback(async () => {
@@ -496,19 +510,22 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   const addConditionalFormattingRule = useCallback(async (rule: ConditionalFormattingRule) => {
     await db.addConditionalFormattingRule(tabId, rule);
     console.log('[CF] Rule added:', rule.id);
-  }, [tabId]);
+    reloadData();
+  }, [tabId, reloadData]);
 
   const removeConditionalFormattingRule = useCallback(async (ruleId: string) => {
     await db.removeConditionalFormattingRule(tabId, ruleId);
     console.log('[CF] Rule removed:', ruleId);
-  }, [tabId]);
+    reloadData();
+  }, [tabId, reloadData]);
 
   const updateConditionalFormattingRule = useCallback(
     async (ruleId: string, updates: Partial<ConditionalFormattingRule>) => {
       await db.updateConditionalFormattingRule(tabId, ruleId, updates);
       console.log('[CF] Rule updated:', ruleId);
+      reloadData();
     },
-    [tabId]
+    [tabId, reloadData]
   );
 
   return {
