@@ -951,7 +951,13 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
         lastSessionDataRef.current = sessionState.data;
         lastSessionDataHashRef.current = newHash;
         setGridData(recalculateSheetData(sessionState.data));
-        setHasLocalChanges(sessionState.dirty);
+        // CRITICAL FIX: Only reset hasLocalChanges to false (after save)
+        // Never override user edits by setting to false when sessionState.dirty is stale
+        // This allows DB-driven "clean" state to propagate after save
+        if (sessionState.dirty === false && hasLocalChanges === true) {
+          console.log('[ExcelViewer] Resetting hasLocalChanges to false (saved)');
+          setHasLocalChanges(false);
+        }
       }
       return;
     }
@@ -969,7 +975,7 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
       setGridData([]);
       setHasLocalChanges(false);
     }
-  }, [currentSheet, sessionState, hashData]);
+  }, [currentSheet, sessionState, hashData, hasLocalChanges]);
 
   useEffect(() => {
     latestGridDataRef.current = gridData;
