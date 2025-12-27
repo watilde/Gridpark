@@ -911,32 +911,79 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
   }, [searchNavigation, searchMatches.length]);
 
   // Track if we're in the process of updating to prevent circular updates
-  const isUpdatingFromGridDataRef = useRef(false);
+  // Data versioning to prevent circular updates (replaces isUpdatingFromGridDataRef hack)
+  const gridDataVersionRef = useRef(0);
+  const sessionDataVersionRef = useRef(0);
   const lastSessionDataRef = useRef<CellData[][] | null>(null);
   const lastSessionDataHashRef = useRef<string>('');
 
-  // Simple hash function to detect data changes
+  // Optimized hash function to detect data changes
+  // Strategy: Hash metadata + sample of non-empty cells
   const hashData = useCallback((data: CellData[][]) => {
-    // Only hash non-empty cells to avoid performance issues
-    const nonEmptyCells: string[] = [];
-    for (let r = 0; r < Math.min(data.length, 100); r++) {
-      for (let c = 0; c < Math.min(data[r]?.length || 0, 50); c++) {
-        const cell = data[r]?.[c];
+    if (!data || data.length === 0) return 'empty';
+
+    // Part 1: Hash dimensions and non-empty cell count (fast)
+    const rows = data.length;
+    const cols = data[0]?.length || 0;
+    
+    // Count non-empty cells (fast scan)
+    let nonEmptyCount = 0;
+    const nonEmptyCells: Array<{ r: number; c: number; v: any }> = [];
+    
+    for (let r = 0; r < rows; r++) {
+      const row = data[r];
+      if (!row) continue;
+      
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
         if (cell && cell.value !== null && cell.value !== undefined && cell.value !== '') {
-          nonEmptyCells.push(`${r},${c}:${cell.value}`);
+          nonEmptyCount++;
+          nonEmptyCells.push({ r, c, v: cell.value });
         }
       }
     }
-    return nonEmptyCells.join('|');
+
+    // Part 2: Sample strategy based on data size
+    let sample: Array<{ r: number; c: number; v: any }>;
+    
+    if (nonEmptyCells.length <= 1000) {
+      // Small dataset: hash all cells
+      sample = nonEmptyCells;
+    } else {
+      // Large dataset: stratified sampling
+      // - First 300 cells (top of sheet)
+      // - Middle 200 cells
+      // - Last 300 cells (bottom of sheet)
+      // - Random 200 cells from remainder
+      const first = nonEmptyCells.slice(0, 300);
+      const last = nonEmptyCells.slice(-300);
+      const middle = nonEmptyCells.slice(
+        Math.floor(nonEmptyCells.length / 2) - 100,
+        Math.floor(nonEmptyCells.length / 2) + 100
+      );
+      
+      // Random sample from remainder
+      const remainder = nonEmptyCells.slice(300, -300);
+      const randomSample: typeof nonEmptyCells = [];
+      const step = Math.max(1, Math.floor(remainder.length / 200));
+      for (let i = 0; i < remainder.length && randomSample.length < 200; i += step) {
+        randomSample.push(remainder[i]);
+      }
+      
+      sample = [...first, ...middle, ...last, ...randomSample];
+    }
+
+    // Part 3: Create hash
+    const metaHash = `${rows}x${cols}:${nonEmptyCount}`;
+    const cellHash = sample.map(({ r, c, v }) => `${r},${c}:${v}`).join('|');
+    
+    return `${metaHash}|${cellHash}`;
   }, []);
 
   useEffect(() => {
-    // Only update gridData from sessionState if we're not currently pushing changes
-    // This prevents the circular update: gridData -> sessionState -> gridData
-    if (isUpdatingFromGridDataRef.current) {
-      console.log('[ExcelViewer] Skipping sessionState update (currently pushing changes)');
-      return;
-    }
+    // Version-based update prevention (replaces isUpdatingFromGridDataRef hack)
+    // Only update gridData from sessionState if sessionState is newer
+    const currentSessionVersion = sessionDataVersionRef.current;
 
     // Use hash to detect actual data changes (not just reference changes)
     if (sessionState && sessionState.data.length) {
@@ -947,16 +994,20 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
           dirty: sessionState.dirty,
           oldHash: lastSessionDataHashRef.current.substring(0, 50),
           newHash: newHash.substring(0, 50),
+          gridVersion: gridDataVersionRef.current,
+          sessionVersion: currentSessionVersion,
         });
-        lastSessionDataRef.current = sessionState.data;
-        lastSessionDataHashRef.current = newHash;
-        setGridData(recalculateSheetData(sessionState.data));
-        // CRITICAL FIX: Only reset hasLocalChanges to false (after save)
-        // Never override user edits by setting to false when sessionState.dirty is stale
-        // This allows DB-driven "clean" state to propagate after save
-        if (sessionState.dirty === false && hasLocalChanges === true) {
-          console.log('[ExcelViewer] Resetting hasLocalChanges to false (saved)');
-          setHasLocalChanges(false);
+        
+        // Only update if this is genuinely new data from sessionState
+        // (not our own data bouncing back through the system)
+        if (gridDataVersionRef.current === 0 || currentSessionVersion > gridDataVersionRef.current) {
+          lastSessionDataRef.current = sessionState.data;
+          lastSessionDataHashRef.current = newHash;
+          setGridData(recalculateSheetData(sessionState.data));
+          // Sync version to prevent circular update
+          gridDataVersionRef.current = currentSessionVersion;
+        } else {
+          console.log('[ExcelViewer] Skipping sessionState update (our data is newer)');
         }
       }
       return;
@@ -975,26 +1026,37 @@ export const ExcelViewer: React.FC<ExcelViewerProps> = ({
       setGridData([]);
       setHasLocalChanges(false);
     }
-  }, [currentSheet, sessionState, hashData, hasLocalChanges]);
+  }, [currentSheet, sessionState, hashData]);
+
+  // Separate useEffect to handle dirty state synchronization
+  // This prevents infinite loop by not depending on hasLocalChanges
+  useEffect(() => {
+    // Only reset hasLocalChanges when sessionState.dirty becomes false (after save)
+    // This allows DB-driven "clean" state to propagate correctly
+    if (sessionState?.dirty === false && hasLocalChanges === true) {
+      console.log('[ExcelViewer] Resetting hasLocalChanges to false (save completed)');
+      setHasLocalChanges(false);
+    }
+  }, [sessionState?.dirty, hasLocalChanges]);
 
   useEffect(() => {
     latestGridDataRef.current = gridData;
 
-    // FIX: Call _onSessionChange immediately when gridData changes
-    // This ensures ExcelViewerDB always has the latest data
-    // Set flag to prevent circular updates (gridData -> sessionState -> gridData)
+    // Increment version when gridData changes (user edit)
+    // This allows us to track which data is newer: gridData or sessionState
+    gridDataVersionRef.current++;
+    const currentVersion = gridDataVersionRef.current;
+
+    console.log('[ExcelViewer] gridData changed, version:', currentVersion);
+
+    // Call _onSessionChange to propagate changes to ExcelViewerDB
     if (_onSessionChange) {
-      isUpdatingFromGridDataRef.current = true;
       _onSessionChange({
         data: gridData,
         dirty: hasLocalChanges,
       });
-      // Reset flag after debounce completes (500ms + buffer)
-      // This prevents sessionState updates from overwriting gridData
-      setTimeout(() => {
-        console.log('[ExcelViewer] Resetting isUpdating flag');
-        isUpdatingFromGridDataRef.current = false;
-      }, 1000); // Wait for debounce (500ms) + save to complete
+      // Update sessionDataVersionRef to match (will be synced after DB save)
+      sessionDataVersionRef.current = currentVersion;
     }
   }, [gridData, hasLocalChanges, _onSessionChange]);
 
