@@ -289,10 +289,13 @@ export const SpreadsheetContainerV2 = forwardRef<
     // Render grid
     return (
       <Box sx={{ width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <StyleToolbar
-          selectedCellStyle={selectedCellStyle}
-          onStyleChange={updateRangeStyle}
-        />
+        {/* Only show StyleToolbar if cell or range is selected */}
+        {(selectedCell || selectedRange) && (
+          <StyleToolbar
+            selectedCellStyle={selectedCellStyle}
+            onStyleChange={updateRangeStyle}
+          />
+        )}
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <SpreadsheetGrid
             cells={cells}

@@ -61,8 +61,12 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   // Load data from DB
   useEffect(() => {
     const loadData = async () => {
+      console.log('[useSpreadsheet] Loading data for tabId:', tabId);
+      
       // Load cells
       const cellArray = await db.getCellsForSheet(tabId);
+      console.log('[useSpreadsheet] Loaded cells:', cellArray.length);
+      
       const cellMap = new Map<string, StoredCellData>();
       cellArray.forEach(cell => {
         const key = `${cell.row},${cell.col}`;
@@ -72,10 +76,12 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
 
       // Load metadata
       const meta = await db.getSheetMetadata(tabId);
+      console.log('[useSpreadsheet] Loaded metadata:', meta);
       setMetadata(meta);
 
       // Load CF rules
       const cfRules = await db.getConditionalFormatting(tabId);
+      console.log('[useSpreadsheet] Loaded CF rules:', cfRules.length);
       setConditionalFormattingRules(cfRules);
     };
 
