@@ -18,8 +18,7 @@ import React, {
   forwardRef,
   useState,
 } from 'react';
-import { ExcelFile } from '../../../types/excel';
-// import { CellData, CellPosition, CellRange } from '../../../types/excel';
+import { ExcelFile, CellData, CellPosition, CellRange } from '../../../types/excel';
 import { useExcelSheet } from '../../../../features/spreadsheet/hooks/useExcelSheet';
 import { ExcelViewer } from './ExcelViewer';
 import type {
