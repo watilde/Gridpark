@@ -111,6 +111,8 @@ export const SpreadsheetContainerV2 = forwardRef<
       computedValues,
       selectedCell,
       setSelectedCell,
+      selectedRange: hookSelectedRange,
+      setSelectedRange: setHookSelectedRange,
       isDirty,
       dimensions,
       updateCell,
@@ -126,6 +128,9 @@ export const SpreadsheetContainerV2 = forwardRef<
       workbookId: file?.path ?? '',
       sheetName: currentSheet?.name ?? '',
     });
+
+    // Use range from hook
+    const selectedRange = hookSelectedRange;
 
     // Expose methods via ref
     useImperativeHandle(
@@ -153,6 +158,8 @@ export const SpreadsheetContainerV2 = forwardRef<
     const handleCellSelect = useCallback(
       (position: { row: number; col: number }) => {
         setSelectedCell(position);
+        setHookSelectedRange(null); // Clear range when selecting single cell
+        
         if (onCellSelect) {
           onCellSelect(position);
         }
@@ -169,7 +176,25 @@ export const SpreadsheetContainerV2 = forwardRef<
           });
         }
       },
-      [setSelectedCell, onCellSelect, onActiveCellDetails, cells]
+      [setSelectedCell, setHookSelectedRange, onCellSelect, onActiveCellDetails, cells]
+    );
+
+    // Handle range selection
+    const handleRangeSelect = useCallback(
+      (range: { start: CellPosition; end: CellPosition }) => {
+        setHookSelectedRange(range);
+        
+        if (onRangeSelect) {
+          const cellRange: CellRange = {
+            startRow: Math.min(range.start.row, range.end.row),
+            startCol: Math.min(range.start.col, range.end.col),
+            endRow: Math.max(range.start.row, range.end.row),
+            endCol: Math.max(range.start.col, range.end.col),
+          };
+          onRangeSelect(cellRange);
+        }
+      },
+      [setHookSelectedRange, onRangeSelect]
     );
 
     // Handle cell change
@@ -199,27 +224,55 @@ export const SpreadsheetContainerV2 = forwardRef<
       }
     }, [formulaCommit, selectedCell, handleCellChange]);
     
-    // Handle style change for selected cell
+    // Handle style change for selected cell or range
     const handleStyleChange = useCallback(async (style: Partial<CellStyleData>) => {
+      // If range is selected, apply to all cells in range
+      if (selectedRange) {
+        const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
+        const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
+        const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
+        const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
+        
+        for (let row = minRow; row <= maxRow; row++) {
+          for (let col = minCol; col <= maxCol; col++) {
+            const key = `${row},${col}`;
+            const currentCell = cells.get(key);
+            
+            const newStyle = {
+              ...(currentCell?.style || {}),
+              ...style,
+            };
+            
+            await updateCell(
+              row,
+              col,
+              currentCell?.formula || currentCell?.value?.toString() || '',
+              newStyle
+            );
+          }
+        }
+        console.log(`[Style] Applied to range: ${maxRow - minRow + 1}x${maxCol - minCol + 1}`);
+        return;
+      }
+      
+      // Single cell styling
       if (!selectedCell) return;
       
       const key = `${selectedCell.row},${selectedCell.col}`;
       const currentCell = cells.get(key);
       
-      // Merge with existing style
       const newStyle = {
         ...(currentCell?.style || {}),
         ...style,
       };
       
-      // Update cell with new style (keep existing value/formula)
       await updateCell(
         selectedCell.row,
         selectedCell.col,
         currentCell?.formula || currentCell?.value?.toString() || '',
         newStyle
       );
-    }, [selectedCell, cells, updateCell]);
+    }, [selectedCell, selectedRange, cells, updateCell]);
     
     // Get selected cell style
     const selectedCellStyle = selectedCell
@@ -287,7 +340,8 @@ export const SpreadsheetContainerV2 = forwardRef<
             onCellSelect={handleCellSelect}
             onCellChange={handleCellChange}
             computedValues={computedValues}
-            selectedRange={null}
+            selectedRange={selectedRange}
+            onRangeSelect={handleRangeSelect}
             searchQuery={searchQuery}
           />
         </Box>

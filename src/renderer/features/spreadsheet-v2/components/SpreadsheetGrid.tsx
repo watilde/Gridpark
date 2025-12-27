@@ -154,6 +154,18 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     return value.toLowerCase().includes(searchQuery.toLowerCase());
   }, [searchQuery, getCellValue]);
 
+  // Check if cell is in selected range
+  const isInRange = useCallback((row: number, col: number): boolean => {
+    if (!selectedRange) return false;
+    
+    const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
+    const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
+    const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
+    const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
+    
+    return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol;
+  }, [selectedRange]);
+
   // Get raw cell value for editing (formula or value)
   const getRawCellValue = useCallback((row: number, col: number): string => {
     const key = `${row},${col}`;
@@ -250,7 +262,51 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
   }, [commitEdit, cancelEdit]);
 
-  // Convert column index to letter (0 -> A, 25 -> Z, 26 -> AA)
+  // Handle cell mouse down (start selection)
+  const handleCellMouseDown = useCallback((row: number, col: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // If shift is held, extend selection from current selected cell
+    if (e.shiftKey && selectedCell) {
+      setSelectionStart(selectedCell);
+      const range = {
+        start: selectedCell,
+        end: { row, col },
+      };
+      if (onRangeSelect) {
+        onRangeSelect(range);
+      }
+    } else {
+      // Start new selection
+      setIsSelecting(true);
+      setSelectionStart({ row, col });
+      onCellSelect({ row, col });
+    }
+  }, [selectedCell, onCellSelect, onRangeSelect]);
+
+  // Handle cell mouse enter (extend selection)
+  const handleCellMouseEnter = useCallback((row: number, col: number) => {
+    if (isSelecting && selectionStart) {
+      const range = {
+        start: selectionStart,
+        end: { row, col },
+      };
+      if (onRangeSelect) {
+        onRangeSelect(range);
+      }
+    }
+  }, [isSelecting, selectionStart, onRangeSelect]);
+
+  // Handle mouse up (end selection)
+  const handleMouseUp = useCallback(() => {
+    setIsSelecting(false);
+  }, []);
+
+  // Global mouse up listener
+  useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseUp]);
   const getColumnLabel = useCallback((col: number): string => {
     let label = '';
     let num = col;
@@ -306,6 +362,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
           const value = getCellValue(row, col);
           const cellStyle = getCellStyle(row, col);
           const isMatch = isSearchMatch(row, col);
+          const inRange = isInRange(row, col);
           
           const style: CSSProperties = {
             position: 'absolute',
@@ -318,21 +375,23 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            backgroundColor: isSelected ? '#e3f2fd' : (isMatch ? '#fff59d' : 'white'),
+            backgroundColor: isSelected ? '#e3f2fd' : (inRange ? '#e8f5e9' : (isMatch ? '#fff59d' : 'white')),
             cursor: 'cell',
             fontSize: '13px',
             // Apply cell-specific styles (override defaults)
             ...cellStyle,
-            // But always keep selection/search background
+            // But always keep selection/range/search background
             ...(isSelected && { backgroundColor: '#e3f2fd' }),
-            ...(isMatch && !isSelected && { backgroundColor: '#fff59d' }),
+            ...(inRange && !isSelected && { backgroundColor: '#e8f5e9' }),
+            ...(isMatch && !isSelected && !inRange && { backgroundColor: '#fff59d' }),
           };
 
           cellElements.push(
             <div
               key={key}
               style={style}
-              onClick={() => onCellSelect({ row, col })}
+              onMouseDown={(e) => handleCellMouseDown(row, col, e)}
+              onMouseEnter={() => handleCellMouseEnter(row, col)}
               onDoubleClick={() => handleCellDoubleClick(row, col)}
             >
               {value}
@@ -343,7 +402,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return cellElements;
-  }, [viewport, getCellValue, getCellStyle, isSearchMatch, selectedCell, editingCell, editValue, onCellSelect, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
+  }, [viewport, getCellValue, getCellStyle, isSearchMatch, isInRange, selectedCell, editingCell, editValue, handleCellMouseDown, handleCellMouseEnter, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
 
   // Render column headers
   const renderColumnHeaders = useMemo(() => {

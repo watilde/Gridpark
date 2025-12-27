@@ -39,6 +39,9 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   // Selected cell
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
   
+  // Selected range
+  const [selectedRange, setSelectedRange] = useState<{ start: CellPosition; end: CellPosition } | null>(null);
+  
   // Undo/Redo stacks
   const [undoStack, setUndoStack] = useState<HistoryItem[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryItem[]>([]);
@@ -253,8 +256,41 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     }
   }, [tabId, redoStack, formulaEngine]);
 
-  // Copy selected cell to clipboard
+  // Copy selected cell or range to clipboard
   const copyCell = useCallback(async () => {
+    // If range is selected, copy range
+    if (selectedRange) {
+      const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
+      const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
+      const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
+      const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
+      
+      const rangeData: any[][] = [];
+      for (let row = minRow; row <= maxRow; row++) {
+        const rowData: any[] = [];
+        for (let col = minCol; col <= maxCol; col++) {
+          const key = `${row},${col}`;
+          const cell = cells?.get(key);
+          rowData.push(cell ? {
+            value: cell.value,
+            formula: cell.formula,
+            type: cell.type,
+            style: cell.style,
+          } : null);
+        }
+        rangeData.push(rowData);
+      }
+      
+      try {
+        await navigator.clipboard.writeText(JSON.stringify({ type: 'range', data: rangeData }));
+        console.log(`[Copy] Range copied: ${rangeData.length}x${rangeData[0]?.length || 0}`);
+      } catch (err) {
+        console.error('[Copy] Failed to copy range:', err);
+      }
+      return;
+    }
+    
+    // Single cell copy
     if (!selectedCell) return;
     
     const key = `${selectedCell.row},${selectedCell.col}`;
@@ -262,39 +298,68 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     
     if (!cell) return;
     
-    // Create clipboard data
     const clipboardData = {
-      value: cell.value,
-      formula: cell.formula,
-      type: cell.type,
-      style: cell.style,
+      type: 'cell',
+      data: {
+        value: cell.value,
+        formula: cell.formula,
+        type: cell.type,
+        style: cell.style,
+      },
     };
     
-    // Try to use Clipboard API
     try {
       await navigator.clipboard.writeText(JSON.stringify(clipboardData));
       console.log('[Copy] Cell copied to clipboard');
     } catch (err) {
       console.error('[Copy] Failed to copy:', err);
     }
-  }, [selectedCell, cells]);
+  }, [selectedCell, selectedRange, cells]);
 
-  // Paste from clipboard to selected cell
+  // Paste from clipboard to selected cell or range
   const pasteCell = useCallback(async () => {
     if (!selectedCell) return;
     
     try {
       const text = await navigator.clipboard.readText();
       
-      // Try to parse as JSON (our format)
+      // Try to parse as JSON
       try {
         const clipboardData = JSON.parse(text);
         
-        // If it's our format, restore everything
-        if (clipboardData && typeof clipboardData === 'object') {
+        // Range paste
+        if (clipboardData.type === 'range' && Array.isArray(clipboardData.data)) {
+          const rangeData = clipboardData.data;
+          const baseRow = selectedCell.row;
+          const baseCol = selectedCell.col;
+          
+          for (let r = 0; r < rangeData.length; r++) {
+            for (let c = 0; c < rangeData[r].length; c++) {
+              const cellData = rangeData[r][c];
+              if (cellData) {
+                const value = cellData.formula || cellData.value?.toString() || '';
+                await updateCell(baseRow + r, baseCol + c, value, cellData.style);
+              }
+            }
+          }
+          console.log(`[Paste] Range pasted: ${rangeData.length}x${rangeData[0]?.length || 0}`);
+          return;
+        }
+        
+        // Single cell paste
+        if (clipboardData.type === 'cell' && clipboardData.data) {
+          const cellData = clipboardData.data;
+          const value = cellData.formula || cellData.value?.toString() || '';
+          await updateCell(selectedCell.row, selectedCell.col, value, cellData.style);
+          console.log('[Paste] Cell pasted from clipboard');
+          return;
+        }
+        
+        // Legacy format (backwards compatibility)
+        if (clipboardData && typeof clipboardData === 'object' && !clipboardData.type) {
           const value = clipboardData.formula || clipboardData.value?.toString() || '';
           await updateCell(selectedCell.row, selectedCell.col, value, clipboardData.style);
-          console.log('[Paste] Cell pasted from clipboard');
+          console.log('[Paste] Cell pasted (legacy format)');
           return;
         }
       } catch {
@@ -318,6 +383,8 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     // State
     selectedCell,
     setSelectedCell,
+    selectedRange,
+    setSelectedRange,
     isDirty,
     
     // Dimensions
