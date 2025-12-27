@@ -119,6 +119,8 @@ export const SpreadsheetContainerV2 = forwardRef<
       redo,
       canUndo,
       canRedo,
+      copyCell,
+      pasteCell,
     } = useSpreadsheet({
       tabId,
       workbookId: file?.path ?? '',
@@ -224,9 +226,10 @@ export const SpreadsheetContainerV2 = forwardRef<
       ? cells.get(`${selectedCell.row},${selectedCell.col}`)?.style
       : undefined;
     
-    // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y)
+    // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+C, Ctrl+V)
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+        // Undo/Redo
         if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
           e.preventDefault();
           if (e.shiftKey) {
@@ -238,11 +241,19 @@ export const SpreadsheetContainerV2 = forwardRef<
           e.preventDefault();
           redo();
         }
+        // Copy/Paste
+        else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+          e.preventDefault();
+          copyCell();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+          e.preventDefault();
+          pasteCell();
+        }
       };
       
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [undo, redo]);
+    }, [undo, redo, copyCell, pasteCell]);
 
     // Loading state
     if (!file || !currentSheet) {

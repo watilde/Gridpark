@@ -253,6 +253,62 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     }
   }, [tabId, redoStack, formulaEngine]);
 
+  // Copy selected cell to clipboard
+  const copyCell = useCallback(async () => {
+    if (!selectedCell) return;
+    
+    const key = `${selectedCell.row},${selectedCell.col}`;
+    const cell = cells?.get(key);
+    
+    if (!cell) return;
+    
+    // Create clipboard data
+    const clipboardData = {
+      value: cell.value,
+      formula: cell.formula,
+      type: cell.type,
+      style: cell.style,
+    };
+    
+    // Try to use Clipboard API
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(clipboardData));
+      console.log('[Copy] Cell copied to clipboard');
+    } catch (err) {
+      console.error('[Copy] Failed to copy:', err);
+    }
+  }, [selectedCell, cells]);
+
+  // Paste from clipboard to selected cell
+  const pasteCell = useCallback(async () => {
+    if (!selectedCell) return;
+    
+    try {
+      const text = await navigator.clipboard.readText();
+      
+      // Try to parse as JSON (our format)
+      try {
+        const clipboardData = JSON.parse(text);
+        
+        // If it's our format, restore everything
+        if (clipboardData && typeof clipboardData === 'object') {
+          const value = clipboardData.formula || clipboardData.value?.toString() || '';
+          await updateCell(selectedCell.row, selectedCell.col, value, clipboardData.style);
+          console.log('[Paste] Cell pasted from clipboard');
+          return;
+        }
+      } catch {
+        // Not JSON, treat as plain text
+      }
+      
+      // Plain text paste
+      await updateCell(selectedCell.row, selectedCell.col, text);
+      console.log('[Paste] Plain text pasted');
+    } catch (err) {
+      console.error('[Paste] Failed to paste:', err);
+    }
+  }, [selectedCell, updateCell]);
+
   return {
     // Data
     cells: cells ?? new Map(),
@@ -276,5 +332,9 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     redo,
     canUndo: undoStack.length > 0,
     canRedo: redoStack.length > 0,
+    
+    // Copy/Paste
+    copyCell,
+    pasteCell,
   };
 }
