@@ -46,6 +46,9 @@ interface SpreadsheetGridProps {
   
   // Computed values from formula engine
   computedValues: Map<string, any>;
+  
+  // Search
+  searchQuery?: string;
 }
 
 export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
@@ -58,6 +61,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   onRangeSelect,
   onCellChange,
   computedValues,
+  searchQuery,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -141,6 +145,14 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
       borderLeft: cell.style.borderLeft,
     };
   }, [cells]);
+
+  // Check if cell matches search query
+  const isSearchMatch = useCallback((row: number, col: number): boolean => {
+    if (!searchQuery || searchQuery.trim() === '') return false;
+    
+    const value = getCellValue(row, col);
+    return value.toLowerCase().includes(searchQuery.toLowerCase());
+  }, [searchQuery, getCellValue]);
 
   // Get raw cell value for editing (formula or value)
   const getRawCellValue = useCallback((row: number, col: number): string => {
@@ -293,6 +305,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
           // Render regular cell
           const value = getCellValue(row, col);
           const cellStyle = getCellStyle(row, col);
+          const isMatch = isSearchMatch(row, col);
           
           const style: CSSProperties = {
             position: 'absolute',
@@ -305,13 +318,14 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            backgroundColor: isSelected ? '#e3f2fd' : 'white',
+            backgroundColor: isSelected ? '#e3f2fd' : (isMatch ? '#fff59d' : 'white'),
             cursor: 'cell',
             fontSize: '13px',
             // Apply cell-specific styles (override defaults)
             ...cellStyle,
-            // But always keep selection background
+            // But always keep selection/search background
             ...(isSelected && { backgroundColor: '#e3f2fd' }),
+            ...(isMatch && !isSelected && { backgroundColor: '#fff59d' }),
           };
 
           cellElements.push(
@@ -329,7 +343,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return cellElements;
-  }, [viewport, getCellValue, getCellStyle, selectedCell, editingCell, editValue, onCellSelect, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
+  }, [viewport, getCellValue, getCellStyle, isSearchMatch, selectedCell, editingCell, editValue, onCellSelect, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
 
   // Render column headers
   const renderColumnHeaders = useMemo(() => {

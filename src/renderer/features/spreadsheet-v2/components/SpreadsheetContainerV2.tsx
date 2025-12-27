@@ -287,6 +287,8 @@ export const SpreadsheetContainerV2 = forwardRef<
             onCellSelect={handleCellSelect}
             onCellChange={handleCellChange}
             computedValues={computedValues}
+            selectedRange={null}
+            searchQuery={searchQuery}
           />
         </Box>
       </Box>
