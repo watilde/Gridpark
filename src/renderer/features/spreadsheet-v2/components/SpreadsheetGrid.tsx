@@ -11,7 +11,7 @@
 
 import React, { useRef, useCallback, useMemo, CSSProperties, useState, useEffect } from 'react';
 import { Box, Input } from '@mui/joy';
-import { StoredCellData, CellStyleData } from '../../../lib/db';
+import { StoredCellData, CellStyleData } from '../../../../lib/db';
 
 // Constants
 const CELL_WIDTH = 100;

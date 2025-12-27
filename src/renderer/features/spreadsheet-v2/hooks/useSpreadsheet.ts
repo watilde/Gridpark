@@ -10,7 +10,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, StoredCellData, CellStyleData, ConditionalFormattingRule } from '../../../lib/db';
+import { db, StoredCellData, CellStyleData, ConditionalFormattingRule } from '../../../../lib/db';
 import { FormulaEngine } from '../utils/FormulaEngine';
 import { ConditionalFormattingEngine } from '../utils/ConditionalFormattingEngine';
 

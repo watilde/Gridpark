@@ -16,7 +16,7 @@ import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
 import { StyleToolbar } from './StyleToolbar';
 import { useSpreadsheet } from '../hooks/useSpreadsheet';
-import { CellStyleData } from '../../../lib/db';
+import { CellStyleData } from '../../../../lib/db';
 
 // Re-export types for compatibility
 export type {
