@@ -194,10 +194,12 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     setEditingCell({ row, col });
     setEditValue(rawValue);
     
-    // Focus input after render
+    // Focus and select input after render
     setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
     }, 0);
   }, [getRawCellValue]);
 
@@ -348,7 +350,11 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
           cellElements.push(
             <Box key={key} sx={style}>
               <Input
-                ref={inputRef}
+                slotProps={{
+                  input: {
+                    ref: inputRef,
+                  },
+                }}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={handleEditKeyDown}

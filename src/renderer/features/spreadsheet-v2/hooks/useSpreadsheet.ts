@@ -62,7 +62,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   useEffect(() => {
     const loadData = async () => {
       // Load cells
-      const cellArray = await db.getCells(tabId);
+      const cellArray = await db.getCellsForSheet(tabId);
       const cellMap = new Map<string, StoredCellData>();
       cellArray.forEach(cell => {
         const key = `${cell.row},${cell.col}`;
