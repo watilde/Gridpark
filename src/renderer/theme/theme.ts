@@ -6,7 +6,7 @@ import { themePresets, themePresetList, themeOptions } from './presets';
 
 export { themePresets, themePresetList, themeOptions };
 
-export const DEFAULT_THEME_ID: ThemePresetId = 'gridpark';
+export const DEFAULT_THEME_ID: ThemePresetId = 'vscode';
 
 export const createThemeFromPreset = (preset: ThemePreset) =>
   extendTheme({

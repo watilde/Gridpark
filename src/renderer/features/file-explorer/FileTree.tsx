@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { styled } from '@mui/joy/styles';
+import { styled, useTheme } from '@mui/joy/styles';
 import Box from '@mui/joy/Box';
 import Typography from '@mui/joy/Typography';
 import IconButton from '@mui/joy/IconButton';
@@ -30,10 +30,11 @@ const TreeItem = styled(Box, {
   cursor: 'pointer',
   borderRadius: theme.radius.sm,
   backgroundColor: selected ? theme.palette.primary.softBg : 'transparent',
-  color: selected ? theme.palette.primary.plainColor : theme.palette.text.primary,
+  color: selected ? theme.palette.text.primary : theme.palette.text.secondary,
   transition: 'background-color 0.2s',
   '&:hover': {
-    backgroundColor: selected ? theme.palette.primary.softBg : theme.palette.neutral.softHoverBg,
+    backgroundColor: selected ? theme.palette.primary.softBg : theme.palette.background.level1,
+    color: theme.palette.text.primary,
   },
 }));
 
@@ -220,6 +221,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
   fullHeight = true,
   dirtyNodeIds,
 }) => {
+  const theme = useTheme();
   return (
     <Sheet
       variant="plain"
@@ -227,6 +229,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
         height: fullHeight ? '100%' : 'auto',
         borderRadius: 0,
         overflow: 'hidden',
+        backgroundColor: theme.palette.background.surface,
       }}
     >
       {title && (

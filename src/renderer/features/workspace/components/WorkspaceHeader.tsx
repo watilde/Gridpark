@@ -30,8 +30,9 @@ const HeaderContainer = styled('div')(({ theme }) => ({
   justifyContent: 'space-between',
   height: '48px',
   padding: '0 16px',
-  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f3f3f3',
-  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? '#333' : '#d0d0d0'}`,
+  backgroundColor: theme.palette.background.body,
+  borderBottom: `1px solid`,
+  borderColor: theme.palette.divider,
   gap: '16px',
 }));
 
@@ -73,7 +74,7 @@ const AppIconButton = styled('button')(({ theme }) => ({
   transition: 'background-color 0.15s ease',
 
   '&:hover': {
-    backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
+    backgroundColor: theme.palette.background.level1,
   },
 
   '& img': {
@@ -91,7 +92,7 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
   padding: '4px 8px',
   border: 'none',
   backgroundColor: 'transparent',
-  color: theme.palette.mode === 'dark' ? '#cccccc' : '#555555',
+  color: theme.palette.text.secondary,
   fontSize: '13px',
   fontFamily: theme.fontFamily.body,
   cursor: 'pointer',
@@ -101,7 +102,7 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
   position: 'relative',
 
   '&:hover': {
-    backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
+    backgroundColor: theme.palette.background.level1,
   },
 
   '&::before': {
@@ -109,7 +110,7 @@ const AutoSaveToggle = styled('button')<{ enabled: boolean }>(({ theme, enabled 
     display: 'block',
     width: '32px',
     height: '16px',
-    backgroundColor: enabled ? '#107c41' : theme.palette.mode === 'dark' ? '#555' : '#999',
+    backgroundColor: enabled ? theme.palette.success[500] : theme.palette.neutral[500],
     borderRadius: '8px',
     transition: 'background-color 0.2s ease',
     flexShrink: 0,
@@ -141,20 +142,12 @@ const ActionButton = styled('button')<{ disabled?: boolean; active?: boolean }>(
     height: '32px',
     padding: 0,
     border: 'none',
-    backgroundColor: active
-      ? theme.palette.mode === 'dark'
-        ? '#107c4122'
-        : '#107c4111'
-      : 'transparent',
+    backgroundColor: active ? theme.palette.primary.softBg : 'transparent',
     color: disabled
-      ? theme.palette.mode === 'dark'
-        ? '#555'
-        : '#aaa'
+      ? theme.palette.text.tertiary
       : active
-        ? '#107c41'
-        : theme.palette.mode === 'dark'
-          ? '#cccccc'
-          : '#555555',
+        ? theme.palette.primary.main
+        : theme.palette.text.secondary,
     cursor: disabled ? 'not-allowed' : 'pointer',
     borderRadius: '4px',
     transition: 'all 0.15s ease',
@@ -164,12 +157,8 @@ const ActionButton = styled('button')<{ disabled?: boolean; active?: boolean }>(
       backgroundColor: disabled
         ? 'transparent'
         : active
-          ? theme.palette.mode === 'dark'
-            ? '#107c4133'
-            : '#107c4122'
-          : theme.palette.mode === 'dark'
-            ? '#333'
-            : '#e5e5e5',
+          ? theme.palette.primary.softHoverBg
+          : theme.palette.background.level1,
     },
 
     '& svg': {
@@ -190,21 +179,22 @@ const SearchInput = styled('input')(({ theme }) => ({
   width: '100%',
   height: '32px',
   padding: '0 12px 0 36px',
-  border: `1px solid ${theme.palette.mode === 'dark' ? '#555' : '#d0d0d0'}`,
+  border: `1px solid`,
+  borderColor: theme.palette.neutral.outlinedBorder,
   borderRadius: '4px',
-  backgroundColor: theme.palette.mode === 'dark' ? '#252525' : '#ffffff',
-  color: theme.palette.mode === 'dark' ? '#d4d4d4' : '#000000',
+  backgroundColor: theme.palette.background.surface,
+  color: theme.palette.text.primary,
   fontSize: '13px',
   fontFamily: theme.fontFamily.body,
   outline: 'none',
   transition: 'border-color 0.15s ease',
 
   '&::placeholder': {
-    color: theme.palette.mode === 'dark' ? '#666' : '#999',
+    color: theme.palette.text.tertiary,
   },
 
   '&:focus': {
-    borderColor: theme.palette.mode === 'dark' ? '#107c41' : '#107c41',
+    borderColor: theme.palette.primary.main,
   },
 }));
 
@@ -214,7 +204,7 @@ const SearchIconOverlay = styled('div')(({ theme }) => ({
   left: '12px',
   top: '50%',
   transform: 'translateY(-50%)',
-  color: theme.palette.mode === 'dark' ? '#999' : '#666',
+  color: theme.palette.text.tertiary,
   pointerEvents: 'none',
   display: 'flex',
   alignItems: 'center',
@@ -234,13 +224,13 @@ const SettingsButton = styled('button')(({ theme }) => ({
   padding: 0,
   border: 'none',
   backgroundColor: 'transparent',
-  color: theme.palette.mode === 'dark' ? '#cccccc' : '#555555',
+  color: theme.palette.text.secondary,
   cursor: 'pointer',
   borderRadius: '4px',
   transition: 'background-color 0.15s ease',
 
   '&:hover': {
-    backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#e5e5e5',
+    backgroundColor: theme.palette.background.level1,
   },
 
   '& svg': {

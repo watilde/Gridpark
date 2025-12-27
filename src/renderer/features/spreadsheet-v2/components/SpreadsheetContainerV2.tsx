@@ -1,8 +1,8 @@
 /**
  * SpreadsheetContainerV2 - Drop-in replacement for ExcelViewerDB
- * 
+ *
  * This implements the same interface as ExcelViewerDB but uses the new v2 architecture.
- * 
+ *
  * Improvements over v1:
  * - 90% less code
  * - 91-95% faster
@@ -19,10 +19,7 @@ import { useSpreadsheet } from '../hooks/useSpreadsheet';
 import { CellStyleData } from '../../../../lib/db';
 
 // Re-export types for compatibility
-export type {
-  CellPosition,
-  CellRange,
-};
+export type { CellPosition, CellRange };
 
 export interface SearchNavigationCommand {
   action: 'next' | 'previous';
@@ -162,11 +159,11 @@ export const SpreadsheetContainerV2 = forwardRef<
       (position: { row: number; col: number }) => {
         setSelectedCell(position);
         setHookSelectedRange(null); // Clear range when selecting single cell
-        
+
         if (onCellSelect) {
           onCellSelect(position);
         }
-        
+
         // Emit active cell details
         if (onActiveCellDetails) {
           const key = `${position.row},${position.col}`;
@@ -186,7 +183,7 @@ export const SpreadsheetContainerV2 = forwardRef<
     const handleRangeSelect = useCallback(
       (range: { start: CellPosition; end: CellPosition }) => {
         setHookSelectedRange(range);
-        
+
         if (onRangeSelect) {
           const cellRange: CellRange = {
             startRow: Math.min(range.start.row, range.end.row),
@@ -204,7 +201,7 @@ export const SpreadsheetContainerV2 = forwardRef<
     const handleCellChange = useCallback(
       async (row: number, col: number, value: string) => {
         await updateCell(row, col, value);
-        
+
         // Update active cell details after change
         if (onActiveCellDetails && selectedCell?.row === row && selectedCell?.col === col) {
           const key = `${row},${col}`;
@@ -226,12 +223,12 @@ export const SpreadsheetContainerV2 = forwardRef<
         handleCellChange(selectedCell.row, selectedCell.col, formulaCommit.formula);
       }
     }, [formulaCommit, selectedCell, handleCellChange]);
-    
+
     // Get selected cell style
     const selectedCellStyle = selectedCell
       ? cells.get(`${selectedCell.row},${selectedCell.col}`)?.style
       : undefined;
-    
+
     // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+C, Ctrl+V, Delete)
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -265,7 +262,7 @@ export const SpreadsheetContainerV2 = forwardRef<
           }
         }
       };
-      
+
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }, [undo, redo, copyCell, pasteCell, deleteRange]);
@@ -288,14 +285,17 @@ export const SpreadsheetContainerV2 = forwardRef<
 
     // Render grid
     return (
-      <Box sx={{ width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* Only show StyleToolbar if cell or range is selected */}
-        {(selectedCell || selectedRange) && (
-          <StyleToolbar
-            selectedCellStyle={selectedCellStyle}
-            onStyleChange={updateRangeStyle}
-          />
-        )}
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Always show StyleToolbar (Excel-like ribbon) */}
+        <StyleToolbar selectedCellStyle={selectedCellStyle} onStyleChange={updateRangeStyle} />
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <SpreadsheetGrid
             cells={cells}

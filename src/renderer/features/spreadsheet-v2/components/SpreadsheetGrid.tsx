@@ -1,6 +1,6 @@
 /**
  * SpreadsheetGrid - Lightweight virtualized grid component with editing
- * 
+ *
  * Design principles:
  * 1. Virtual scrolling for performance
  * 2. Minimal re-renders
@@ -10,7 +10,7 @@
  */
 
 import React, { useRef, useCallback, useMemo, CSSProperties, useState, useEffect } from 'react';
-import { Box, Input } from '@mui/joy';
+import { Box, Input, useTheme } from '@mui/joy';
 import { StoredCellData, CellStyleData } from '../../../../lib/db';
 
 // Constants
@@ -28,28 +28,28 @@ interface CellPosition {
 interface SpreadsheetGridProps {
   // Sparse cell data (only non-empty cells)
   cells: Map<string, StoredCellData>;
-  
+
   // Cell styles with conditional formatting applied
   cellStylesWithCF?: Map<string, CellStyleData>;
-  
+
   // Grid dimensions
   visibleRows: number;
   visibleCols: number;
-  
+
   // Selection
   selectedCell: CellPosition | null;
   onCellSelect: (position: CellPosition) => void;
-  
+
   // Range selection
   selectedRange: { start: CellPosition; end: CellPosition } | null;
   onRangeSelect?: (range: { start: CellPosition; end: CellPosition }) => void;
-  
+
   // Editing
   onCellChange: (row: number, col: number, value: string) => void;
-  
+
   // Computed values from formula engine
   computedValues: Map<string, any>;
-  
+
   // Search
   searchQuery?: string;
 }
@@ -67,15 +67,16 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   computedValues,
   searchQuery,
 }) => {
+  const theme = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  
+
   // Editing state
   const [editingCell, setEditingCell] = useState<CellPosition | null>(null);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   // Range selection state
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<CellPosition | null>(null);
@@ -84,19 +85,19 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const viewport = useMemo(() => {
     const containerHeight = containerRef.current?.clientHeight || 600;
     const containerWidth = containerRef.current?.clientWidth || 800;
-    
+
     const startRow = Math.max(0, Math.floor(scrollTop / CELL_HEIGHT) - OVERSCAN_COUNT);
     const endRow = Math.min(
       visibleRows,
       Math.ceil((scrollTop + containerHeight) / CELL_HEIGHT) + OVERSCAN_COUNT
     );
-    
+
     const startCol = Math.max(0, Math.floor(scrollLeft / CELL_WIDTH) - OVERSCAN_COUNT);
     const endCol = Math.min(
       visibleCols,
       Math.ceil((scrollLeft + containerWidth) / CELL_WIDTH) + OVERSCAN_COUNT
     );
-    
+
     return { startRow, endRow, startCol, endCol };
   }, [scrollTop, scrollLeft, visibleRows, visibleCols]);
 
@@ -108,115 +109,133 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   }, []);
 
   // Get cell value (computed or raw)
-  const getCellValue = useCallback((row: number, col: number): string => {
-    const key = `${row},${col}`;
-    const cell = cells.get(key);
-    
-    if (!cell) return '';
-    
-    // If formula, use computed value
-    if (cell.formula) {
-      const computed = computedValues.get(key);
-      return computed !== undefined ? String(computed) : '#ERROR';
-    }
-    
-    // Otherwise use raw value
-    return cell.value !== null ? String(cell.value) : '';
-  }, [cells, computedValues]);
+  const getCellValue = useCallback(
+    (row: number, col: number): string => {
+      const key = `${row},${col}`;
+      const cell = cells.get(key);
+
+      if (!cell) return '';
+
+      // If formula, use computed value
+      if (cell.formula) {
+        const computed = computedValues.get(key);
+        return computed !== undefined ? String(computed) : '#ERROR';
+      }
+
+      // Otherwise use raw value
+      return cell.value !== null ? String(cell.value) : '';
+    },
+    [cells, computedValues]
+  );
 
   // Get cell style (with conditional formatting applied)
-  const getCellStyle = useCallback((row: number, col: number): CSSProperties => {
-    const key = `${row},${col}`;
-    
-    // Use cellStylesWithCF if available (includes conditional formatting)
-    const style = cellStylesWithCF?.get(key) || cells.get(key)?.style;
-    
-    if (!style) return {};
-    
-    // Check if individual border properties are set
-    const hasIndividualBorders = !!(
-      style.borderTop ||
-      style.borderRight ||
-      style.borderBottom ||
-      style.borderLeft
-    );
-    
-    // Convert CellStyleData to CSSProperties
-    // Avoid mixing border shorthand with individual properties
-    return {
-      backgroundColor: style.backgroundColor,
-      color: style.color,
-      fontWeight: style.fontWeight,
-      fontStyle: style.fontStyle,
-      textDecoration: style.textDecoration,
-      fontSize: style.fontSize,
-      fontFamily: style.fontFamily,
-      textAlign: style.textAlign as any,
-      verticalAlign: style.verticalAlign as any,
-      // Only use border shorthand if no individual borders are set
-      ...(hasIndividualBorders
-        ? {
-            borderTop: style.borderTop,
-            borderRight: style.borderRight,
-            borderBottom: style.borderBottom,
-            borderLeft: style.borderLeft,
-          }
-        : {
-            border: style.border,
-          }),
-    };
-  }, [cells, cellStylesWithCF]);
+  const getCellStyle = useCallback(
+    (row: number, col: number): CSSProperties => {
+      const key = `${row},${col}`;
+
+      // Use cellStylesWithCF if available (includes conditional formatting)
+      const style = cellStylesWithCF?.get(key) || cells.get(key)?.style;
+
+      if (!style) return {};
+
+      // Check if individual border properties are set
+      const hasIndividualBorders = !!(
+        style.borderTop ||
+        style.borderRight ||
+        style.borderBottom ||
+        style.borderLeft
+      );
+
+      // Convert CellStyleData to CSSProperties
+      // Avoid mixing border shorthand with individual properties
+      return {
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        fontWeight: style.fontWeight,
+        fontStyle: style.fontStyle,
+        textDecoration: style.textDecoration,
+        fontSize: style.fontSize,
+        fontFamily: style.fontFamily,
+        textAlign: style.textAlign as any,
+        verticalAlign: style.verticalAlign as any,
+        // Only use border shorthand if no individual borders are set
+        ...(hasIndividualBorders
+          ? {
+              borderTop: style.borderTop,
+              borderRight: style.borderRight,
+              borderBottom: style.borderBottom,
+              borderLeft: style.borderLeft,
+            }
+          : {
+              border: style.border,
+            }),
+      };
+    },
+    [cells, cellStylesWithCF]
+  );
 
   // Check if cell matches search query
-  const isSearchMatch = useCallback((row: number, col: number): boolean => {
-    if (!searchQuery || searchQuery.trim() === '') return false;
-    
-    const value = getCellValue(row, col);
-    return value.toLowerCase().includes(searchQuery.toLowerCase());
-  }, [searchQuery, getCellValue]);
+  const isSearchMatch = useCallback(
+    (row: number, col: number): boolean => {
+      if (!searchQuery || searchQuery.trim() === '') return false;
+
+      const value = getCellValue(row, col);
+      return value.toLowerCase().includes(searchQuery.toLowerCase());
+    },
+    [searchQuery, getCellValue]
+  );
 
   // Check if cell is in selected range
-  const isInRange = useCallback((row: number, col: number): boolean => {
-    if (!selectedRange) return false;
-    
-    const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
-    const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
-    const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
-    const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
-    
-    return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol;
-  }, [selectedRange]);
+  const isInRange = useCallback(
+    (row: number, col: number): boolean => {
+      if (!selectedRange) return false;
+
+      const minRow = Math.min(selectedRange.start.row, selectedRange.end.row);
+      const maxRow = Math.max(selectedRange.start.row, selectedRange.end.row);
+      const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
+      const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
+
+      return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol;
+    },
+    [selectedRange]
+  );
 
   // Get raw cell value for editing (formula or value)
-  const getRawCellValue = useCallback((row: number, col: number): string => {
-    const key = `${row},${col}`;
-    const cell = cells.get(key);
-    
-    if (!cell) return '';
-    
-    // If formula, return formula (with =)
-    if (cell.formula) {
-      return cell.formula; // Already includes '='
-    }
-    
-    // Otherwise return raw value
-    return cell.value !== null ? String(cell.value) : '';
-  }, [cells]);
+  const getRawCellValue = useCallback(
+    (row: number, col: number): string => {
+      const key = `${row},${col}`;
+      const cell = cells.get(key);
+
+      if (!cell) return '';
+
+      // If formula, return formula (with =)
+      if (cell.formula) {
+        return cell.formula; // Already includes '='
+      }
+
+      // Otherwise return raw value
+      return cell.value !== null ? String(cell.value) : '';
+    },
+    [cells]
+  );
 
   // Start editing
-  const startEditing = useCallback((row: number, col: number) => {
-    const rawValue = getRawCellValue(row, col);
-    setEditingCell({ row, col });
-    setEditValue(rawValue);
-    
-    // Focus and select input after render
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.select();
-      }
-    }, 0);
-  }, [getRawCellValue]);
+  const startEditing = useCallback(
+    (row: number, col: number) => {
+      const rawValue = getRawCellValue(row, col);
+      setEditingCell({ row, col });
+      setEditValue(rawValue);
+
+      // Focus and select input after render
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      }, 0);
+    },
+    [getRawCellValue]
+  );
 
   // Commit edit
   const commitEdit = useCallback(() => {
@@ -234,31 +253,34 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   }, []);
 
   // Handle double-click to edit
-  const handleCellDoubleClick = useCallback((row: number, col: number) => {
-    startEditing(row, col);
-  }, [startEditing]);
+  const handleCellDoubleClick = useCallback(
+    (row: number, col: number) => {
+      startEditing(row, col);
+    },
+    [startEditing]
+  );
 
   // Handle Enter key on selected cell (start editing)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // If already editing, don't interfere
       if (editingCell) return;
-      
+
       // If no cell selected, ignore
       if (!selectedCell) return;
-      
+
       // Enter: start editing
       if (e.key === 'Enter') {
         e.preventDefault();
         startEditing(selectedCell.row, selectedCell.col);
       }
-      
+
       // F2: start editing
       if (e.key === 'F2') {
         e.preventDefault();
         startEditing(selectedCell.row, selectedCell.col);
       }
-      
+
       // Typing any printable character: start editing
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
@@ -269,56 +291,65 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         }, 0);
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedCell, editingCell, startEditing]);
 
   // Handle keyboard in edit mode
-  const handleEditKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      commitEdit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      cancelEdit();
-    }
-  }, [commitEdit, cancelEdit]);
+  const handleEditKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitEdit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEdit();
+      }
+    },
+    [commitEdit, cancelEdit]
+  );
 
   // Handle cell mouse down (start selection)
-  const handleCellMouseDown = useCallback((row: number, col: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    
-    // If shift is held, extend selection from current selected cell
-    if (e.shiftKey && selectedCell) {
-      setSelectionStart(selectedCell);
-      const range = {
-        start: selectedCell,
-        end: { row, col },
-      };
-      if (onRangeSelect) {
-        onRangeSelect(range);
+  const handleCellMouseDown = useCallback(
+    (row: number, col: number, e: React.MouseEvent) => {
+      e.preventDefault();
+
+      // If shift is held, extend selection from current selected cell
+      if (e.shiftKey && selectedCell) {
+        setSelectionStart(selectedCell);
+        const range = {
+          start: selectedCell,
+          end: { row, col },
+        };
+        if (onRangeSelect) {
+          onRangeSelect(range);
+        }
+      } else {
+        // Start new selection
+        setIsSelecting(true);
+        setSelectionStart({ row, col });
+        onCellSelect({ row, col });
       }
-    } else {
-      // Start new selection
-      setIsSelecting(true);
-      setSelectionStart({ row, col });
-      onCellSelect({ row, col });
-    }
-  }, [selectedCell, onCellSelect, onRangeSelect]);
+    },
+    [selectedCell, onCellSelect, onRangeSelect]
+  );
 
   // Handle cell mouse enter (extend selection)
-  const handleCellMouseEnter = useCallback((row: number, col: number) => {
-    if (isSelecting && selectionStart) {
-      const range = {
-        start: selectionStart,
-        end: { row, col },
-      };
-      if (onRangeSelect) {
-        onRangeSelect(range);
+  const handleCellMouseEnter = useCallback(
+    (row: number, col: number) => {
+      if (isSelecting && selectionStart) {
+        const range = {
+          start: selectionStart,
+          end: { row, col },
+        };
+        if (onRangeSelect) {
+          onRangeSelect(range);
+        }
       }
-    }
-  }, [isSelecting, selectionStart, onRangeSelect]);
+    },
+    [isSelecting, selectionStart, onRangeSelect]
+  );
 
   // Handle mouse up (end selection)
   const handleMouseUp = useCallback(() => {
@@ -345,12 +376,20 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     const { startRow, endRow, startCol, endCol } = viewport;
     const cellElements: JSX.Element[] = [];
 
+    // Theme colors
+    const borderColor = theme.palette.divider;
+    const cellBg = theme.palette.background.surface;
+    const selectedBg = theme.palette.primary.softBg;
+    const rangeBg = theme.palette.primary.softHoverBg; // slightly darker/different than selected
+    const matchBg = theme.palette.warning.softBg;
+    const textColor = theme.palette.text.primary;
+
     for (let row = startRow; row < endRow; row++) {
       for (let col = startCol; col < endCol; col++) {
         const key = `${row},${col}`;
         const isSelected = selectedCell?.row === row && selectedCell?.col === col;
         const isEditing = editingCell?.row === row && editingCell?.col === col;
-        
+
         if (isEditing) {
           // Render input for editing cell
           const style: CSSProperties = {
@@ -371,7 +410,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                   },
                 }}
                 value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
+                onChange={e => setEditValue(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={commitEdit}
                 sx={{
@@ -390,34 +429,43 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
           const cellStyle = getCellStyle(row, col);
           const isMatch = isSearchMatch(row, col);
           const inRange = isInRange(row, col);
-          
+
           const style: CSSProperties = {
             position: 'absolute',
             left: HEADER_WIDTH + col * CELL_WIDTH,
             top: HEADER_HEIGHT + row * CELL_HEIGHT,
             width: CELL_WIDTH,
             height: CELL_HEIGHT,
-            border: '1px solid #e0e0e0',
+            border: `1px solid ${borderColor}`,
             padding: '4px 8px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            backgroundColor: isSelected ? '#e3f2fd' : (inRange ? '#e8f5e9' : (isMatch ? '#fff59d' : 'white')),
+            backgroundColor: isSelected
+              ? selectedBg
+              : inRange
+                ? rangeBg
+                : isMatch
+                  ? matchBg
+                  : cellBg,
+            color: textColor,
             cursor: 'cell',
             fontSize: '13px',
             // Apply cell-specific styles (override defaults)
             ...cellStyle,
-            // But always keep selection/range/search background
-            ...(isSelected && { backgroundColor: '#e3f2fd' }),
-            ...(inRange && !isSelected && { backgroundColor: '#e8f5e9' }),
-            ...(isMatch && !isSelected && !inRange && { backgroundColor: '#fff59d' }),
+            // But always keep selection/range/search background if specific priority needed
+            // Actually standard Excel behavior is selection overlay on top of cell styles
+            // But here we're mixing background color.
+            ...(isSelected && { backgroundColor: selectedBg }),
+            ...(inRange && !isSelected && { backgroundColor: rangeBg }),
+            ...(isMatch && !isSelected && !inRange && { backgroundColor: matchBg }),
           };
 
           cellElements.push(
             <div
               key={key}
               style={style}
-              onMouseDown={(e) => handleCellMouseDown(row, col, e)}
+              onMouseDown={e => handleCellMouseDown(row, col, e)}
               onMouseEnter={() => handleCellMouseEnter(row, col)}
               onDoubleClick={() => handleCellDoubleClick(row, col)}
             >
@@ -429,12 +477,32 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return cellElements;
-  }, [viewport, getCellValue, getCellStyle, isSearchMatch, isInRange, selectedCell, editingCell, editValue, handleCellMouseDown, handleCellMouseEnter, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
+  }, [
+    viewport,
+    getCellValue,
+    getCellStyle,
+    isSearchMatch,
+    isInRange,
+    selectedCell,
+    editingCell,
+    editValue,
+    handleCellMouseDown,
+    handleCellMouseEnter,
+    handleCellDoubleClick,
+    handleEditKeyDown,
+    commitEdit,
+    theme,
+  ]);
 
   // Render column headers
   const renderColumnHeaders = useMemo(() => {
     const { startCol, endCol } = viewport;
     const headers: JSX.Element[] = [];
+
+    // Theme colors
+    const headerBg = theme.palette.background.level1;
+    const borderColor = theme.palette.divider;
+    const textColor = theme.palette.text.secondary;
 
     for (let col = startCol; col < endCol; col++) {
       const style: CSSProperties = {
@@ -443,8 +511,9 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         top: 0,
         width: CELL_WIDTH,
         height: HEADER_HEIGHT,
-        border: '1px solid #ccc',
-        backgroundColor: '#f5f5f5',
+        border: `1px solid ${borderColor}`,
+        backgroundColor: headerBg,
+        color: textColor,
         fontWeight: 'bold',
         display: 'flex',
         alignItems: 'center',
@@ -460,12 +529,17 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return headers;
-  }, [viewport, getColumnLabel]);
+  }, [viewport, getColumnLabel, theme]);
 
   // Render row headers
   const renderRowHeaders = useMemo(() => {
     const { startRow, endRow } = viewport;
     const headers: JSX.Element[] = [];
+
+    // Theme colors
+    const headerBg = theme.palette.background.level1;
+    const borderColor = theme.palette.divider;
+    const textColor = theme.palette.text.secondary;
 
     for (let row = startRow; row < endRow; row++) {
       const style: CSSProperties = {
@@ -474,8 +548,9 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         top: HEADER_HEIGHT + row * CELL_HEIGHT,
         width: HEADER_WIDTH,
         height: CELL_HEIGHT,
-        border: '1px solid #ccc',
-        backgroundColor: '#f5f5f5',
+        border: `1px solid ${borderColor}`,
+        backgroundColor: headerBg,
+        color: textColor,
         fontWeight: 'bold',
         display: 'flex',
         alignItems: 'center',
@@ -491,7 +566,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return headers;
-  }, [viewport]);
+  }, [viewport, theme]);
 
   // Total content dimensions
   const contentWidth = HEADER_WIDTH + visibleCols * CELL_WIDTH;
@@ -506,6 +581,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         height: '100%',
         overflow: 'auto',
         position: 'relative',
+        backgroundColor: theme.palette.background.body,
       }}
     >
       <div
@@ -523,15 +599,16 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             top: 0,
             width: HEADER_WIDTH,
             height: HEADER_HEIGHT,
-            border: '1px solid #ccc',
-            backgroundColor: '#f5f5f5',
+            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: theme.palette.background.level1,
+            zIndex: 10,
           }}
         />
-        
+
         {/* Headers */}
         {renderColumnHeaders}
         {renderRowHeaders}
-        
+
         {/* Cells */}
         {renderCells}
       </div>

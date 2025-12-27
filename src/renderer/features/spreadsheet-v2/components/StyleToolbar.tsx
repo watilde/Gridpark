@@ -1,6 +1,6 @@
 /**
  * StyleToolbar - Cell styling toolbar
- * 
+ *
  * Features:
  * - Font family selection
  * - Font size selection
@@ -11,13 +11,13 @@
  */
 
 import React, { useCallback } from 'react';
-import { Box, Button, Select, Option, IconButton, Stack } from '@mui/joy';
+import { Box, Select, Option, IconButton, Stack, useTheme } from '@mui/joy';
 import { CellStyleData } from '../../../../lib/db';
 
 interface StyleToolbarProps {
   // Current selection
   selectedCellStyle?: CellStyleData;
-  
+
   // Callbacks
   onStyleChange: (style: Partial<CellStyleData>) => void;
 }
@@ -34,31 +34,45 @@ const FONT_FAMILIES = [
   'Trebuchet MS',
 ];
 
-const FONT_SIZES = ['10px', '11px', '12px', '13px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
+const FONT_SIZES = [
+  '10px',
+  '11px',
+  '12px',
+  '13px',
+  '14px',
+  '16px',
+  '18px',
+  '20px',
+  '24px',
+  '28px',
+  '32px',
+];
 
 export const StyleToolbar: React.FC<StyleToolbarProps> = ({
   selectedCellStyle = {},
   onStyleChange,
 }) => {
+  const theme = useTheme();
+
   // Font family
-  const handleFontFamilyChange = useCallback((
-    _event: React.SyntheticEvent | null,
-    value: string | null
-  ) => {
-    if (value) {
-      onStyleChange({ fontFamily: value });
-    }
-  }, [onStyleChange]);
+  const handleFontFamilyChange = useCallback(
+    (_event: React.SyntheticEvent | null, value: string | null) => {
+      if (value) {
+        onStyleChange({ fontFamily: value });
+      }
+    },
+    [onStyleChange]
+  );
 
   // Font size
-  const handleFontSizeChange = useCallback((
-    _event: React.SyntheticEvent | null,
-    value: string | null
-  ) => {
-    if (value) {
-      onStyleChange({ fontSize: value });
-    }
-  }, [onStyleChange]);
+  const handleFontSizeChange = useCallback(
+    (_event: React.SyntheticEvent | null, value: string | null) => {
+      if (value) {
+        onStyleChange({ fontSize: value });
+      }
+    },
+    [onStyleChange]
+  );
 
   // Toggle bold
   const toggleBold = useCallback(() => {
@@ -79,19 +93,28 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
   }, [selectedCellStyle.textDecoration, onStyleChange]);
 
   // Text color
-  const handleTextColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onStyleChange({ color: e.target.value });
-  }, [onStyleChange]);
+  const handleTextColorChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onStyleChange({ color: e.target.value });
+    },
+    [onStyleChange]
+  );
 
   // Background color
-  const handleBackgroundColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onStyleChange({ backgroundColor: e.target.value });
-  }, [onStyleChange]);
+  const handleBackgroundColorChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onStyleChange({ backgroundColor: e.target.value });
+    },
+    [onStyleChange]
+  );
 
   // Text alignment
-  const setTextAlign = useCallback((align: 'left' | 'center' | 'right') => {
-    onStyleChange({ textAlign: align });
-  }, [onStyleChange]);
+  const setTextAlign = useCallback(
+    (align: 'left' | 'center' | 'right') => {
+      onStyleChange({ textAlign: align });
+    },
+    [onStyleChange]
+  );
 
   const isBold = selectedCellStyle.fontWeight === 'bold' || selectedCellStyle.fontWeight === 700;
   const isItalic = selectedCellStyle.fontStyle === 'italic';
@@ -105,9 +128,11 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
         alignItems: 'center',
         gap: 1,
         padding: '8px 16px',
-        borderBottom: '1px solid #e0e0e0',
-        backgroundColor: '#f5f5f5',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'background.surface',
         flexWrap: 'wrap',
+        color: 'text.primary',
       }}
     >
       {/* Font Family */}
@@ -139,31 +164,34 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
       </Select>
 
       {/* Divider */}
-      <Box sx={{ width: 1, height: 24, backgroundColor: '#ccc', mx: 0.5 }} />
+      <Box sx={{ width: 1, height: 24, backgroundColor: 'divider', mx: 0.5 }} />
 
       {/* Bold, Italic, Underline */}
       <Stack direction="row" spacing={0.5}>
         <IconButton
           size="sm"
-          variant={isBold ? 'solid' : 'outlined'}
+          variant={isBold ? 'solid' : 'plain'}
+          color={isBold ? 'primary' : 'neutral'}
           onClick={toggleBold}
           sx={{ fontWeight: 'bold' }}
         >
           B
         </IconButton>
-        
+
         <IconButton
           size="sm"
-          variant={isItalic ? 'solid' : 'outlined'}
+          variant={isItalic ? 'solid' : 'plain'}
+          color={isItalic ? 'primary' : 'neutral'}
           onClick={toggleItalic}
           sx={{ fontStyle: 'italic' }}
         >
           I
         </IconButton>
-        
+
         <IconButton
           size="sm"
-          variant={isUnderline ? 'solid' : 'outlined'}
+          variant={isUnderline ? 'solid' : 'plain'}
+          color={isUnderline ? 'primary' : 'neutral'}
           onClick={toggleUnderline}
           sx={{ textDecoration: 'underline' }}
         >
@@ -172,11 +200,27 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
       </Stack>
 
       {/* Divider */}
-      <Box sx={{ width: 1, height: 24, backgroundColor: '#ccc', mx: 0.5 }} />
+      <Box sx={{ width: 1, height: 24, backgroundColor: 'divider', mx: 0.5 }} />
 
       {/* Text Color */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <label htmlFor="text-color" style={{ fontSize: '13px', cursor: 'pointer' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          border: '1px solid',
+          borderColor: 'neutral.outlinedBorder',
+          borderRadius: 'sm',
+          padding: '2px 6px',
+          '&:hover': {
+            backgroundColor: 'background.level1',
+          },
+        }}
+      >
+        <label
+          htmlFor="text-color"
+          style={{ fontSize: '13px', cursor: 'pointer', color: theme.palette.text.primary }}
+        >
           A
         </label>
         <input
@@ -184,13 +228,36 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
           type="color"
           value={selectedCellStyle.color || '#000000'}
           onChange={handleTextColorChange}
-          style={{ width: 32, height: 24, cursor: 'pointer', border: '1px solid #ccc' }}
+          style={{
+            width: 24,
+            height: 20,
+            cursor: 'pointer',
+            border: 'none',
+            backgroundColor: 'transparent',
+            padding: 0,
+          }}
         />
       </Box>
 
       {/* Background Color */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <label htmlFor="bg-color" style={{ fontSize: '13px', cursor: 'pointer' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          border: '1px solid',
+          borderColor: 'neutral.outlinedBorder',
+          borderRadius: 'sm',
+          padding: '2px 6px',
+          '&:hover': {
+            backgroundColor: 'background.level1',
+          },
+        }}
+      >
+        <label
+          htmlFor="bg-color"
+          style={{ fontSize: '13px', cursor: 'pointer', color: theme.palette.text.primary }}
+        >
           🎨
         </label>
         <input
@@ -198,34 +265,44 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
           type="color"
           value={selectedCellStyle.backgroundColor || '#ffffff'}
           onChange={handleBackgroundColorChange}
-          style={{ width: 32, height: 24, cursor: 'pointer', border: '1px solid #ccc' }}
+          style={{
+            width: 24,
+            height: 20,
+            cursor: 'pointer',
+            border: 'none',
+            backgroundColor: 'transparent',
+            padding: 0,
+          }}
         />
       </Box>
 
       {/* Divider */}
-      <Box sx={{ width: 1, height: 24, backgroundColor: '#ccc', mx: 0.5 }} />
+      <Box sx={{ width: 1, height: 24, backgroundColor: 'divider', mx: 0.5 }} />
 
       {/* Text Alignment */}
       <Stack direction="row" spacing={0.5}>
         <IconButton
           size="sm"
-          variant={textAlign === 'left' ? 'solid' : 'outlined'}
+          variant={textAlign === 'left' ? 'solid' : 'plain'}
+          color={textAlign === 'left' ? 'primary' : 'neutral'}
           onClick={() => setTextAlign('left')}
         >
           ←
         </IconButton>
-        
+
         <IconButton
           size="sm"
-          variant={textAlign === 'center' ? 'solid' : 'outlined'}
+          variant={textAlign === 'center' ? 'solid' : 'plain'}
+          color={textAlign === 'center' ? 'primary' : 'neutral'}
           onClick={() => setTextAlign('center')}
         >
           ↔
         </IconButton>
-        
+
         <IconButton
           size="sm"
-          variant={textAlign === 'right' ? 'solid' : 'outlined'}
+          variant={textAlign === 'right' ? 'solid' : 'plain'}
+          color={textAlign === 'right' ? 'primary' : 'neutral'}
           onClick={() => setTextAlign('right')}
         >
           →
