@@ -7,18 +7,11 @@ import {
   ReplaceCommand,
   FormulaCommitCommand,
   ActiveCellDetails,
-} from '../../workbook/components/ExcelViewer';
-import {
-  ExcelViewerDB,
-  ExcelViewerDBHandle,
-} from '../../workbook/components/ExcelViewerDB';
+} from '../../spreadsheet-v2/components/SpreadsheetContainerV2';
 import {
   SpreadsheetContainerV2,
   SpreadsheetContainerV2Handle,
 } from '../../spreadsheet-v2/components/SpreadsheetContainerV2';
-
-// Feature flag: Use v2 spreadsheet (can be toggled via env var)
-const USE_SPREADSHEET_V2 = import.meta.env.VITE_USE_SPREADSHEET_V2 === 'true';
 import { FormulaBar } from '../../formula-bar/FormulaBar';
 import { SpreadsheetToolbar } from '../../toolbar/SpreadsheetToolbar';
 import { WorkbookTab } from '../../../types/tabs';
@@ -83,7 +76,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
     },
     ref
   ) => {
-    const sheetViewerRef = useRef<ExcelViewerDBHandle | SpreadsheetContainerV2Handle | null>(null);
+    const sheetViewerRef = useRef<SpreadsheetContainerV2Handle | null>(null);
     
     // Track selected cell/range for toolbar
     const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
@@ -154,37 +147,20 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
             selectedRange={selectedRange}
           />
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            {USE_SPREADSHEET_V2 ? (
-              <SpreadsheetContainerV2
-                ref={sheetViewerRef as React.Ref<SpreadsheetContainerV2Handle>}
-                tabId={activeTab.id}
-                file={activeTab.file}
-                sheetIndex={activeTab.sheetIndex}
-                onDirtyChange={onDirtyChange}
-                onCellSelect={handleCellSelect}
-                onRangeSelect={handleRangeSelect}
-                searchQuery={sheetSearchQuery}
-                searchNavigation={searchNavigation}
-                replaceCommand={replaceCommand}
-                formulaCommit={formulaCommitCommand}
-                onActiveCellDetails={onActiveCellDetails}
-              />
-            ) : (
-              <ExcelViewerDB
-                ref={sheetViewerRef as React.Ref<ExcelViewerDBHandle>}
-                tabId={activeTab.id}
-                file={activeTab.file}
-                sheetIndex={activeTab.sheetIndex}
-                onDirtyChange={onDirtyChange}
-                onCellSelect={handleCellSelect}
-                onRangeSelect={handleRangeSelect}
-                searchQuery={sheetSearchQuery}
-                searchNavigation={searchNavigation}
-                replaceCommand={replaceCommand}
-                formulaCommit={formulaCommitCommand}
-                onActiveCellDetails={onActiveCellDetails}
-              />
-            )}
+            <SpreadsheetContainerV2
+              ref={sheetViewerRef}
+              tabId={activeTab.id}
+              file={activeTab.file}
+              sheetIndex={activeTab.sheetIndex}
+              onDirtyChange={onDirtyChange}
+              onCellSelect={handleCellSelect}
+              onRangeSelect={handleRangeSelect}
+              searchQuery={sheetSearchQuery}
+              searchNavigation={searchNavigation}
+              replaceCommand={replaceCommand}
+              formulaCommit={formulaCommitCommand}
+              onActiveCellDetails={onActiveCellDetails}
+            />
           </Box>
         </Box>
       );

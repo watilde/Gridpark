@@ -5,11 +5,10 @@ import { EditorPanel, EditorPanelHandle } from './EditorPanel';
 import { WorkbookTab } from '../../../types/tabs';
 import {
   ActiveCellDetails,
-  // SheetSessionState,
   SearchNavigationCommand,
   ReplaceCommand,
   FormulaCommitCommand,
-} from '../../workbook/components/ExcelViewer';
+} from '../../spreadsheet-v2/components/SpreadsheetContainerV2';
 import { ManifestSession } from '../../../hooks/useFileSessions';
 import {
   CellPosition,

@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   FormulaCommitCommand,
   ActiveCellDetails,
-} from '../features/workbook/components/ExcelViewer';
+} from '../features/spreadsheet-v2/components/SpreadsheetContainerV2';
 import { defaultFormulaOptions, FormulaOption } from '../utils/formulaUtils';
 
 export const useFormulaBar = (activeTabKind?: string) => {

@@ -25,7 +25,7 @@ import type { FileNode } from '../../../renderer/features/file-explorer/FileTree
 import type {
   SearchNavigationCommand,
   ReplaceCommand,
-} from '../../../renderer/features/workbook/components/ExcelViewer';
+} from '../../../renderer/features/spreadsheet-v2/components/SpreadsheetContainerV2';
 
 /**
  * Search state managed by reducer

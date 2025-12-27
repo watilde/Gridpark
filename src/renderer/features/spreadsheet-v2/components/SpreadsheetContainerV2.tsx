@@ -15,12 +15,36 @@ import { Box, CircularProgress } from '@mui/joy';
 import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
 import { useSpreadsheet } from '../hooks/useSpreadsheet';
-import type {
-  SearchNavigationCommand,
-  ReplaceCommand,
-  FormulaCommitCommand,
-  ActiveCellDetails,
-} from '../../workbook/components/ExcelViewer';
+
+// Re-export types for compatibility
+export type {
+  CellPosition,
+  CellRange,
+};
+
+export interface SearchNavigationCommand {
+  action: 'next' | 'previous';
+  timestamp: number;
+}
+
+export interface ReplaceCommand {
+  searchTerm: string;
+  replaceTerm: string;
+  replaceAll: boolean;
+  timestamp: number;
+}
+
+export interface FormulaCommitCommand {
+  formula: string;
+  timestamp: number;
+}
+
+export interface ActiveCellDetails {
+  address: string;
+  value: any;
+  formula: string;
+  type: string;
+}
 
 export interface SpreadsheetContainerV2Props {
   // Tab identification
@@ -89,35 +113,29 @@ export const SpreadsheetContainerV2 = forwardRef<
       dimensions,
       updateCell,
       save,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
     } = useSpreadsheet({
       tabId,
       workbookId: file?.path ?? '',
       sheetName: currentSheet?.name ?? '',
     });
 
-    // TODO: Implement undo/redo
-    const [undoStack, setUndoStack] = useState<any[]>([]);
-    const [redoStack, setRedoStack] = useState<any[]>([]);
-
     // Expose methods via ref
     useImperativeHandle(
       ref,
       () => ({
-        undo: () => {
-          console.log('[SpreadsheetV2] Undo not yet implemented');
-          // TODO: Implement undo
-        },
-        redo: () => {
-          console.log('[SpreadsheetV2] Redo not yet implemented');
-          // TODO: Implement redo
-        },
-        canUndo: () => undoStack.length > 0,
-        canRedo: () => redoStack.length > 0,
+        undo,
+        redo,
+        canUndo: () => canUndo,
+        canRedo: () => canRedo,
         save: async () => {
           await save();
         },
       }),
-      [save, undoStack, redoStack]
+      [save, undo, redo, canUndo, canRedo]
     );
 
     // Notify dirty changes
@@ -154,9 +172,48 @@ export const SpreadsheetContainerV2 = forwardRef<
     const handleCellChange = useCallback(
       async (row: number, col: number, value: string) => {
         await updateCell(row, col, value);
+        
+        // Update active cell details after change
+        if (onActiveCellDetails && selectedCell?.row === row && selectedCell?.col === col) {
+          const key = `${row},${col}`;
+          const cell = cells.get(key);
+          onActiveCellDetails({
+            address: `${indexToColumn(col)}${row + 1}`,
+            value: cell?.value ?? value,
+            formula: cell?.formula ?? (value.startsWith('=') ? value : ''),
+            type: cell?.type ?? 'string',
+          });
+        }
       },
-      [updateCell]
+      [updateCell, onActiveCellDetails, selectedCell, cells]
     );
+
+    // Handle formula commit from formula bar
+    useEffect(() => {
+      if (formulaCommit && selectedCell) {
+        handleCellChange(selectedCell.row, selectedCell.col, formulaCommit.formula);
+      }
+    }, [formulaCommit, selectedCell, handleCellChange]);
+    
+    // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y)
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            redo();
+          } else {
+            undo();
+          }
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+          e.preventDefault();
+          redo();
+        }
+      };
+      
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [undo, redo]);
 
     // Loading state
     if (!file || !currentSheet) {

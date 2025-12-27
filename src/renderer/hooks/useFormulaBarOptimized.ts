@@ -2,7 +2,7 @@ import { useReducer, useCallback, useRef, useEffect, useMemo, useState } from 'r
 import {
   FormulaCommitCommand,
   ActiveCellDetails,
-} from '../features/workbook/components/ExcelViewer';
+} from '../features/spreadsheet-v2/components/SpreadsheetContainerV2';
 import { defaultFormulaOptions, FormulaOption } from '../utils/formulaUtils';
 
 /**

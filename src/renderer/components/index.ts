@@ -19,7 +19,15 @@ export { FormulaBar } from '../features/formula-bar/FormulaBar';
 export { MonacoEditor } from '../features/code-editor/MonacoEditor';
 export { Toolbar } from '../features/toolbar/Toolbar';
 export { FileTree } from '../features/file-explorer/FileTree';
-export { ExcelViewer } from '../features/workbook/components/ExcelViewer';
+// V2 Spreadsheet
+export { SpreadsheetContainerV2 } from '../features/spreadsheet-v2/components/SpreadsheetContainerV2';
+export type { 
+  SpreadsheetContainerV2Handle,
+  SearchNavigationCommand,
+  ReplaceCommand,
+  FormulaCommitCommand,
+  ActiveCellDetails,
+} from '../features/spreadsheet-v2/components/SpreadsheetContainerV2';
 
 // Test Components
 export { FontTest } from './test/FontTest';

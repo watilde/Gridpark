@@ -1,15 +1,16 @@
 /**
- * SpreadsheetGrid - Lightweight virtualized grid component
+ * SpreadsheetGrid - Lightweight virtualized grid component with editing
  * 
  * Design principles:
  * 1. Virtual scrolling for performance
  * 2. Minimal re-renders
  * 3. Direct cell updates (no full grid clones)
  * 4. Sparse data structure
+ * 5. Inline editing support
  */
 
-import React, { useRef, useCallback, useMemo, CSSProperties } from 'react';
-import { Box } from '@mui/joy';
+import React, { useRef, useCallback, useMemo, CSSProperties, useState, useEffect } from 'react';
+import { Box, Input } from '@mui/joy';
 import { StoredCellData } from '../../../lib/db';
 
 // Constants
@@ -40,7 +41,7 @@ interface SpreadsheetGridProps {
   onCellChange: (row: number, col: number, value: string) => void;
   
   // Computed values from formula engine
-  computedValues: Map<string, number>;
+  computedValues: Map<string, any>;
 }
 
 export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
@@ -53,8 +54,13 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   computedValues,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scrollTop, setScrollTop] = React.useState(0);
-  const [scrollLeft, setScrollLeft] = React.useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  
+  // Editing state
+  const [editingCell, setEditingCell] = useState<CellPosition | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Calculate viewport
   const viewport = useMemo(() => {
@@ -100,6 +106,102 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     return cell.value !== null ? String(cell.value) : '';
   }, [cells, computedValues]);
 
+  // Get raw cell value for editing (formula or value)
+  const getRawCellValue = useCallback((row: number, col: number): string => {
+    const key = `${row},${col}`;
+    const cell = cells.get(key);
+    
+    if (!cell) return '';
+    
+    // If formula, return formula (with =)
+    if (cell.formula) {
+      return cell.formula; // Already includes '='
+    }
+    
+    // Otherwise return raw value
+    return cell.value !== null ? String(cell.value) : '';
+  }, [cells]);
+
+  // Start editing
+  const startEditing = useCallback((row: number, col: number) => {
+    const rawValue = getRawCellValue(row, col);
+    setEditingCell({ row, col });
+    setEditValue(rawValue);
+    
+    // Focus input after render
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+  }, [getRawCellValue]);
+
+  // Commit edit
+  const commitEdit = useCallback(() => {
+    if (editingCell) {
+      onCellChange(editingCell.row, editingCell.col, editValue);
+      setEditingCell(null);
+      setEditValue('');
+    }
+  }, [editingCell, editValue, onCellChange]);
+
+  // Cancel edit
+  const cancelEdit = useCallback(() => {
+    setEditingCell(null);
+    setEditValue('');
+  }, []);
+
+  // Handle double-click to edit
+  const handleCellDoubleClick = useCallback((row: number, col: number) => {
+    startEditing(row, col);
+  }, [startEditing]);
+
+  // Handle Enter key on selected cell (start editing)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If already editing, don't interfere
+      if (editingCell) return;
+      
+      // If no cell selected, ignore
+      if (!selectedCell) return;
+      
+      // Enter: start editing
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        startEditing(selectedCell.row, selectedCell.col);
+      }
+      
+      // F2: start editing
+      if (e.key === 'F2') {
+        e.preventDefault();
+        startEditing(selectedCell.row, selectedCell.col);
+      }
+      
+      // Typing any printable character: start editing
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setEditingCell(selectedCell);
+        setEditValue(e.key);
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCell, editingCell, startEditing]);
+
+  // Handle keyboard in edit mode
+  const handleEditKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+    }
+  }, [commitEdit, cancelEdit]);
+
   // Convert column index to letter (0 -> A, 25 -> Z, 26 -> AA)
   const getColumnLabel = useCallback((col: number): string => {
     let label = '';
@@ -119,38 +221,74 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     for (let row = startRow; row < endRow; row++) {
       for (let col = startCol; col < endCol; col++) {
         const key = `${row},${col}`;
-        const value = getCellValue(row, col);
         const isSelected = selectedCell?.row === row && selectedCell?.col === col;
+        const isEditing = editingCell?.row === row && editingCell?.col === col;
         
-        const style: CSSProperties = {
-          position: 'absolute',
-          left: HEADER_WIDTH + col * CELL_WIDTH,
-          top: HEADER_HEIGHT + row * CELL_HEIGHT,
-          width: CELL_WIDTH,
-          height: CELL_HEIGHT,
-          border: '1px solid #e0e0e0',
-          padding: '4px 8px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          backgroundColor: isSelected ? '#e3f2fd' : 'white',
-          cursor: 'cell',
-        };
+        if (isEditing) {
+          // Render input for editing cell
+          const style: CSSProperties = {
+            position: 'absolute',
+            left: HEADER_WIDTH + col * CELL_WIDTH,
+            top: HEADER_HEIGHT + row * CELL_HEIGHT,
+            width: CELL_WIDTH,
+            height: CELL_HEIGHT,
+            zIndex: 100,
+          };
 
-        cellElements.push(
-          <div
-            key={key}
-            style={style}
-            onClick={() => onCellSelect({ row, col })}
-          >
-            {value}
-          </div>
-        );
+          cellElements.push(
+            <Box key={key} sx={style}>
+              <Input
+                ref={inputRef}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={commitEdit}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  '--Input-minHeight': `${CELL_HEIGHT}px`,
+                  fontSize: '13px',
+                  padding: '4px 8px',
+                }}
+              />
+            </Box>
+          );
+        } else {
+          // Render regular cell
+          const value = getCellValue(row, col);
+          
+          const style: CSSProperties = {
+            position: 'absolute',
+            left: HEADER_WIDTH + col * CELL_WIDTH,
+            top: HEADER_HEIGHT + row * CELL_HEIGHT,
+            width: CELL_WIDTH,
+            height: CELL_HEIGHT,
+            border: '1px solid #e0e0e0',
+            padding: '4px 8px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            backgroundColor: isSelected ? '#e3f2fd' : 'white',
+            cursor: 'cell',
+            fontSize: '13px',
+          };
+
+          cellElements.push(
+            <div
+              key={key}
+              style={style}
+              onClick={() => onCellSelect({ row, col })}
+              onDoubleClick={() => handleCellDoubleClick(row, col)}
+            >
+              {value}
+            </div>
+          );
+        }
       }
     }
 
     return cellElements;
-  }, [viewport, getCellValue, selectedCell, onCellSelect]);
+  }, [viewport, getCellValue, selectedCell, editingCell, editValue, onCellSelect, handleCellDoubleClick, handleEditKeyDown, commitEdit]);
 
   // Render column headers
   const renderColumnHeaders = useMemo(() => {
