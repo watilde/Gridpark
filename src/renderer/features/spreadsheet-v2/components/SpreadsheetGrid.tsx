@@ -133,7 +133,16 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     
     if (!style) return {};
     
+    // Check if individual border properties are set
+    const hasIndividualBorders = !!(
+      style.borderTop ||
+      style.borderRight ||
+      style.borderBottom ||
+      style.borderLeft
+    );
+    
     // Convert CellStyleData to CSSProperties
+    // Avoid mixing border shorthand with individual properties
     return {
       backgroundColor: style.backgroundColor,
       color: style.color,
@@ -144,11 +153,17 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
       fontFamily: style.fontFamily,
       textAlign: style.textAlign as any,
       verticalAlign: style.verticalAlign as any,
-      border: style.border,
-      borderTop: style.borderTop,
-      borderRight: style.borderRight,
-      borderBottom: style.borderBottom,
-      borderLeft: style.borderLeft,
+      // Only use border shorthand if no individual borders are set
+      ...(hasIndividualBorders
+        ? {
+            borderTop: style.borderTop,
+            borderRight: style.borderRight,
+            borderBottom: style.borderBottom,
+            borderLeft: style.borderLeft,
+          }
+        : {
+            border: style.border,
+          }),
     };
   }, [cells, cellStylesWithCF]);
 
