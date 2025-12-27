@@ -69,6 +69,97 @@ export interface CellStyleData {
 }
 
 /**
+ * Conditional formatting rule types
+ */
+export type ConditionalFormattingType = 
+  | 'cellIs' // Compare cell value
+  | 'expression' // Formula-based
+  | 'top10' // Top/bottom N values
+  | 'aboveAverage' // Above/below average
+  | 'colorScale' // Color gradient
+  | 'iconSet' // Icon indicators
+  | 'dataBar' // Horizontal bars
+  | 'containsText' // Text pattern
+  | 'timePeriod'; // Date-based
+
+/**
+ * Conditional formatting operators
+ */
+export type ConditionalFormattingOperator =
+  | 'greaterThan'
+  | 'lessThan'
+  | 'greaterThanOrEqual'
+  | 'lessThanOrEqual'
+  | 'equal'
+  | 'notEqual'
+  | 'between'
+  | 'notBetween'
+  | 'containsText'
+  | 'notContainsText'
+  | 'beginsWith'
+  | 'endsWith';
+
+/**
+ * Conditional formatting rule
+ */
+export interface ConditionalFormattingRule {
+  id: string; // Unique rule ID
+  type: ConditionalFormattingType;
+  priority: number; // Higher priority = evaluated first
+  
+  // Range to apply rule
+  ranges: Array<{
+    startRow: number;
+    startCol: number;
+    endRow: number;
+    endCol: number;
+  }>;
+  
+  // Rule-specific config
+  operator?: ConditionalFormattingOperator;
+  formula?: string; // For expression type
+  value?: string | number; // For comparison
+  value2?: string | number; // For between operator
+  
+  // Formatting to apply
+  style?: CellStyleData;
+  
+  // Color scale config
+  colorScale?: {
+    min?: { value?: number; color: string };
+    mid?: { value?: number; color: string };
+    max?: { value?: number; color: string };
+  };
+  
+  // Icon set config
+  iconSet?: {
+    icons: string[]; // Icon names
+    reverse?: boolean; // Reverse icon order
+    showValue?: boolean; // Show cell value
+  };
+  
+  // Data bar config
+  dataBar?: {
+    color: string;
+    showValue?: boolean;
+    minLength?: number;
+    maxLength?: number;
+  };
+  
+  // Stop if true (don't evaluate lower priority rules)
+  stopIfTrue?: boolean;
+}
+
+/**
+ * Sheet conditional formatting rules
+ */
+export interface SheetConditionalFormatting {
+  tabId: string;
+  rules: ConditionalFormattingRule[];
+  updatedAt: Date;
+}
+
+/**
  * Stored cell data (sparse matrix - only non-empty cells)
  * Matches ExcelViewer's CellData structure
  */
@@ -727,6 +818,65 @@ export class AppDatabase {
         break;
       }
     }
+  }
+
+  // ============================================================================
+  // Conditional Formatting Methods
+  // ============================================================================
+
+  /**
+   * Store for conditional formatting rules (in-memory)
+   */
+  private conditionalFormattingStore = new Map<string, SheetConditionalFormatting>();
+
+  /**
+   * Get conditional formatting rules for a sheet
+   */
+  async getConditionalFormatting(tabId: string): Promise<ConditionalFormattingRule[]> {
+    const cf = this.conditionalFormattingStore.get(tabId);
+    return cf?.rules || [];
+  }
+
+  /**
+   * Set conditional formatting rules for a sheet
+   */
+  async setConditionalFormatting(tabId: string, rules: ConditionalFormattingRule[]): Promise<void> {
+    this.conditionalFormattingStore.set(tabId, {
+      tabId,
+      rules,
+      updatedAt: new Date(),
+    });
+  }
+
+  /**
+   * Add a conditional formatting rule
+   */
+  async addConditionalFormattingRule(tabId: string, rule: ConditionalFormattingRule): Promise<void> {
+    const existing = await this.getConditionalFormatting(tabId);
+    const updated = [...existing, rule].sort((a, b) => b.priority - a.priority);
+    await this.setConditionalFormatting(tabId, updated);
+  }
+
+  /**
+   * Remove a conditional formatting rule
+   */
+  async removeConditionalFormattingRule(tabId: string, ruleId: string): Promise<void> {
+    const existing = await this.getConditionalFormatting(tabId);
+    const updated = existing.filter(r => r.id !== ruleId);
+    await this.setConditionalFormatting(tabId, updated);
+  }
+
+  /**
+   * Update a conditional formatting rule
+   */
+  async updateConditionalFormattingRule(
+    tabId: string,
+    ruleId: string,
+    updates: Partial<ConditionalFormattingRule>
+  ): Promise<void> {
+    const existing = await this.getConditionalFormatting(tabId);
+    const updated = existing.map(r => (r.id === ruleId ? { ...r, ...updates } : r));
+    await this.setConditionalFormatting(tabId, updated.sort((a, b) => b.priority - a.priority));
   }
 }
 
