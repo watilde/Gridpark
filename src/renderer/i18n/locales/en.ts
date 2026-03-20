@@ -193,6 +193,8 @@ export const en = {
   'modal.close': 'Close modal',
   'sidebar.explore': 'Explore',
   'sidebar.no_files_match': 'No files match "{query}"',
+  'sidebar.open_file': 'Open File…',
+  'sidebar.open_file_hint': 'Open an Excel file to get started.',
 } as const;
 
 export type TranslationKey = keyof typeof en;

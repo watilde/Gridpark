@@ -69,6 +69,16 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   >([]);
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
+  // Tracks whether we're still waiting for the initial bulk-write that happens
+  // asynchronously after file open (resetWorkbooks defers DB writes via setTimeout).
+  // Kept as a ref so reads/writes don't trigger re-renders.
+  const awaitingInitialData = useRef(true);
+
+  // Reset the flag whenever the tab changes so every new tab gets a fresh wait.
+  useEffect(() => {
+    awaitingInitialData.current = true;
+  }, [tabId]);
+
   // Load data from DB
   useEffect(() => {
     const loadData = async () => {
@@ -77,6 +87,11 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       // Load cells
       const cellArray = await db.getCellsForSheet(tabId);
       console.log('[useSpreadsheet] Loaded cells:', cellArray.length);
+
+      // Data is already in DB — no need to wait for the async bulk-write.
+      if (cellArray.length > 0) {
+        awaitingInitialData.current = false;
+      }
 
       const cellMap = new Map<string, StoredCellData>();
       cellArray.forEach(cell => {
@@ -120,6 +135,23 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   const reloadData = useCallback(() => {
     setReloadTrigger(prev => prev + 1);
   }, []);
+
+  // Subscribe to DB cell events so we can detect when the async bulk-write
+  // (triggered by resetWorkbooks via setTimeout) completes after a file open.
+  // User edits go through updateCell which updates local state directly, so
+  // we only trigger a reload while awaitingInitialData is still true.
+  useEffect(() => {
+    const unsubscribe = db.subscribe(
+      () => {
+        if (awaitingInitialData.current) {
+          awaitingInitialData.current = false;
+          reloadData();
+        }
+      },
+      { tabId, type: 'cells' }
+    );
+    return unsubscribe;
+  }, [tabId, reloadData]);
 
   // Compute all formulas when cells change (READ-ONLY from Engine)
   const computedValues = useMemo(() => {

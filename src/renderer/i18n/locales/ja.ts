@@ -193,4 +193,6 @@ export const ja: Record<TranslationKey, string> = {
   'modal.close': 'モーダルを閉じる',
   'sidebar.explore': 'エクスプローラー',
   'sidebar.no_files_match': '「{query}」に一致するファイルはありません',
+  'sidebar.open_file': 'ファイルを開く…',
+  'sidebar.open_file_hint': 'Excelファイルを開いてください。',
 };

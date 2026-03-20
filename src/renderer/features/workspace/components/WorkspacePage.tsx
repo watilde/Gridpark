@@ -385,6 +385,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
             selectedNodeId={selectedNodeId}
             onNodeSelect={handleNodeSelect}
             dirtyNodeIds={dirtyNodeIds}
+            onOpenFile={() => window.electronAPI?.openFile()}
           />
         ) : activeView === 'branch' ? (
           <GitPlaceholderSidebar viewType="branch" />

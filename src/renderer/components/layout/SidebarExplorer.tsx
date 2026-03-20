@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import Box from '@mui/joy/Box';
+import Button from '@mui/joy/Button';
 import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
 import { useTheme } from '@mui/joy/styles';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { FileTree, FileNode } from '../../features/file-explorer/FileTree';
 import { useT } from '../../i18n/I18nProvider';
 
@@ -13,6 +15,7 @@ interface SidebarExplorerProps {
   onNodeSelect: (node: FileNode) => void;
   dirtyNodeIds: Record<string, boolean>;
   title?: string;
+  onOpenFile?: () => void;
 }
 
 export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
@@ -22,6 +25,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   onNodeSelect,
   dirtyNodeIds,
   title,
+  onOpenFile,
 }) => {
   const theme = useTheme();
   const t = useT();
@@ -59,7 +63,45 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   const noMatches = isFiltering && filteredTreeNodes.length === 0;
 
   if (workbookNodes.length === 0) {
-    return null;
+    return (
+      <Box
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: theme.palette.background.surface,
+        }}
+      >
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography level="title-md">{resolvedTitle}</Typography>
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2,
+            p: 3,
+          }}
+        >
+          <FolderOpenIcon sx={{ fontSize: 40, color: 'text.tertiary', opacity: 0.5 }} />
+          <Typography level="body-sm" textAlign="center" textColor="text.secondary">
+            {t('sidebar.open_file_hint')}
+          </Typography>
+          <Button
+            size="sm"
+            variant="outlined"
+            color="neutral"
+            startDecorator={<FolderOpenIcon />}
+            onClick={onOpenFile}
+          >
+            {t('sidebar.open_file')}
+          </Button>
+        </Box>
+      </Box>
+    );
   }
 
   return (
