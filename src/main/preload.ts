@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu:save-as', handler);
     return () => ipcRenderer.removeListener('menu:save-as', handler);
   },
+  onMenuNewFile: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('menu:new-file', handler);
+    return () => ipcRenderer.removeListener('menu:new-file', handler);
+  },
   // Excel file operations
   createNewFile: () => ipcRenderer.invoke('excel:create-new-file'),
   openFile: () => ipcRenderer.invoke('excel:open-file'),

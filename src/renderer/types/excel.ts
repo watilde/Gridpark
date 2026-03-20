@@ -2,6 +2,8 @@
  * Excel file and worksheet types
  */
 
+import type { ExcelCellStyle } from '../../lib/exceljs-types';
+
 export interface ExcelFile {
   name: string;
   path: string;
@@ -21,7 +23,7 @@ export interface CellData {
   value: string | number | boolean | null | Date;
   type: 'string' | 'number' | 'boolean' | 'formula' | 'empty' | 'date' | 'error' | 'richText';
   formula?: string;
-  style?: CellStyle;  // Legacy CSS-style (for backwards compatibility)
+  style?: ExcelCellStyle | CellStyle;  // ExcelCellStyle (primary) or legacy CSS-style
   // ExcelJS extensions (imported lazily to avoid circular deps)
   richText?: any[];  // ExcelRichTextFragment[]
   merge?: any;  // ExcelMergeInfo

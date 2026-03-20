@@ -14,7 +14,7 @@ export { SidebarExplorer } from './layout/SidebarExplorer';
 export { SettingsDrawer } from './layout/SettingsDrawer';
 
 // Feature Components (re-exported for convenience)
-export { SpreadsheetGrid } from '../features/workbook/components/SpreadsheetGrid';
+// v1 SpreadsheetGrid removed - use SpreadsheetContainerV2 from spreadsheet-v2 instead
 export { FormulaBar } from '../features/formula-bar/FormulaBar';
 export { MonacoEditor } from '../features/code-editor/MonacoEditor';
 export { Toolbar } from '../features/toolbar/Toolbar';

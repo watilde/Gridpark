@@ -4,6 +4,13 @@ module.exports = {
   
   // Preset for ts-jest
   preset: 'ts-jest',
+
+  // ts-jest configuration
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      diagnostics: false,
+    }],
+  },
   
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],

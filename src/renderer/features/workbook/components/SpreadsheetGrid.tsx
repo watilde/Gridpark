@@ -1,11 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { styled } from '@mui/joy/styles';
-
-interface CellData {
-  value: string | number | null;
-  formula?: string;
-  isSelected?: boolean;
-}
+import Typography from '@mui/joy/Typography';
+import type { CellData } from '../../../types/excel';
 
 interface GridPosition {
   row: number;
@@ -51,6 +47,7 @@ const GridScrollContainer = styled('div')(({ theme }) => ({
     },
   },
 }));
+
 
 const GridTable = styled('div')({
   display: 'grid',
@@ -102,6 +99,7 @@ interface CellProps {
   isSelected?: boolean;
   isEditing?: boolean;
 }
+
 
 const CellBase = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & CellProps>(
   ({ _isSelected, _isEditing, ...rest }, ref) => <div ref={ref} {...rest} />
@@ -160,6 +158,7 @@ const getColumnName = (index: number): string => {
   return result;
 };
 
+
 export interface SpreadsheetGridProps {
   /**
    * Number of rows to display
@@ -195,7 +194,10 @@ export interface SpreadsheetGridProps {
 }
 
 /**
- * Gridpark SpreadsheetGrid Component
+ * @deprecated Use SpreadsheetGrid from `features/spreadsheet-v2/components/SpreadsheetGrid` instead.
+ * This v1 component is no longer used in the application and will be removed in a future release.
+ *
+ * Gridpark SpreadsheetGrid Component (v1)
  *
  * Excel-compatible spreadsheet grid with familiar navigation:
  * - Code-first: Keyboard navigation (arrows, Tab, Enter)
@@ -225,6 +227,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const [data, setData] = useState<Record<string, CellData>>(initialData);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const selectedCellRef = useRef<HTMLDivElement>(null);
+
 
   // Virtualization state
   const [visibleRange, setVisibleRange] = useState({
@@ -291,6 +294,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     return () => container.removeEventListener('scroll', handleScroll);
   }, [handleScroll, virtualized]);
 
+
   const handleCellClick = useCallback(
     (row: number, col: number) => {
       const position = { row, col };
@@ -313,7 +317,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
       const key = getCellKey(row, col);
       const newData = {
         ...data,
-        [key]: { value: value || null },
+        [key]: { value: value || null, type: value ? 'string' : 'empty' } as CellData,
       };
       setData(newData);
       onCellChange?.({ row, col }, value);
@@ -355,6 +359,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     },
     [editingCell, readOnly, rows, columns, handleCellClick]
   );
+
 
   const renderCell = (row: number, col: number) => {
     const isSelected = selectedCell.row === row && selectedCell.col === col;
@@ -413,6 +418,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         (_, i) => i + visibleRange.startCol
       )
     : Array.from({ length: columns }, (_, i) => i);
+
 
   return (
     <GridContainer>

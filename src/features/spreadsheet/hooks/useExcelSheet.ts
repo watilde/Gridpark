@@ -191,10 +191,44 @@ export function useExcelSheet(params: UseExcelSheetParams) {
   // Computed Values
   // ========================================================================
 
+  // Track previous cells for shallow comparison to stabilize data2D reference
+  const prevCellsRef = useRef<StoredCellData[]>([]);
+  const prevData2DRef = useRef<CellData[][]>([]);
+
+  /**
+   * Check if two cell arrays have the same content (shallow comparison).
+   * Returns true if both arrays have the same length and each cell has
+   * identical row, col, value, type, formula, and style reference.
+   */
+  const areCellsEqual = (a: StoredCellData[], b: StoredCellData[]): boolean => {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const ca = a[i];
+      const cb = b[i];
+      if (
+        ca.row !== cb.row ||
+        ca.col !== cb.col ||
+        ca.value !== cb.value ||
+        ca.type !== cb.type ||
+        ca.formula !== cb.formula ||
+        ca.style !== cb.style
+      ) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Convert sparse cell array to 2D array (for ExcelViewer compatibility)
   const data2D = useMemo((): CellData[][] => {
     if (!cells) {
       return [];
+    }
+
+    // If cells content hasn't changed, return previous data2D to preserve reference stability
+    if (prevCellsRef.current.length > 0 && areCellsEqual(prevCellsRef.current, cells)) {
+      return prevData2DRef.current;
     }
 
     // Use metadata dimensions (more efficient than calculating from cells)
@@ -211,11 +245,11 @@ export function useExcelSheet(params: UseExcelSheetParams) {
       if (cell.col > actualMaxCol) actualMaxCol = cell.col;
     });
 
-    // CRITICAL FIX: Support infinite scroll by adding buffer beyond actual data
+    // Support infinite scroll by adding buffer beyond actual data
     // This allows users to scroll and edit cells beyond the current data range
-    // Adding +100 rows and +10 cols buffer for smooth scrolling experience
-    const rows = Math.max(minRows, actualMaxRow + 100); // +100 row buffer for infinite scroll
-    const cols = Math.max(minCols, actualMaxCol + 10);  // +10 col buffer
+    // Using +20 rows and +5 cols buffer for reasonable scrolling experience
+    const rows = Math.max(minRows, actualMaxRow + 20); // +20 row buffer for infinite scroll
+    const cols = Math.max(minCols, actualMaxCol + 5);   // +5 col buffer
 
     // Create empty 2D array
     const result: CellData[][] = Array(rows)
@@ -242,6 +276,10 @@ export function useExcelSheet(params: UseExcelSheetParams) {
         };
       }
     });
+
+    // Store current cells and result for future comparison
+    prevCellsRef.current = cells;
+    prevData2DRef.current = result;
 
     return result;
   }, [cells, metadata?.maxRow, metadata?.maxCol, minRows, minCols]);

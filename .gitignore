@@ -102,3 +102,6 @@ web/excel-test.html
 
 *storybook.log
 storybook-static
+
+# Kiro
+.kiro/

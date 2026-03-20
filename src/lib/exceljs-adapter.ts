@@ -64,8 +64,22 @@ function convertExcelJSValue(cell: ExcelJS.Cell): CellValue {
   }
   
   // Handle formula results
-  if (typeof cell.value === 'object' && 'result' in cell.value) {
-    return (cell.value as { result: CellValue }).result;
+  // ExcelJS drops falsy results (0, false) from cell.value during serialization,
+  // but cell.result always has the correct value. Use cell.result as fallback.
+  if (typeof cell.value === 'object' && ('result' in cell.value || 'formula' in cell.value)) {
+    if ('result' in cell.value) {
+      return (cell.value as { result: CellValue }).result;
+    }
+    // Falsy results (0, false) are dropped from cell.value by ExcelJS,
+    // but cell.result still holds the correct value with proper type
+    const result = cell.result;
+    if (result !== undefined) {
+      if (result instanceof Date) return result;
+      if (typeof result === 'number' || typeof result === 'boolean' || typeof result === 'string') {
+        return result;
+      }
+    }
+    return null;
   }
   
   // Basic types
@@ -280,7 +294,7 @@ export class ExcelJSAdapter {
               value,
               type: cellType,
               formula: cell.formula ? String(cell.formula) : undefined,
-              style: style as any,  // Convert to legacy style format
+              style,  // ExcelCellStyle — type-safe after union type update
             };
           }
         });
@@ -369,13 +383,29 @@ export class ExcelJSAdapter {
             cell.value = { formula: cellData.formula, result: cellData.value };
           } else if (cellData.type === 'richText' && (cellData as any).richText) {
             cell.value = { richText: (cellData as any).richText };
+          } else if (cellData.type === 'boolean') {
+            // Ensure boolean values are written as boolean, not string
+            if (typeof cellData.value === 'string') {
+              cell.value = cellData.value === 'true';
+            } else {
+              cell.value = Boolean(cellData.value);
+            }
+          } else if (cellData.type === 'date') {
+            // Ensure date values are written as Date, not string
+            if (cellData.value instanceof Date) {
+              cell.value = cellData.value;
+            } else if (typeof cellData.value === 'string' || typeof cellData.value === 'number') {
+              cell.value = new Date(cellData.value);
+            } else {
+              cell.value = cellData.value as any;
+            }
           } else {
             cell.value = cellData.value as any;
           }
           
           // Apply style
           if (cellData.style) {
-            applyStyleToCell(cell, cellData.style as any);
+            applyStyleToCell(cell, cellData.style as ExcelCellStyle);
           }
           
           // Apply data validation

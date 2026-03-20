@@ -7,15 +7,18 @@ import type { ExcelFile } from './excel';
 export interface ElectronAPI {
   // Window management
   setWindowTitle: (title: string) => void;
-  
+
   // File events
   onFilesOpened: (
     callback: (payload: { files: ExcelFile[]; directoryName?: string }) => void
   ) => () => void;
-  
+
   // Theme events
   onThemePresetChange: (callback: (presetId: string) => void) => () => void;
-  
+
+  // Menu event listeners
+  onMenuNewFile: (callback: () => void) => () => void;
+
   // Excel file operations
   createNewFile: () => Promise<{
     success: boolean;
@@ -23,7 +26,7 @@ export interface ElectronAPI {
     canceled?: boolean;
     error?: string;
   }>;
-  
+
   openFile: () => Promise<{
     success: boolean;
     files?: ExcelFile[];

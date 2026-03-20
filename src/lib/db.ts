@@ -11,6 +11,8 @@
  * - Separate metadata for efficient sheet-level operations
  */
 
+import type { ExcelCellStyle } from './exceljs-types';
+
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -32,7 +34,7 @@ export interface CellData {
   value: CellValue;
   type: CellType;
   formula?: string;
-  style?: CellStyleData;
+  style?: CellStyleData | ExcelCellStyle;
 }
 
 /**
@@ -176,7 +178,7 @@ export interface StoredCellData {
   formula?: string; // Formula if present
 
   // Styling
-  style?: CellStyleData; // Cell-specific styles
+  style?: CellStyleData | ExcelCellStyle; // Cell-specific styles (CellStyleData or ExcelCellStyle)
 
   // Metadata
   updatedAt: Date; // Last update timestamp
@@ -505,6 +507,18 @@ export class AppDatabase {
     const action = existing ? 'update' : 'create';
 
     if (existing) {
+      // Skip write if data is identical to existing cell
+      const valueEqual = existing.value === (data.value ?? existing.value);
+      const typeEqual = existing.type === (data.type ?? existing.type);
+      const formulaEqual = existing.formula === (data.formula ?? existing.formula);
+      const styleEqual =
+        JSON.stringify(existing.style ?? null) ===
+        JSON.stringify(data.style ?? existing.style ?? null);
+
+      if (valueEqual && typeEqual && formulaEqual && styleEqual) {
+        return existing.id!;
+      }
+
       const updated = {
         ...existing,
         ...data,
@@ -719,13 +733,15 @@ export class AppDatabase {
     });
 
     try {
-      // Clear existing cells
-      await this.clearSheetCells(tabId);
-      console.log('[db] Cleared existing cells for', tabId);
+      // Get existing cells for diff comparison
+      const existingCells = await this.getCellsForSheet(tabId);
+      const existingMap = new Map<string, StoredCellData>();
+      existingCells.forEach(cell => {
+        existingMap.set(`${cell.row},${cell.col}`, cell);
+      });
 
-      // Convert to sparse format (only save non-empty cells)
-      const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> =
-        [];
+      // Build new cells map from 2D array (only non-empty cells)
+      const newCellsMap = new Map<string, { row: number; col: number; data: Partial<StoredCellData> }>();
 
       data.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
@@ -744,7 +760,8 @@ export class AppDatabase {
 
           // Save if any of these conditions are true
           if (hasValue || hasFormula || hasNonEmptyType) {
-            cellUpdates.push({
+            const key = `${rowIndex},${colIndex}`;
+            newCellsMap.set(key, {
               row: rowIndex,
               col: colIndex,
               data: {
@@ -758,12 +775,60 @@ export class AppDatabase {
         });
       });
 
-      console.log('[db] Prepared', cellUpdates.length, 'cells to save');
+      // Diff: find cells to upsert (new or changed)
+      const cellsToUpsert: Array<{ row: number; col: number; data: Partial<StoredCellData> }> = [];
 
-      // Bulk insert
-      await this.bulkUpsertCells(tabId, cellUpdates);
+      for (const [key, newCell] of newCellsMap) {
+        const existing = existingMap.get(key);
+        if (!existing) {
+          // New cell - needs insert
+          cellsToUpsert.push(newCell);
+        } else {
+          // Existing cell - check if changed
+          const valueEqual = existing.value === (newCell.data.value ?? null);
+          const typeEqual = existing.type === (newCell.data.type ?? 'empty');
+          const formulaEqual = (existing.formula ?? undefined) === (newCell.data.formula ?? undefined);
+          const styleEqual =
+            JSON.stringify(existing.style ?? null) ===
+            JSON.stringify(newCell.data.style ?? null);
 
-      console.log('[db] Bulk upsert completed for', tabId);
+          if (!valueEqual || !typeEqual || !formulaEqual || !styleEqual) {
+            cellsToUpsert.push(newCell);
+          }
+        }
+      }
+
+      // Diff: find cells to delete (exist in DB but not in new data)
+      const cellsToDelete: Array<{ row: number; col: number }> = [];
+      for (const [, existing] of existingMap) {
+        const key = `${existing.row},${existing.col}`;
+        if (!newCellsMap.has(key)) {
+          cellsToDelete.push({ row: existing.row, col: existing.col });
+        }
+      }
+
+      console.log('[db] Diff result', {
+        toUpsert: cellsToUpsert.length,
+        toDelete: cellsToDelete.length,
+        unchanged: newCellsMap.size - cellsToUpsert.length,
+      });
+
+      // Apply upserts
+      if (cellsToUpsert.length > 0) {
+        await this.bulkUpsertCells(tabId, cellsToUpsert);
+      }
+
+      // Apply deletes
+      for (const { row, col } of cellsToDelete) {
+        await this.deleteCell(tabId, row, col);
+      }
+
+      // Update dimensions if there were any changes
+      if (cellsToUpsert.length > 0 || cellsToDelete.length > 0) {
+        await this.updateSheetDimensions(tabId);
+      }
+
+      console.log('[db] save2DArrayAsCells completed for', tabId);
     } catch (error) {
       console.error('[db] save2DArrayAsCells: failed', { tabId, error });
       throw new Error(

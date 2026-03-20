@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import Box from '@mui/joy/Box';
 import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
+import IconButton from '@mui/joy/IconButton';
+import AddIcon from '@mui/icons-material/Add';
 import { useTheme } from '@mui/joy/styles';
 import { FileTree, FileNode } from '../../features/file-explorer/FileTree';
 
@@ -12,6 +14,7 @@ interface SidebarExplorerProps {
   onNodeSelect: (node: FileNode) => void;
   dirtyNodeIds: Record<string, boolean>;
   title?: string;
+  onFileCreate?: () => void;
 }
 
 export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
@@ -21,6 +24,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   onNodeSelect,
   dirtyNodeIds,
   title = 'Explore',
+  onFileCreate,
 }) => {
   const theme = useTheme();
 
@@ -55,10 +59,6 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   const displayNodes = isFiltering ? filteredTreeNodes : workbookNodes;
   const noMatches = isFiltering && filteredTreeNodes.length === 0;
 
-  if (workbookNodes.length === 0) {
-    return null;
-  }
-
   return (
     <Box
       sx={{
@@ -68,27 +68,56 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
         backgroundColor: theme.palette.background.surface,
       }}
     >
-      <FileTree
-        files={displayNodes}
-        selectedNodeId={selectedNodeId}
-        onNodeSelect={onNodeSelect}
-        title={title}
-        dirtyNodeIds={dirtyNodeIds}
-        fullHeight
-      />
-      {noMatches && (
-        <Sheet
-          variant="plain"
+      {onFileCreate && (
+        <Box
           sx={{
-            p: 2,
-            borderTop: '1px solid',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            px: 1,
+            py: 0.5,
+            borderBottom: '1px solid',
             borderColor: 'divider',
-            color: 'text.secondary',
-            backgroundColor: 'transparent',
           }}
         >
-          <Typography level="body-sm">No files match "{searchQuery.trim()}"</Typography>
-        </Sheet>
+          <IconButton
+            size="sm"
+            variant="plain"
+            color="neutral"
+            onClick={onFileCreate}
+            aria-label="New File"
+            title="New File"
+            sx={{ minWidth: 'auto', minHeight: 'auto' }}
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )}
+      {workbookNodes.length > 0 && (
+        <>
+          <FileTree
+            files={displayNodes}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={onNodeSelect}
+            title={title}
+            dirtyNodeIds={dirtyNodeIds}
+            fullHeight
+          />
+          {noMatches && (
+            <Sheet
+              variant="plain"
+              sx={{
+                p: 2,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                color: 'text.secondary',
+                backgroundColor: 'transparent',
+              }}
+            >
+              <Typography level="body-sm">No files match "{searchQuery.trim()}"</Typography>
+            </Sheet>
+          )}
+        </>
       )}
     </Box>
   );

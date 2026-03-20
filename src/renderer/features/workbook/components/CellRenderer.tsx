@@ -1,7 +1,80 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { _CellData, CellStyle, _CellPosition, _CellRange } from '../../../types/excel';
+import type { ExcelCellStyle, ExcelColor, ExcelPatternFill } from '../../../../lib/exceljs-types';
 import { styled } from '@mui/joy/styles';
 import { excelPalette } from './theme';
+
+/**
+ * Convert ExcelCellStyle to CSS-like CellStyle for rendering.
+ * Handles both ExcelCellStyle (structured) and legacy CellStyle (CSS-like) formats.
+ */
+function excelStyleToCellStyle(style: ExcelCellStyle | CellStyle | undefined): CellStyle | undefined {
+  if (!style) return undefined;
+
+  // If it already looks like a CellStyle (has CSS-like properties), return as-is
+  if ('backgroundColor' in style || 'color' in style || 'fontWeight' in style ||
+      'fontStyle' in style || 'textAlign' in style || 'fontSize' in style) {
+    return style as CellStyle;
+  }
+
+  // Convert ExcelCellStyle to CellStyle
+  const excelStyle = style as ExcelCellStyle;
+  const cellStyle: CellStyle = {};
+
+  // Font properties
+  if (excelStyle.font) {
+    if (excelStyle.font.color) {
+      cellStyle.color = excelColorToCss(excelStyle.font.color);
+    }
+    if (excelStyle.font.bold) {
+      cellStyle.fontWeight = 'bold';
+    }
+    if (excelStyle.font.italic) {
+      cellStyle.fontStyle = 'italic';
+    }
+    if (excelStyle.font.size) {
+      cellStyle.fontSize = excelStyle.font.size + 'px';
+    }
+  }
+
+  // Fill (background color)
+  if (excelStyle.fill && excelStyle.fill.type === 'pattern') {
+    const patternFill = excelStyle.fill as ExcelPatternFill;
+    if (patternFill.pattern === 'solid' && patternFill.fgColor) {
+      cellStyle.backgroundColor = excelColorToCss(patternFill.fgColor);
+    }
+  }
+
+  // Alignment
+  if (excelStyle.alignment?.horizontal) {
+    cellStyle.textAlign = excelStyle.alignment.horizontal;
+  }
+
+  // Border (simplified: use first available border segment as representative)
+  if (excelStyle.border) {
+    const segment = excelStyle.border.top || excelStyle.border.bottom ||
+                    excelStyle.border.left || excelStyle.border.right;
+    if (segment?.style) {
+      const width = segment.style === 'thin' ? '1px' : segment.style === 'medium' ? '2px' : segment.style === 'thick' ? '3px' : '1px';
+      const color = segment.color ? excelColorToCss(segment.color) : '#000000';
+      cellStyle.border = width + ' solid ' + color;
+    }
+  }
+
+  return Object.keys(cellStyle).length > 0 ? cellStyle : undefined;
+}
+
+/**
+ * Convert ExcelColor to CSS color string.
+ */
+function excelColorToCss(color: ExcelColor): string | undefined {
+  if (color.argb) {
+    // ARGB format: 'FFRRGGBB' -> '#RRGGBB'
+    const hex = color.argb.length === 8 ? color.argb.substring(2) : color.argb;
+    return '#' + hex;
+  }
+  return undefined;
+}
 
 const Cell = styled('div', {
   shouldForwardProp: prop =>
@@ -112,7 +185,7 @@ export const CellItem = React.memo(
     const hasError = cell.value === '#ERROR'; // Assuming #ERROR signifies an error cell
     
     // Get style from cell data (database) instead of separate cellStyles map
-    const cellStyle = cell.style as CellStyle | undefined;
+    const cellStyle = excelStyleToCellStyle(cell.style);
 
     // ========================================================================
     // FIX: Use local state for editing to prevent first character loss
@@ -221,13 +294,93 @@ export const CellItem = React.memo(
       </Cell>
     );
   },
-  (__prevProps, __nextProps) => {
-    // Custom comparison to avoid re-renders if not necessary
-    // This is optimization, but for now let's rely on React.memo with default shallow comparison
-    // However, 'sheetData' prop changes ref every edit. Shallow compare will fail.
-    // We might need granular comparison if performance is bad.
-    // For now, default is fine to ensure correctness (it will re-render, but input focus should be preserved if component tree is stable).
-    return false; // Always re-render for now to ensure updates
+  (prevProps, nextProps) => {
+    // Compare positional props
+    if (prevProps.rowIndex !== nextProps.rowIndex) return false;
+    if (prevProps.columnIndex !== nextProps.columnIndex) return false;
+
+    // Compare react-window style (position/size)
+    const prevStyle = prevProps.style;
+    const nextStyle = nextProps.style;
+    if (
+      prevStyle?.top !== nextStyle?.top ||
+      prevStyle?.left !== nextStyle?.left ||
+      prevStyle?.width !== nextStyle?.width ||
+      prevStyle?.height !== nextStyle?.height
+    ) {
+      return false;
+    }
+
+    // Compare cell data (shallow comparison of the cell at this position)
+    const prevCell = prevProps.sheetData?.[prevProps.rowIndex]?.[prevProps.columnIndex];
+    const nextCell = nextProps.sheetData?.[nextProps.rowIndex]?.[nextProps.columnIndex];
+    if (prevCell !== nextCell) {
+      if (!prevCell || !nextCell) return false;
+      if (prevCell.value !== nextCell.value) return false;
+      if (prevCell.type !== nextCell.type) return false;
+      if (prevCell.formula !== nextCell.formula) return false;
+      if (prevCell.style !== nextCell.style) {
+        if (!prevCell.style || !nextCell.style) return false;
+        const ps = excelStyleToCellStyle(prevCell.style);
+        const ns = excelStyleToCellStyle(nextCell.style);
+        if (
+          ps.backgroundColor !== ns.backgroundColor ||
+          ps.color !== ns.color ||
+          ps.fontWeight !== ns.fontWeight ||
+          ps.fontStyle !== ns.fontStyle ||
+          ps.textAlign !== ns.textAlign ||
+          ps.border !== ns.border ||
+          ps.fontSize !== ns.fontSize
+        ) {
+          return false;
+        }
+      }
+    }
+
+    // Compare whether this cell's selected (active) state changed
+    const prevActive =
+      prevProps.selectedCell?.row === prevProps.rowIndex &&
+      prevProps.selectedCell?.col === prevProps.columnIndex;
+    const nextActive =
+      nextProps.selectedCell?.row === nextProps.rowIndex &&
+      nextProps.selectedCell?.col === nextProps.columnIndex;
+    if (prevActive !== nextActive) return false;
+
+    // Compare whether this cell's in-range state changed
+    const inRange = (range: any, row: number, col: number): boolean => {
+      if (!range) return false;
+      return (
+        row >= Math.min(range.startRow, range.endRow) &&
+        row <= Math.max(range.startRow, range.endRow) &&
+        col >= Math.min(range.startCol, range.endCol) &&
+        col <= Math.max(range.startCol, range.endCol)
+      );
+    };
+    const prevInRange = inRange(prevProps.selectionRange, prevProps.rowIndex, prevProps.columnIndex);
+    const nextInRange = inRange(nextProps.selectionRange, nextProps.rowIndex, nextProps.columnIndex);
+    if (prevInRange !== nextInRange) return false;
+
+    // Compare search match state for this cell
+    const prevCellKey = prevProps.getCellKey(prevProps.rowIndex, prevProps.columnIndex);
+    const nextCellKey = nextProps.getCellKey(nextProps.rowIndex, nextProps.columnIndex);
+    const prevIsMatch = prevProps.searchMatchMap?.has(prevCellKey) ?? false;
+    const nextIsMatch = nextProps.searchMatchMap?.has(nextCellKey) ?? false;
+    if (prevIsMatch !== nextIsMatch) return false;
+
+    // Compare current search match state for this cell
+    const prevIsCurrent =
+      prevProps.currentSearchMatch?.row === prevProps.rowIndex &&
+      prevProps.currentSearchMatch?.col === prevProps.columnIndex;
+    const nextIsCurrent =
+      nextProps.currentSearchMatch?.row === nextProps.rowIndex &&
+      nextProps.currentSearchMatch?.col === nextProps.columnIndex;
+    if (prevIsCurrent !== nextIsCurrent) return false;
+
+    // Compare sheet name
+    if (prevProps.currentSheetName !== nextProps.currentSheetName) return false;
+
+    // All relevant props are equal — skip re-render
+    return true;
   }
 );
 

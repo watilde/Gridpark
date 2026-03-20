@@ -97,6 +97,7 @@ export interface UseWorkspaceStateReturn {
   handleNodeSelect: (node: any) => void;
   findWorkbookNode: (workbookId: string) => any;
   updateWorkbookReferences: (workbookId: string, file: ExcelFile) => void;
+  resetWorkbooks: (files: ExcelFile[], directoryName?: string) => void;
 
   // Formula bar
   formulaBarState: any;
@@ -135,6 +136,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     isLoadingFiles,
     findWorkbookNode,
     updateWorkbookReferences,
+    resetWorkbooks,
     handleTabChange,
     handleNodeSelect,
     handleCloseTab,
@@ -405,6 +407,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     handleNodeSelect,
     findWorkbookNode,
     updateWorkbookReferences,
+    resetWorkbooks,
 
     // Formula bar
     formulaBarState,

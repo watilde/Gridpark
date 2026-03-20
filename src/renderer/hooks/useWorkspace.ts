@@ -282,6 +282,9 @@ export const useWorkspace = (
     tabIsDirty,
     dirtyNodeIds,
 
+    // Workspace Reset
+    resetWorkbooks,
+
     // Tab Operations
     handleNodeSelect,
     handleCloseTab,
