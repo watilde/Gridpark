@@ -9,6 +9,8 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useDispatch } from 'react-redux';
+import { addTransientHighlight, clearTransientHighlights } from '../../../stores/spreadsheetSlice';
 import {
   db,
   StoredCellData,
@@ -18,6 +20,7 @@ import {
 } from '../../../../lib/db';
 import { FormulaEngine } from '../utils/FormulaEngine';
 import { ConditionalFormattingEngine } from '../utils/ConditionalFormattingEngine';
+import { setSyncListener } from '../../../../lib/excel-api/context';
 
 interface CellPosition {
   row: number;
@@ -39,6 +42,8 @@ interface HistoryItem {
 }
 
 export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetParams) {
+  const dispatch = useDispatch();
+
   // Formula engine instance (one per sheet)
   const [formulaEngine] = useState(() => new FormulaEngine());
 
@@ -68,6 +73,42 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     ConditionalFormattingRule[]
   >([]);
   const [reloadTrigger, setReloadTrigger] = useState(0);
+
+  // Trigger reload manually
+  const reloadData = useCallback(() => {
+    setReloadTrigger(prev => prev + 1);
+  }, []);
+
+  // Register Excel API Sync Listener
+  useEffect(() => {
+    setSyncListener((changes) => {
+      // Filter changes for this tab
+      const tabChanges = changes.filter(c => c.tabId === tabId);
+      if (tabChanges.length === 0) return;
+
+      console.log(`[useSpreadsheet] Received ${tabChanges.length} sync changes for tab:`, tabId);
+
+      // Trigger data reload from DB
+      reloadData();
+
+      // Add transient highlights
+      const batchId = `sync-${Date.now()}`;
+      tabChanges.forEach(change => {
+        dispatch(addTransientHighlight({
+          id: `${batchId}-${change.address}`,
+          tabId,
+          address: change.address
+        }));
+      });
+
+      // Clear highlights after 200ms (Immediate Feedback principle)
+      setTimeout(() => {
+        dispatch(clearTransientHighlights());
+      }, 200);
+    });
+
+    return () => setSyncListener(() => {}); // Cleanup
+  }, [tabId, reloadData, dispatch]);
 
   // Load data from DB
   useEffect(() => {
@@ -179,7 +220,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     const maxCol = metadata?.maxCol ?? 0;
 
     return {
-      rows: Math.max(100000, maxRow + 50), // +50 row buffer
+      rows: Math.max(1000, maxRow + 50), // +50 row buffer - Adjusted to 1000 for US-001
       cols: Math.max(26, maxCol + 5), // +5 col buffer
     };
   }, [metadata]);
@@ -204,18 +245,35 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       const formula = isFormula ? value : undefined;
       const rawValue = isFormula ? null : value;
 
-      // Determine type
-      let type: 'empty' | 'string' | 'number' = 'empty';
-      if (rawValue) {
-        const num = parseFloat(rawValue);
-        type = !isNaN(num) ? 'number' : 'string';
+      // Determine type and value
+      let type: 'empty' | 'string' | 'number' | 'boolean' = 'empty';
+      let finalValue: any = rawValue;
+
+      if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+        const upperValue = String(rawValue).toUpperCase();
+        if (upperValue === 'TRUE') {
+          type = 'boolean';
+          finalValue = true;
+        } else if (upperValue === 'FALSE') {
+          type = 'boolean';
+          finalValue = false;
+        } else {
+          const num = Number(rawValue);
+          if (!isNaN(num) && rawValue.trim() !== '') {
+            type = 'number';
+            finalValue = num;
+          } else {
+            type = 'string';
+            finalValue = rawValue;
+          }
+        }
       }
 
       // Use provided style or keep existing
       const finalStyle = style || currentCell?.style || {};
 
       // After state for history
-      const after = { value: rawValue, formula, type, style: finalStyle };
+      const after = { value: finalValue, formula, type, style: finalStyle };
 
       // Record history (if not undo/redo operation)
       if (!isUndoRedoRef.current) {
@@ -226,7 +284,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
 
       // Update DB (Async)
       await db.upsertCell(tabId, row, col, {
-        value: rawValue,
+        value: finalValue,
         type,
         formula,
         style: finalStyle,
@@ -236,7 +294,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       formulaEngine.setCell(row, col, {
         row,
         col,
-        value: rawValue,
+        value: finalValue,
         formula,
         type,
       });
@@ -250,7 +308,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
         tabId,
         row,
         col,
-        value: rawValue,
+        value: finalValue,
         type,
         formula,
         style: finalStyle,

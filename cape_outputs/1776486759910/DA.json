@@ -1,0 +1,83 @@
+{
+  "design_spec": {
+    "interfaces": {
+      "IRange": {
+        "added_properties": {
+          "rowCount": "readonly number",
+          "columnCount": "readonly number",
+          "rowIndex": "readonly number",
+          "columnIndex": "readonly number",
+          "format": "readonly IRangeFormat"
+        },
+        "added_methods": {
+          "clear": "(option?: 'All' | 'Contents' | 'Formats') => void"
+        }
+      },
+      "IRangeFormat": {
+        "properties": {
+          "font": "readonly IRangeFont",
+          "fill": "readonly IRangeFill",
+          "borders": "readonly IRangeBorders"
+        }
+      },
+      "IRangeFont": {
+        "properties": {
+          "bold": "boolean",
+          "italic": "boolean",
+          "color": "string",
+          "size": "number",
+          "name": "string"
+        }
+      },
+      "IRangeFill": {
+        "properties": {
+          "color": "string"
+        }
+      },
+      "IRangeBorders": {
+        "properties": {
+          "top": "readonly IRangeBorder",
+          "bottom": "readonly IRangeBorder",
+          "left": "readonly IRangeBorder",
+          "right": "readonly IRangeBorder"
+        }
+      },
+      "IRangeBorder": {
+        "properties": {
+          "color": "string",
+          "style": "string"
+        }
+      },
+      "IWorksheet": {
+        "added_methods": {
+          "activate": "() => void",
+          "delete": "() => void"
+        }
+      },
+      "IWorkbook": {
+        "added_properties": {
+          "name": "readonly string"
+        }
+      }
+    },
+    "proxy_updates": {
+      "RangeProxy": [
+        "Implement getters for row/column metadata with checkLoaded validation",
+        "Initialize _format property as RangeFormatProxy",
+        "Implement clear() method to queue 'clearRange' command"
+      ],
+      "RangeFormatProxy": [
+        "Nested proxy to manage Font, Fill, and Borders proxies"
+      ],
+      "WorksheetProxy": [
+        "Implement activate() to queue 'activateWorksheet' command",
+        "Implement delete() to queue 'deleteWorksheet' command"
+      ],
+      "WorkbookProxy": [
+        "Add _name field and populate via _setLoadedData"
+      ]
+    }
+  },
+  "rationale": "The design adheres to the Excel JavaScript API standard which users expect, while keeping the implementation details (commands/sync) hidden behind the proxy layer. The hierarchical formatting API ensures that styling is organized and scalable for future properties (e.g., alignment, protection).",
+  "confidence": 5
+}

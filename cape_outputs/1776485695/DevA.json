@@ -1,0 +1,5 @@
+I will now read the relevant files in `cape_outputs/1776485695/` to understand the context of the task.
+I will read the content of `DevA.json` to see if it contains any task-specific information.
+I will search for the task ID `1776485695` in the `cape` and `docs-md` directories to find the relevant context.
+I will read the backlog and architecture documents in the `cape` directory to understand the current project state and technical requirements.
+I will examine the `exceljs-adapter.ts` and the `spreadsheet-v2` feature directory to assess the current implementation status of the Excel compatibility and grid rendering.

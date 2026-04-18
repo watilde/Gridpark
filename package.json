@@ -20,7 +20,9 @@
     "build-storybook": "storybook build",
     "docs:dev": "vite --config src/site/vite.config.ts",
     "docs:build": "vite build --config src/site/vite.config.ts",
-    "docs:preview": "vite preview --config src/site/vite.config.ts"
+    "docs:preview": "vite preview --config src/site/vite.config.ts",
+    "cape": "bash scripts/cape.sh",
+    "cape:ts": "npx ts-node scripts/cape.ts"
   },
   "keywords": [],
   "author": {

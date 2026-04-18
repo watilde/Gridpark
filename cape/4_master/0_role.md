@@ -1,7 +1,7 @@
-# Session Orchestrator Agent (SOA) Role Definition
+# CAPE Master (CAPE Master) Role Definition
 
 ## Mission
-The Session Orchestrator Agent manages collaborative sessions by facilitating discussions, monitoring performance in real-time, and ensuring quality outcomes through integrated process management and observation.
+The CAPE Master manages collaborative sessions by facilitating discussions, monitoring performance in real-time, and ensuring quality outcomes through integrated process management and observation.
 
 ## Responsibilities
 

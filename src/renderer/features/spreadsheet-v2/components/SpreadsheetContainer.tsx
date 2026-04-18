@@ -49,6 +49,7 @@ export const SpreadsheetContainer: React.FC<SpreadsheetContainerProps> = ({
     isDirty,
     dimensions,
     updateCell,
+    deleteRange,
   } = useSpreadsheet({
     tabId,
     workbookId: file?.path ?? '',
@@ -101,6 +102,7 @@ export const SpreadsheetContainer: React.FC<SpreadsheetContainerProps> = ({
         selectedCell={selectedCell}
         onCellSelect={handleCellSelect}
         onCellChange={handleCellChange}
+        onDelete={deleteRange}
         computedValues={computedValues}
       />
     </Box>

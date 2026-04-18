@@ -110,7 +110,7 @@ export const useWorkspace = (
                 workbookId,
                 sheetName: sheet.name,
                 sheetIndex,
-                maxRow: sheet.rowCount || 100,
+                maxRow: sheet.rowCount || 1000,
                 maxCol: sheet.colCount || 26,
                 cellCount: 0,
                 dirty: false,

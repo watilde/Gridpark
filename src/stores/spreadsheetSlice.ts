@@ -7,6 +7,7 @@
  * - Active tab selection
  * - Auto-save configuration
  * - Session state (scroll position, selections, etc.)
+ * - Transient UI states (highlights, etc.)
  */
 
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
@@ -17,47 +18,26 @@ import type { FileNode } from '../renderer/features/file-explorer/FileTree';
 // Types
 // ============================================================================
 
-// Use the actual WorkbookTab type from the application
 export type { WorkbookTab };
 
-/**
- * OPTIMIZED Redux State: UI State ONLY
- *
- * Data persistence is handled by in-memory database:
- * - Sheet data → database cells table (including dirty flags)
- * - Manifest/Code → File system (via Electron)
- *
- * Redux manages UI state:
- * - Workspace navigation (tabs, nodes, selection)
- * - UI preferences (auto-save, settings)
- * - Formula bar state (centralized)
- * - Undo/redo state (centralized)
- *
- * NOTE: Dirty tracking is now EXCLUSIVELY in database (sheetMetadata.dirty)
- * Use db.subscribe to reactively read dirty state from database
- */
+export interface TransientHighlight {
+  id: string;
+  tabId: string;
+  address: string;
+  timestamp: number;
+}
+
 export interface SpreadsheetState {
-  // ========================================================================
-  // Workspace State (Navigation & Structure)
-  // ========================================================================
   workbookNodes: FileNode[];
   currentDirectoryName: string;
   selectedNodeId: string;
-
-  // ========================================================================
-  // Tabs (Open Files)
-  // ========================================================================
   openTabs: WorkbookTab[];
   activeTabId: string;
+  dirtyTabIds: string[];
+  
+  // Transient UI State
+  transientHighlights: TransientHighlight[];
 
-  // ========================================================================
-  // Dirty Tracking (Computed from Database)
-  // ========================================================================
-  dirtyTabIds: string[]; // Array of dirty tab IDs (synced from database)
-
-  // ========================================================================
-  // Formula Bar State (Centralized)
-  // ========================================================================
   formulaBar: {
     activeCellAddress: string;
     formulaBarValue: string;
@@ -65,24 +45,14 @@ export interface SpreadsheetState {
     isEditing: boolean;
   };
 
-  // ========================================================================
-  // Undo/Redo State (Centralized)
-  // ========================================================================
   undoRedo: {
     canUndo: boolean;
     canRedo: boolean;
   };
 
-  // ========================================================================
-  // UI Preferences
-  // ========================================================================
   autoSaveEnabled: boolean;
-  autoSaveInterval: number; // milliseconds
+  autoSaveInterval: number;
 }
-
-// ============================================================================
-// Initial State
-// ============================================================================
 
 const initialState: SpreadsheetState = {
   workbookNodes: [],
@@ -91,6 +61,7 @@ const initialState: SpreadsheetState = {
   openTabs: [],
   activeTabId: '',
   dirtyTabIds: [],
+  transientHighlights: [],
   formulaBar: {
     activeCellAddress: '',
     formulaBarValue: '',
@@ -105,44 +76,22 @@ const initialState: SpreadsheetState = {
   autoSaveInterval: 2000,
 };
 
-// ============================================================================
-// Slice Definition
-// ============================================================================
-
 const spreadsheetSlice = createSlice({
   name: 'spreadsheet',
   initialState,
   reducers: {
-    // ========================================================================
-    // Workspace Management
-    // ========================================================================
-
-    setWorkbooks: (state, action: PayloadAction<{ nodes: FileNode[]; directoryName: string }>) => {
-      state.workbookNodes = action.payload.nodes;
-      state.currentDirectoryName = action.payload.directoryName;
-    },
-
     updateWorkbook: (state, action: PayloadAction<{ workbookId: string; updatedFile: any }>) => {
       const { workbookId, updatedFile } = action.payload;
-
       const cloneNodeWithFile = (node: FileNode): FileNode => {
         const next: FileNode = { ...node };
-        if (node.file) {
-          next.file = updatedFile;
-        }
-        if (node.type === 'workbook') {
-          next.name = updatedFile.name;
-        }
-        if (node.children) {
-          next.children = node.children.map(child => cloneNodeWithFile(child));
-        }
+        if (node.file) next.file = updatedFile;
+        if (node.type === 'workbook') next.name = updatedFile.name;
+        if (node.children) next.children = node.children.map(child => cloneNodeWithFile(child));
         return next;
       };
-
       state.workbookNodes = state.workbookNodes.map(node =>
         node.id === workbookId ? cloneNodeWithFile(node) : node
       );
-
       state.openTabs = state.openTabs.map(tab =>
         tab.workbookId === workbookId
           ? { ...tab, file: updatedFile, fileName: updatedFile.name }
@@ -154,14 +103,7 @@ const spreadsheetSlice = createSlice({
       state.selectedNodeId = action.payload;
     },
 
-    resetWorkspace: (
-      state,
-      action: PayloadAction<{
-        nodes: FileNode[];
-        directoryName: string;
-        firstTab: WorkbookTab | null;
-      }>
-    ) => {
+    resetWorkspace: (state, action: PayloadAction<{ nodes: FileNode[]; directoryName: string; firstTab: WorkbookTab | null; }>) => {
       const { nodes, directoryName, firstTab } = action.payload;
       state.workbookNodes = nodes;
       state.currentDirectoryName = directoryName;
@@ -170,15 +112,9 @@ const spreadsheetSlice = createSlice({
       state.selectedNodeId = firstTab?.treeNodeId ?? '';
     },
 
-    // ========================================================================
-    // Tab Management
-    // ========================================================================
-
     openTab: (state, action: PayloadAction<WorkbookTab>) => {
       const exists = state.openTabs.find(tab => tab.id === action.payload.id);
-      if (!exists) {
-        state.openTabs.push(action.payload);
-      }
+      if (!exists) state.openTabs.push(action.payload);
       state.activeTabId = action.payload.id;
       state.selectedNodeId = action.payload.treeNodeId;
     },
@@ -186,8 +122,6 @@ const spreadsheetSlice = createSlice({
     closeTab: (state, action: PayloadAction<string>) => {
       const tabId = action.payload;
       const nextTabs = state.openTabs.filter(tab => tab.id !== tabId);
-
-      // Update active tab
       if (state.activeTabId === tabId) {
         const nextActive = nextTabs[nextTabs.length - 1];
         if (nextActive) {
@@ -198,82 +132,35 @@ const spreadsheetSlice = createSlice({
           state.selectedNodeId = '';
         }
       }
-
       state.openTabs = nextTabs;
     },
 
     setActiveTab: (state, action: PayloadAction<string>) => {
       state.activeTabId = action.payload;
       const tab = state.openTabs.find(t => t.id === action.payload);
-      if (tab) {
-        state.selectedNodeId = tab.treeNodeId;
-      }
+      if (tab) state.selectedNodeId = tab.treeNodeId;
     },
 
-    focusTab: (state, action: PayloadAction<WorkbookTab>) => {
-      state.activeTabId = action.payload.id;
-      state.selectedNodeId = action.payload.treeNodeId;
+    addTransientHighlight: (state, action: PayloadAction<Omit<TransientHighlight, 'timestamp'>>) => {
+      state.transientHighlights.push({
+        ...action.payload,
+        timestamp: Date.now(),
+      });
     },
 
-    // ========================================================================
-    // Auto-save Configuration
-    // ========================================================================
-
-    setAutoSaveEnabled: (state, action: PayloadAction<boolean>) => {
-      state.autoSaveEnabled = action.payload;
+    removeTransientHighlight: (state, action: PayloadAction<string>) => {
+      state.transientHighlights = state.transientHighlights.filter(h => h.id !== action.payload);
     },
 
-    setAutoSaveInterval: (state, action: PayloadAction<number>) => {
-      state.autoSaveInterval = action.payload;
+    clearTransientHighlights: (state) => {
+      state.transientHighlights = [];
     },
-
-    // ========================================================================
-    // Dirty Tracking Actions
-    // ========================================================================
 
     setDirtyTabIds: (state, action: PayloadAction<string[]>) => {
       state.dirtyTabIds = action.payload;
     },
 
-    addDirtyTab: (state, action: PayloadAction<string>) => {
-      if (!state.dirtyTabIds.includes(action.payload)) {
-        state.dirtyTabIds.push(action.payload);
-      }
-    },
-
-    removeDirtyTab: (state, action: PayloadAction<string>) => {
-      state.dirtyTabIds = state.dirtyTabIds.filter(id => id !== action.payload);
-    },
-
-    // ========================================================================
-    // Formula Bar Actions
-    // ========================================================================
-
-    setFormulaBarAddress: (state, action: PayloadAction<string>) => {
-      state.formulaBar.activeCellAddress = action.payload;
-    },
-
-    setFormulaBarValue: (state, action: PayloadAction<string>) => {
-      state.formulaBar.formulaBarValue = action.payload;
-    },
-
-    setFormulaBaselineValue: (state, action: PayloadAction<string>) => {
-      state.formulaBar.formulaBaselineValue = action.payload;
-    },
-
-    setFormulaBarEditing: (state, action: PayloadAction<boolean>) => {
-      state.formulaBar.isEditing = action.payload;
-    },
-
-    updateFormulaBar: (
-      state,
-      action: PayloadAction<{
-        address?: string;
-        value?: string;
-        baseline?: string;
-        isEditing?: boolean;
-      }>
-    ) => {
+    updateFormulaBar: (state, action: PayloadAction<{ address?: string; value?: string; baseline?: string; isEditing?: boolean; }>) => {
       const { address, value, baseline, isEditing } = action.payload;
       if (address !== undefined) state.formulaBar.activeCellAddress = address;
       if (value !== undefined) state.formulaBar.formulaBarValue = value;
@@ -281,117 +168,32 @@ const spreadsheetSlice = createSlice({
       if (isEditing !== undefined) state.formulaBar.isEditing = isEditing;
     },
 
-    // ========================================================================
-    // Undo/Redo Actions
-    // ========================================================================
-
-    setCanUndo: (state, action: PayloadAction<boolean>) => {
-      state.undoRedo.canUndo = action.payload;
-    },
-
-    setCanRedo: (state, action: PayloadAction<boolean>) => {
-      state.undoRedo.canRedo = action.payload;
-    },
-
-    updateUndoRedo: (
-      state,
-      action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>
-    ) => {
+    updateUndoRedo: (state, action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>) => {
       state.undoRedo = action.payload;
     },
-
-    // ========================================================================
-    // Bulk Operations
-    // ========================================================================
 
     resetSpreadsheetState: () => initialState,
   },
 });
 
-// ============================================================================
-// Exports
-// ============================================================================
-
 export const {
-  // Workspace
-  // setWorkbooks,
   updateWorkbook,
   setSelectedNode,
   resetWorkspace,
-
-  // Tabs
   openTab,
   closeTab,
   setActiveTab,
-  focusTab,
-
-  // Formula Bar
-  setFormulaBarAddress,
-  setFormulaBarValue,
-  setFormulaBaselineValue,
-  setFormulaBarEditing,
-  updateFormulaBar,
-
-  // Undo/Redo
-  setCanUndo,
-  setCanRedo,
-  updateUndoRedo,
-
-  // Auto-save
-  setAutoSaveEnabled,
-  setAutoSaveInterval,
-
-  // Dirty Tracking
+  addTransientHighlight,
+  removeTransientHighlight,
+  clearTransientHighlights,
   setDirtyTabIds,
-  addDirtyTab,
-  removeDirtyTab,
-
-  // Bulk
+  updateFormulaBar,
+  updateUndoRedo,
   resetSpreadsheetState,
 } = spreadsheetSlice.actions;
 
 export default spreadsheetSlice.reducer;
 
-// ============================================================================
-// Selectors (for convenience and memoization)
-// ============================================================================
-
 import { RootState } from './index';
-
-// Workspace selectors
-export const selectWorkbookNodes = (state: RootState) => state.spreadsheet.workbookNodes;
-export const selectCurrentDirectoryName = (state: RootState) =>
-  state.spreadsheet.currentDirectoryName;
-export const selectSelectedNodeId = (state: RootState) => state.spreadsheet.selectedNodeId;
-
-// Tab selectors
-export const selectOpenTabs = (state: RootState) => state.spreadsheet.openTabs;
-export const selectActiveTabId = (state: RootState) => state.spreadsheet.activeTabId;
-export const selectActiveTab = (state: RootState) => {
-  const { openTabs, activeTabId } = state.spreadsheet;
-  return openTabs.find(tab => tab.id === activeTabId) || null;
-};
-
-// Auto-save selectors
-export const selectAutoSaveEnabled = (state: RootState) => state.spreadsheet.autoSaveEnabled;
-export const selectAutoSaveInterval = (state: RootState) => state.spreadsheet.autoSaveInterval;
-
-// Formula Bar selectors
-export const selectFormulaBar = (state: RootState) => state.spreadsheet.formulaBar;
-export const selectFormulaBarAddress = (state: RootState) =>
-  state.spreadsheet.formulaBar.activeCellAddress;
-export const selectFormulaBarValue = (state: RootState) =>
-  state.spreadsheet.formulaBar.formulaBarValue;
-export const selectFormulaBarEditing = (state: RootState) =>
-  state.spreadsheet.formulaBar.isEditing;
-
-// Undo/Redo selectors
-export const selectUndoRedo = (state: RootState) => state.spreadsheet.undoRedo;
-export const selectCanUndo = (state: RootState) => state.spreadsheet.undoRedo.canUndo;
-export const selectCanRedo = (state: RootState) => state.spreadsheet.undoRedo.canRedo;
-
-// Dirty Tracking selectors
-export const selectDirtyTabIds = (state: RootState) => state.spreadsheet.dirtyTabIds;
-export const selectIsDirty = (tabId: string) => (state: RootState) =>
-  state.spreadsheet.dirtyTabIds.includes(tabId);
-export const selectDirtyCount = (state: RootState) => state.spreadsheet.dirtyTabIds.length;
+export const selectActiveTab = (state: RootState) => state.spreadsheet.openTabs.find(tab => tab.id === state.spreadsheet.activeTabId) || null;
+export const selectTransientHighlights = (state: RootState) => state.spreadsheet.transientHighlights;

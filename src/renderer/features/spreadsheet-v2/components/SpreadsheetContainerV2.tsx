@@ -8,25 +8,30 @@
  * - 91-95% faster
  * - 99% less memory
  * - HyperFormula for full Excel compatibility
- */
+ import React, { forwardRef, useImperativeHandle, useState, useCallback, useEffect } from 'react';
+ import { useSelector } from 'react-redux';
+ import { Box, CircularProgress, Snackbar, Typography } from '@mui/joy';
+ import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
+ import { SpreadsheetGrid } from './SpreadsheetGrid';
+ import { StyleToolbar } from './StyleToolbar';
+ import { useSpreadsheet } from '../hooks/useSpreadsheet';
+ import { selectTransientHighlights } from '../../../stores/spreadsheetSlice';
+ import { CellStyleData } from '../../../../lib/db';
+ import InfoIcon from '@mui/icons-material/Info';
 
-import React, { forwardRef, useImperativeHandle, useState, useCallback, useEffect } from 'react';
-import { Box, CircularProgress, Snackbar, Typography } from '@mui/joy';
-import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
-import { SpreadsheetGrid } from './SpreadsheetGrid';
-import { StyleToolbar } from './StyleToolbar';
-import { useSpreadsheet } from '../hooks/useSpreadsheet';
-import { CellStyleData } from '../../../../lib/db';
-import InfoIcon from '@mui/icons-material/Info';
+ // Re-export types for compatibility
+ export type { CellPosition, CellRange };
 
-// Re-export types for compatibility
-export type { CellPosition, CellRange };
+ export interface SearchNavigationCommand {
+ ...
+     },
+     ref
+   ) => {
+     // Get transient highlights from store
+     const transientHighlights = useSelector(selectTransientHighlights);
 
-export interface SearchNavigationCommand {
-  action: 'next' | 'previous';
-  timestamp: number;
-}
-
+     // Get current sheet
+     const currentSheet = file?.sheets?.[sheetIndex];
 export interface ReplaceCommand {
   searchTerm: string;
   replaceTerm: string;
@@ -259,7 +264,8 @@ export const SpreadsheetContainerV2 = forwardRef<
       ? cells.get(`${selectedCell.row},${selectedCell.col}`)?.style
       : undefined;
 
-    // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+C, Ctrl+V, Delete)
+    // Handle keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+C, Ctrl+V)
+    // Note: Delete/Backspace are now handled by SpreadsheetGrid internally via onCellChange/onDelete
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
         // Undo/Redo
@@ -275,27 +281,18 @@ export const SpreadsheetContainerV2 = forwardRef<
           redo();
         }
         // Copy/Paste
-        else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) { // Shift+C is for Markdown Copy
           e.preventDefault();
           copyCell();
         } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
           e.preventDefault();
           pasteCell();
         }
-        // Delete
-        else if (e.key === 'Delete' || e.key === 'Backspace') {
-          // Only delete if not editing
-          const activeElement = document.activeElement;
-          if (activeElement?.tagName !== 'INPUT' && activeElement?.tagName !== 'TEXTAREA') {
-            e.preventDefault();
-            deleteRange();
-          }
-        }
       };
 
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [undo, redo, copyCell, pasteCell, deleteRange]);
+    }, [undo, redo, copyCell, pasteCell]);
 
     // Loading state
     if (!file || !currentSheet) {
@@ -343,12 +340,14 @@ export const SpreadsheetContainerV2 = forwardRef<
             selectedCell={selectedCell}
             onCellSelect={handleCellSelect}
             onCellChange={handleCellChange}
+            onDelete={deleteRange}
             computedValues={computedValues}
             selectedRange={selectedRange}
             onRangeSelect={handleRangeSelect}
             searchQuery={searchQuery}
             activeDrawTool={activeDrawTool}
             penColor={penColor}
+            transientHighlights={transientHighlights}
           />
         </Box>
         

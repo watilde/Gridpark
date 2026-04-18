@@ -1,0 +1,12 @@
+{
+  "task_id": "1776486759910",
+  "status": "ACTIVE",
+  "phase": "POA_Backlog_Refinement",
+  "start_time": "2026-04-18T10:00:00Z",
+  "metrics": {
+    "avg_ass": 5.0,
+    "sv": 0.0,
+    "st": "Stable"
+  },
+  "participants": ["SOA", "POA", "DA", "DevA"]
+}

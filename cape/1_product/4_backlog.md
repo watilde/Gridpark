@@ -21,7 +21,7 @@ This backlog follows our **Excel Subset Strategy** with breaking changes allowed
 
 ### Core Infrastructure (P0)
 
-#### US-001: Basic Spreadsheet Grid
+#### DONE-US-001: Basic Spreadsheet Grid
 **As a** developer  
 **I want** a basic spreadsheet interface with 26 columns × 1000 rows  
 **So that** I can perform core data entry and viewing operations  
@@ -43,11 +43,12 @@ This backlog follows our **Excel Subset Strategy** with breaking changes allowed
 **So that** I can use familiar Excel programming patterns  
 
 **Acceptance Criteria**:
-- [ ] Excel.run() function accepts async callback
-- [ ] Context.workbook object with worksheets collection
-- [ ] Worksheet object with getRange() method
-- [ ] Range object with values and formulas properties
-- [ ] Context.sync() mechanism for batch operations
+- [x] Excel.run() function accepts async callback
+- [x] Context.workbook object with worksheets collection
+- [x] Worksheet object with getRange() method
+- [x] Range object with values and formulas properties
+- [x] Context.sync() mechanism for batch operations
+- [ ] Visual feedback: 200ms ease-out highlight on range after successful sync()
 
 **Example Usage**:
 ```javascript
