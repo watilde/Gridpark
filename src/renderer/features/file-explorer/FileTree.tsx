@@ -153,10 +153,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     <>
       <TreeItem depth={depth} selected={isSelected} onClick={handleClick}>
         {/* Indent guides for nested items */}
-        {depth > 0 && Array.from({ length: depth }).map((_, i) => (
-          <IndentGuide key={i} />
-        ))}
-        
+        {depth > 0 && Array.from({ length: depth }).map((_, i) => <IndentGuide key={i} />)}
+
         {hasChildren && (
           <IconButton
             size="sm"
@@ -171,7 +169,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           </IconButton>
         )}
         {!hasChildren && <Box sx={{ width: '28px' }} />}
-        
+
         <ItemIcon>
           {node.type === 'folder' ? (
             expanded ? (

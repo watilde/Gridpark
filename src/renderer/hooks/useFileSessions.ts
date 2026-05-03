@@ -14,7 +14,6 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { ExcelFile, GridparkManifest, GridparkCodeFile } from '../types/excel';
-import { serializeExcelFile } from '../utils/excelUtils';
 import {
   cloneManifest,
   createDefaultManifest as createDefaultManifestHelper,
@@ -60,10 +59,10 @@ export const useSaveWorkbook = () => {
       throw new Error('File saving is only available in the desktop app');
     }
 
-    console.log('[useSaveWorkbook] === SAVE START ===', { 
-      path: file.path, 
+    console.log('[useSaveWorkbook] === SAVE START ===', {
+      path: file.path,
       workbookId,
-      sheetCount: file.sheets.length 
+      sheetCount: file.sheets.length,
     });
 
     // Keep track of which sheets were marked clean for rollback on error
@@ -74,9 +73,7 @@ export const useSaveWorkbook = () => {
       const updatedSheets = await Promise.all(
         file.sheets.map(async (sheet: any, index: number) => {
           // Generate tabId (must match the ID used in createWorkbookNode)
-          const tabId = workbookId 
-            ? `${workbookId}-sheet-${index}`
-            : `${file.path}-sheet-${index}`;
+          const tabId = workbookId ? `${workbookId}-sheet-${index}` : `${file.path}-sheet-${index}`;
 
           console.log(`[useSaveWorkbook] Processing sheet ${index}`, {
             sheetName: sheet.name,
@@ -86,7 +83,7 @@ export const useSaveWorkbook = () => {
           try {
             // Load 2D array from database
             const data = await db.getCellsAs2DArray(tabId);
-            
+
             // Verify data was loaded
             if (!data || data.length === 0) {
               console.error(`[useSaveWorkbook] No data loaded from database for ${sheet.name}`, {
@@ -95,32 +92,82 @@ export const useSaveWorkbook = () => {
               });
               throw new Error(`No data in database for sheet ${sheet.name} (${tabId})`);
             }
-            
+
             console.log(`[useSaveWorkbook] Loaded ${data.length} rows for sheet ${index}`);
-            
+
             // DEBUG: Log first few cells to verify data
-            const nonEmptyCells = data.flatMap((row, r) => 
-              row.map((cell, c) => ({ r, c, cell }))
-            ).filter(({ cell }) => cell.value !== null && cell.value !== '');
-            console.log(`[useSaveWorkbook] Non-empty cells in sheet ${index}:`, nonEmptyCells.length);
-            
+            const nonEmptyCells = data
+              .flatMap((row, r) => row.map((cell, c) => ({ r, c, cell })))
+              .filter(({ cell }) => cell.value !== null && cell.value !== '');
+            console.log(
+              `[useSaveWorkbook] Non-empty cells in sheet ${index}:`,
+              nonEmptyCells.length
+            );
+
             if (nonEmptyCells.length === 0) {
-              console.warn(`[useSaveWorkbook] Sheet ${index} (${sheet.name}) has no non-empty cells`);
+              console.warn(
+                `[useSaveWorkbook] Sheet ${index} (${sheet.name}) has no non-empty cells`
+              );
             }
+
+            // Pull structural metadata (merges, column widths, row heights)
+            // from the in-memory db so user changes round-trip on save.
+            const meta = await db.getSheetMetadata(tabId);
+            const baseProps = (sheet.properties ?? {}) as any;
+            const columns = (() => {
+              const widths = meta?.columnWidths;
+              if (!widths || Object.keys(widths).length === 0) return baseProps.columns;
+              const maxCol = Math.max(
+                data[0]?.length ?? 0,
+                ...Object.keys(widths)
+                  .map(Number)
+                  .map(n => n + 1)
+              );
+              const out = Array.from({ length: maxCol }, (_, i) => {
+                const fromBase = baseProps.columns?.[i] ?? {};
+                const px = widths[i];
+                // ExcelJS column.width is in character units; convert from px (≈7px per unit)
+                return px !== undefined ? { ...fromBase, width: Math.max(1, px / 7) } : fromBase;
+              });
+              return out;
+            })();
+            const rows = (() => {
+              const heights = meta?.rowHeights;
+              if (!heights || Object.keys(heights).length === 0) return baseProps.rows;
+              const maxRow = Math.max(
+                data.length,
+                ...Object.keys(heights)
+                  .map(Number)
+                  .map(n => n + 1)
+              );
+              const out = Array.from({ length: maxRow }, (_, i) => {
+                const fromBase = baseProps.rows?.[i] ?? {};
+                const px = heights[i];
+                // ExcelJS row.height is in points; convert from px (1pt ≈ 1.333px)
+                return px !== undefined ? { ...fromBase, height: px / 1.333 } : fromBase;
+              });
+              return out;
+            })();
+            const mergedProps = {
+              ...baseProps,
+              merges: meta?.merges?.length ? meta.merges : baseProps.merges,
+              columns,
+              rows,
+            };
 
             return {
               ...sheet,
               data,
               rowCount: data.length,
               colCount: data[0]?.length ?? sheet.colCount,
+              properties: mergedProps,
             };
           } catch (error) {
-            console.error(
-              `[useSaveWorkbook] Failed to load data for ${sheet.name}:`,
-              error
-            );
+            console.error(`[useSaveWorkbook] Failed to load data for ${sheet.name}:`, error);
             // Re-throw error instead of silently using original (which may not have data)
-            throw new Error(`Failed to save sheet ${sheet.name}: ${error instanceof Error ? error.message : String(error)}`);
+            throw new Error(
+              `Failed to save sheet ${sheet.name}: ${error instanceof Error ? error.message : String(error)}`
+            );
           }
         })
       );
@@ -130,7 +177,7 @@ export const useSaveWorkbook = () => {
       // STEP 2: Save to file system
       console.log('[useSaveWorkbook] Writing to file system...');
       const result = await electronAPI.saveFile(updatedFile);
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to save file');
       }
@@ -141,9 +188,7 @@ export const useSaveWorkbook = () => {
       console.log('[useSaveWorkbook] Marking sheets as clean...');
       await Promise.all(
         file.sheets.map(async (sheet: any, index: number) => {
-          const tabId = workbookId 
-            ? `${workbookId}-sheet-${index}`
-            : `${file.path}-sheet-${index}`;
+          const tabId = workbookId ? `${workbookId}-sheet-${index}` : `${file.path}-sheet-${index}`;
 
           try {
             await db.markSheetDirty(tabId, false);
@@ -155,11 +200,10 @@ export const useSaveWorkbook = () => {
         })
       );
 
-      console.log('[useSaveWorkbook] === SAVE COMPLETE ===', { 
+      console.log('[useSaveWorkbook] === SAVE COMPLETE ===', {
         path: file.path,
-        cleanedSheets: cleanedSheets.length 
+        cleanedSheets: cleanedSheets.length,
       });
-
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('[useSaveWorkbook] === SAVE FAILED ===', {
@@ -171,9 +215,7 @@ export const useSaveWorkbook = () => {
       // Rollback: Mark any cleaned sheets as dirty again
       if (cleanedSheets.length > 0) {
         console.warn('[useSaveWorkbook] Rolling back cleaned sheets...');
-        await Promise.all(
-          cleanedSheets.map(tabId => db.markSheetDirty(tabId, true))
-        );
+        await Promise.all(cleanedSheets.map(tabId => db.markSheetDirty(tabId, true)));
       }
 
       throw new Error(`Failed to save workbook ${file.name}: ${message}`);
@@ -187,23 +229,21 @@ export const useSaveWorkbook = () => {
       throw new Error('File saving is only available in the desktop app');
     }
 
-    console.log('[useSaveWorkbook] === SAVE AS START ===', { 
-      path: file.path, 
+    console.log('[useSaveWorkbook] === SAVE AS START ===', {
+      path: file.path,
       workbookId,
-      sheetCount: file.sheets.length 
+      sheetCount: file.sheets.length,
     });
 
     try {
       // STEP 1: Load all sheets from database and prepare for save
       const updatedSheets = await Promise.all(
         file.sheets.map(async (sheet: any, index: number) => {
-          const tabId = workbookId 
-            ? `${workbookId}-sheet-${index}`
-            : `${file.path}-sheet-${index}`;
+          const tabId = workbookId ? `${workbookId}-sheet-${index}` : `${file.path}-sheet-${index}`;
 
           // Load 2D array from database
           const data = await db.getCellsAs2DArray(tabId);
-          
+
           if (!data || data.length === 0) {
             console.warn(`[useSaveWorkbook] No data for ${sheet.name}, saving empty sheet`);
             return { ...sheet, data: [], rowCount: 0, colCount: sheet.colCount };
@@ -223,7 +263,7 @@ export const useSaveWorkbook = () => {
       // STEP 2: Save As dialog
       console.log('[useSaveWorkbook] Opening Save As dialog...');
       const result = await electronAPI.saveFileAs(updatedFile);
-      
+
       if (result.canceled) {
         console.log('[useSaveWorkbook] Save As canceled');
         return null;
@@ -234,14 +274,13 @@ export const useSaveWorkbook = () => {
       }
 
       console.log('[useSaveWorkbook] File saved as:', result.file.path);
-      
+
       // Note: We do NOT mark sheets as clean here because the "Save As" creates a COPY.
       // The original workbook in the editor is still open and potentially dirty.
       // If we wanted to "switch" to the new file, we would need to reload the workspace with the new file.
       // For a simple "Export", we don't change the active workspace state.
 
       return result.file;
-
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('[useSaveWorkbook] === SAVE AS FAILED ===', message);

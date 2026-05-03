@@ -3,10 +3,7 @@ import { db } from '../../lib/db';
 import { ExcelFile } from '../types/excel';
 import { FileNode } from '../features/file-explorer/FileTree';
 import { WorkbookTab } from '../types/tabs';
-import {
-  createWorkbookNode,
-  createSheetTab,
-} from '../utils/workbookUtils';
+import { createWorkbookNode, createSheetTab } from '../utils/workbookUtils';
 import { useAppDispatch, useAppSelector } from '../../stores';
 import {
   selectWorkbookNodes,
@@ -31,17 +28,13 @@ import {
  * Parameters for dirty tracking (OPTIMIZED - Database Only)
  * Note: Code and manifest dirty tracking removed - sheets only
  */
-export interface DirtyTrackingDeps {
-  // Empty for now - dirty tracking is in database
-}
+export type DirtyTrackingDeps = Record<string, never>;
 
 /**
  * Unified workspace hook that consolidates workspace state management
  * NOW USING REDUX for state management instead of useReducer
  */
-export const useWorkspace = (
-  dirtyTrackingDeps: DirtyTrackingDeps
-) => {
+export const useWorkspace = (dirtyTrackingDeps: DirtyTrackingDeps) => {
   // ✅ Use Redux instead of useReducer
   const dispatch = useAppDispatch();
   const workbookNodes = useAppSelector(selectWorkbookNodes);
@@ -94,16 +87,44 @@ export const useWorkspace = (
         // This prevents UI freeze when opening large files
         // OPTIMIZED: Use batch API to minimize event notifications
         setTimeout(() => {
-          const metadataArray: Array<Omit<import('../../lib/db').SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>> = [];
-          
+          const metadataArray: Array<
+            Omit<
+              import('../../lib/db').SheetMetadata,
+              'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'
+            >
+          > = [];
+
           for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
             const file = files[fileIndex];
             const workbookId = `workbook-${timestamp}-${fileIndex}`;
-            
+
             for (let sheetIndex = 0; sheetIndex < file.sheets.length; sheetIndex++) {
               const sheet = file.sheets[sheetIndex];
               const tabId = `${workbookId}-sheet-${sheetIndex}`;
-              
+
+              // Translate ExcelJS-style structural properties (column widths,
+              // row heights, merges) back into our db's per-sheet metadata so
+              // the grid can render and round-trip them.
+              const props = (sheet.properties ?? {}) as any;
+              const columnWidths: Record<number, number> = {};
+              if (Array.isArray(props.columns)) {
+                props.columns.forEach((c: any, i: number) => {
+                  if (c && typeof c.width === 'number') {
+                    // ExcelJS width is in character units; rough px conversion
+                    columnWidths[i] = Math.round(c.width * 7);
+                  }
+                });
+              }
+              const rowHeights: Record<number, number> = {};
+              if (Array.isArray(props.rows)) {
+                props.rows.forEach((r: any, i: number) => {
+                  if (r && typeof r.height === 'number') {
+                    // ExcelJS row height is in points; convert to px
+                    rowHeights[i] = Math.round(r.height * 1.333);
+                  }
+                });
+              }
+
               // Queue metadata for batch insert
               metadataArray.push({
                 tabId,
@@ -114,15 +135,20 @@ export const useWorkspace = (
                 maxCol: sheet.colCount || 26,
                 cellCount: 0,
                 dirty: false,
+                merges: Array.isArray(props.merges) ? props.merges : undefined,
+                columnWidths: Object.keys(columnWidths).length ? columnWidths : undefined,
+                rowHeights: Object.keys(rowHeights).length ? rowHeights : undefined,
               });
             }
           }
-          
+
           // Batch insert all metadata (single event notification)
           db.batchUpsertSheetMetadata(metadataArray)
-            .then((ids) => {
-              console.log('[useWorkspace] All sheet metadata initialized in batch:', { count: ids.length });
-              
+            .then(ids => {
+              console.log('[useWorkspace] All sheet metadata initialized in batch:', {
+                count: ids.length,
+              });
+
               // CRITICAL: Also save initial data to database
               // This ensures data is available when saving
               console.log('[useWorkspace] Saving initial sheet data to database...');
@@ -130,19 +156,22 @@ export const useWorkspace = (
                 const workbookId = `workbook-${timestamp}-${fileIndex}`;
                 return file.sheets.map(async (sheet, sheetIndex) => {
                   const tabId = `${workbookId}-sheet-${sheetIndex}`;
-                  
+
                   // Only save if sheet has data
                   if (sheet.data && sheet.data.length > 0) {
                     try {
                       await db.save2DArrayAsCells(tabId, sheet.data);
                       console.log(`[useWorkspace] Initial data saved for ${sheet.name}`);
                     } catch (error) {
-                      console.error(`[useWorkspace] Failed to save initial data for ${sheet.name}:`, error);
+                      console.error(
+                        `[useWorkspace] Failed to save initial data for ${sheet.name}:`,
+                        error
+                      );
                     }
                   }
                 });
               });
-              
+
               return Promise.all(dataPromises);
             })
             .then(() => {

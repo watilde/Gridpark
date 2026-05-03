@@ -14,7 +14,9 @@ import {
 } from '../../spreadsheet-v2/components/SpreadsheetContainerV2';
 import { FormulaBar } from '../../formula-bar/FormulaBar';
 import { WorkbookTab } from '../../../types/tabs';
-import { CellPosition, CellRange } from '../../../types/excel';
+import { CellPosition, CellRange, ExcelFile } from '../../../types/excel';
+import { useAppDispatch } from '../../../../stores';
+import { updateWorkbook } from '../../../../stores/spreadsheetSlice';
 
 interface EditorPanelProps {
   activeTab: WorkbookTab | null;
@@ -76,6 +78,15 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
     ref
   ) => {
     const sheetViewerRef = useRef<SpreadsheetContainerV2Handle | null>(null);
+    const dispatch = useAppDispatch();
+
+    const handleFileChange = React.useCallback(
+      (nextFile: ExcelFile) => {
+        if (!activeTab) return;
+        dispatch(updateWorkbook({ workbookId: activeTab.workbookId, updatedFile: nextFile }));
+      },
+      [dispatch, activeTab]
+    );
 
     // Expose undo/redo/save methods via ref
     useImperativeHandle(
@@ -138,6 +149,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
               replaceCommand={replaceCommand}
               formulaCommit={formulaCommitCommand}
               onActiveCellDetails={onActiveCellDetails}
+              onFileChange={handleFileChange}
             />
           </Box>
         </Box>

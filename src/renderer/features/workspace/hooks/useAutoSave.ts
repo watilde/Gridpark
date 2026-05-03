@@ -10,12 +10,12 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '../../../stores';
+import { useAppDispatch, useAppSelector } from '../../../../stores';
 import {
   setAutoSaveEnabled,
   selectAutoSaveEnabled,
   selectAutoSaveInterval,
-} from '../../../stores/spreadsheetSlice';
+} from '../../../../stores/spreadsheetSlice';
 
 export interface UseAutoSaveParams {
   dirtyCount: number;

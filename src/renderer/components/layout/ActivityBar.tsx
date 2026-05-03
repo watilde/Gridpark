@@ -1,12 +1,12 @@
 /**
  * Activity Bar Component
- * 
+ *
  * VSCode-inspired left sidebar navigation
- * 
+ *
  * Top Section:
  * - Excel View (spreadsheet viewer) - FIRST
  * - Git operations (optional/secondary)
- * 
+ *
  * Bottom Section:
  * - Settings - LAST
  */
@@ -16,24 +16,15 @@ import { styled } from '@mui/joy/styles';
 import { Box, Tooltip } from '@mui/joy';
 import {
   GridOn as ExcelIcon,
-  Commit as CommitIcon,
-  History as HistoryIcon,
   AccountTree as BranchIcon,
   Settings as SettingsIcon,
-  GitHub as GitHubIcon,
 } from '@mui/icons-material';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type ActivityBarView =
-  | 'excel'
-  | 'commit'
-  | 'history'
-  | 'branch'
-  | 'git-config'
-  | 'settings';
+export type ActivityBarView = 'excel' | 'commit' | 'history' | 'branch' | 'git-config' | 'settings';
 
 export interface ActivityBarProps {
   activeView?: ActivityBarView;
@@ -89,9 +80,7 @@ const ActivityButton = styled('button')<ActivityButtonProps>(({ theme, active })
   justifyContent: 'center',
   border: 'none',
   backgroundColor: 'transparent',
-  color: active
-    ? '#ffffff'
-    : 'rgba(255, 255, 255, 0.4)',
+  color: active ? '#ffffff' : 'rgba(255, 255, 255, 0.4)',
   cursor: 'pointer',
   position: 'relative',
   transition: 'color 0.1s ease',
@@ -106,7 +95,11 @@ const ActivityButton = styled('button')<ActivityButtonProps>(({ theme, active })
     top: 0,
     bottom: 0,
     width: '2px',
-    backgroundColor: active ? (theme.palette.mode === 'dark' ? '#ffffff' : '#007acc') : 'transparent',
+    backgroundColor: active
+      ? theme.palette.mode === 'dark'
+        ? '#ffffff'
+        : '#007acc'
+      : 'transparent',
     transition: 'background-color 0.1s ease',
   },
 
@@ -165,7 +158,6 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
             <BranchIcon />
           </ActivityButton>
         </Tooltip>
-
       </TopSection>
 
       <BottomSection>

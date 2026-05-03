@@ -9,7 +9,7 @@
  * - Session state (scroll position, selections, etc.)
  */
 
-import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { WorkbookTab } from '../renderer/types/tabs';
 import type { FileNode } from '../renderer/features/file-explorer/FileTree';
 
@@ -293,10 +293,7 @@ const spreadsheetSlice = createSlice({
       state.undoRedo.canRedo = action.payload;
     },
 
-    updateUndoRedo: (
-      state,
-      action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>
-    ) => {
+    updateUndoRedo: (state, action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>) => {
       state.undoRedo = action.payload;
     },
 
@@ -382,8 +379,7 @@ export const selectFormulaBarAddress = (state: RootState) =>
   state.spreadsheet.formulaBar.activeCellAddress;
 export const selectFormulaBarValue = (state: RootState) =>
   state.spreadsheet.formulaBar.formulaBarValue;
-export const selectFormulaBarEditing = (state: RootState) =>
-  state.spreadsheet.formulaBar.isEditing;
+export const selectFormulaBarEditing = (state: RootState) => state.spreadsheet.formulaBar.isEditing;
 
 // Undo/Redo selectors
 export const selectUndoRedo = (state: RootState) => state.spreadsheet.undoRedo;

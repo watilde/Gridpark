@@ -1,6 +1,6 @@
 /**
  * Git Placeholder Sidebar
- * 
+ *
  * Placeholder component for Git-related views
  * Shows "Coming Soon" message for future implementation
  */
@@ -8,9 +8,7 @@
 import React from 'react';
 import { styled } from '@mui/joy/styles';
 import { Box, Typography } from '@mui/joy';
-import {
-  Construction as ConstructionIcon,
-} from '@mui/icons-material';
+import { Construction as ConstructionIcon } from '@mui/icons-material';
 
 // ============================================================================
 // Types
@@ -42,7 +40,7 @@ const PlaceholderContainer = styled(Box)(({ theme }) => ({
 const IconWrapper = styled(Box)(({ theme }) => ({
   marginBottom: '24px',
   color: theme.palette.mode === 'dark' ? '#969696' : '#6e6e6e',
-  
+
   '& svg': {
     fontSize: '64px',
   },
@@ -69,11 +67,13 @@ const Description = styled(Typography)(({ theme }) => ({
 const VIEW_CONFIGS: Record<GitViewType, { title: string; description: string }> = {
   commit: {
     title: 'Git Commit View',
-    description: 'Stage changes, view diffs, and commit your work. Split and inline diff views available.',
+    description:
+      'Stage changes, view diffs, and commit your work. Split and inline diff views available.',
   },
   history: {
     title: 'Git History View',
-    description: 'Browse commit timeline, view commit details, and navigate through your project history.',
+    description:
+      'Browse commit timeline, view commit details, and navigate through your project history.',
   },
   branch: {
     title: 'Git Branch View',
@@ -102,9 +102,7 @@ export const GitPlaceholderSidebar: React.FC<GitPlaceholderSidebarProps> = ({
       </IconWrapper>
       <Title>{config.title}</Title>
       <Description>{config.description}</Description>
-      <Description sx={{ mt: 2, fontStyle: 'italic' }}>
-        Coming Soon
-      </Description>
+      <Description sx={{ mt: 2, fontStyle: 'italic' }}>Coming Soon</Description>
     </PlaceholderContainer>
   );
 };

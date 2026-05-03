@@ -1,12 +1,12 @@
 /**
  * FormulaEngine - Excel-compatible formula calculation using HyperFormula
- * 
+ *
  * Why HyperFormula?
  * - Full Excel compatibility (400+ functions)
  * - Optimized incremental calculation
  * - Built-in circular reference detection
  * - Production-tested by Handsontable
- * 
+ *
  * Performance:
  * - 10,000 cells: ~5ms (vs 50-100ms with custom impl)
  * - Incremental updates: ~1ms per cell
@@ -66,22 +66,13 @@ export class FormulaEngine {
       if (cell.formula && cell.formula.startsWith('=')) {
         // Set formula (HyperFormula expects formulas without '=')
         const formula = cell.formula.slice(1);
-        this.hf.setCellContents(
-          { sheet: this.sheetId, col, row },
-          formula
-        );
+        this.hf.setCellContents({ sheet: this.sheetId, col, row }, formula);
       } else if (cell.value !== null && cell.value !== undefined) {
         // Set value
-        this.hf.setCellContents(
-          { sheet: this.sheetId, col, row },
-          cell.value
-        );
+        this.hf.setCellContents({ sheet: this.sheetId, col, row }, cell.value);
       } else {
         // Empty cell
-        this.hf.setCellContents(
-          { sheet: this.sheetId, col, row },
-          null
-        );
+        this.hf.setCellContents({ sheet: this.sheetId, col, row }, null);
       }
     } catch (error) {
       console.error(`[FormulaEngine] Error setting cell (${row},${col}):`, error);
@@ -94,7 +85,7 @@ export class FormulaEngine {
   getCell(row: number, col: number): CalculationResult {
     try {
       const cellValue = this.hf.getCellValue({ sheet: this.sheetId, col, row });
-      
+
       // Handle errors
       if (this.isError(cellValue)) {
         return {
@@ -157,18 +148,72 @@ export class FormulaEngine {
    */
   private formatError(value: CellValue): string {
     if (!this.isError(value)) return String(value);
-    
+
     const errorObj = value as any;
     switch (errorObj.value) {
-      case '#DIV/0!': return '#DIV/0!';
-      case '#N/A': return '#N/A';
-      case '#NAME?': return '#NAME?';
-      case '#NULL!': return '#NULL!';
-      case '#NUM!': return '#NUM!';
-      case '#REF!': return '#REF!';
-      case '#VALUE!': return '#VALUE!';
-      case '#CYCLE!': return '#CYCLE!';
-      default: return '#ERROR!';
+      case '#DIV/0!':
+        return '#DIV/0!';
+      case '#N/A':
+        return '#N/A';
+      case '#NAME?':
+        return '#NAME?';
+      case '#NULL!':
+        return '#NULL!';
+      case '#NUM!':
+        return '#NUM!';
+      case '#REF!':
+        return '#REF!';
+      case '#VALUE!':
+        return '#VALUE!';
+      case '#CYCLE!':
+        return '#CYCLE!';
+      default:
+        return '#ERROR!';
+    }
+  }
+
+  /**
+   * Insert a row at the given index. Existing rows at >= index move down.
+   * HyperFormula auto-adjusts formula references.
+   */
+  insertRow(rowIndex: number) {
+    try {
+      this.hf.addRows(this.sheetId, [rowIndex, 1]);
+    } catch (error) {
+      console.error(`[FormulaEngine] Error inserting row ${rowIndex}:`, error);
+    }
+  }
+
+  /**
+   * Remove a row at the given index. Existing rows at > index move up.
+   */
+  removeRow(rowIndex: number) {
+    try {
+      this.hf.removeRows(this.sheetId, [rowIndex, 1]);
+    } catch (error) {
+      console.error(`[FormulaEngine] Error removing row ${rowIndex}:`, error);
+    }
+  }
+
+  /**
+   * Insert a column at the given index. Existing cols at >= index move right.
+   */
+  insertColumn(colIndex: number) {
+    try {
+      this.hf.addColumns(this.sheetId, [colIndex, 1]);
+    } catch (error) {
+      console.error(`[FormulaEngine] Error inserting column ${colIndex}:`, error);
+    }
+  }
+
+  /**
+   * Remove a column at the given index. Existing cols at > index move left.
+   */
+  removeColumn(colIndex: number) {
+    try {
+      this.hf.removeColumns(this.sheetId, [colIndex, 1]);
+    } catch (error) {
+      console.error(`[FormulaEngine] Error removing column ${colIndex}:`, error);
     }
   }
 
@@ -184,7 +229,7 @@ export class FormulaEngine {
         this.hf.removeSheet(id);
       }
     });
-    
+
     this.sheetId = this.initSheet();
   }
 

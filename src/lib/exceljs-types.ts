@@ -1,6 +1,6 @@
 /**
  * ExcelJS Style Types
- * 
+ *
  * Comprehensive type definitions for ExcelJS cell styling
  * These types match ExcelJS API for full feature support
  */
@@ -10,16 +10,16 @@
 // ============================================================================
 
 export interface ExcelFont {
-  name?: string;              // 'Arial', 'Times New Roman', 'Calibri'
-  size?: number;              // 10, 12, 14, 16, etc.
+  name?: string; // 'Arial', 'Times New Roman', 'Calibri'
+  size?: number; // 10, 12, 14, 16, etc.
   bold?: boolean;
   italic?: boolean;
   underline?: boolean | 'single' | 'double' | 'singleAccounting' | 'doubleAccounting';
   strike?: boolean;
   outline?: boolean;
   color?: ExcelColor;
-  family?: number;            // Font family ID
-  charset?: number;           // Character set
+  family?: number; // Font family ID
+  charset?: number; // Character set
   scheme?: 'minor' | 'major' | 'none';
   vertAlign?: 'superscript' | 'subscript';
 }
@@ -29,9 +29,9 @@ export interface ExcelFont {
 // ============================================================================
 
 export interface ExcelColor {
-  argb?: string;    // 'FFFF0000' (Alpha, Red, Green, Blue)
-  theme?: number;   // Theme color index (0-9)
-  tint?: number;    // Tint value (-1 to 1)
+  argb?: string; // 'FFFF0000' (Alpha, Red, Green, Blue)
+  theme?: number; // Theme color index (0-9)
+  tint?: number; // Tint value (-1 to 1)
 }
 
 // ============================================================================
@@ -67,15 +67,15 @@ export interface ExcelPatternFill {
 }
 
 export interface ExcelGradientStop {
-  position: number;  // 0 to 1
+  position: number; // 0 to 1
   color: ExcelColor;
 }
 
 export interface ExcelGradientFill {
   type: 'gradient';
   gradient: 'angle' | 'path';
-  degree?: number;        // For angle gradient (0-360)
-  center?: { left: number; top: number };  // For path gradient
+  degree?: number; // For angle gradient (0-360)
+  center?: { left: number; top: number }; // For path gradient
   stops: ExcelGradientStop[];
 }
 
@@ -118,13 +118,20 @@ export interface ExcelBorder {
 // ============================================================================
 
 export interface ExcelAlignment {
-  horizontal?: 'left' | 'center' | 'right' | 'fill' | 'justify' | 'centerContinuous' | 'distributed';
+  horizontal?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed';
   vertical?: 'top' | 'middle' | 'bottom' | 'justify' | 'distributed';
   wrapText?: boolean;
   shrinkToFit?: boolean;
   indent?: number;
   readingOrder?: 'rtl' | 'ltr';
-  textRotation?: number | 'vertical';  // 0-180 or 'vertical'
+  textRotation?: number | 'vertical'; // 0-180 or 'vertical'
 }
 
 // ============================================================================
@@ -132,7 +139,7 @@ export interface ExcelAlignment {
 // ============================================================================
 
 export interface ExcelNumberFormat {
-  formatCode?: string;  // Excel format code (e.g., '0.00', '$#,##0.00', 'dd/mm/yyyy')
+  formatCode?: string; // Excel format code (e.g., '0.00', '$#,##0.00', 'dd/mm/yyyy')
 }
 
 // Predefined format codes
@@ -172,7 +179,7 @@ export interface ExcelCellStyle {
   fill?: ExcelFill;
   border?: ExcelBorder;
   alignment?: ExcelAlignment;
-  numFmt?: string;  // Number format code
+  numFmt?: string; // Number format code
   protection?: ExcelProtection;
 }
 
@@ -194,19 +201,19 @@ export interface ExcelRichText {
 // ============================================================================
 
 export interface ExcelConditionalFormatting {
-  ref: string;  // Cell range (e.g., 'A1:B10')
+  ref: string; // Cell range (e.g., 'A1:B10')
   type: 'expression' | 'cellIs' | 'top10' | 'aboveAverage' | 'colorScale' | 'dataBar' | 'iconSet';
   priority?: number;
-  
+
   // For expression type
   formulae?: string[];
-  
+
   // For cellIs type
   operator?: 'lessThan' | 'greaterThan' | 'equal' | 'between' | 'notBetween';
-  
+
   // Style to apply
   style?: ExcelCellStyle;
-  
+
   // For dataBar
   dataBar?: {
     minLength?: number;
@@ -225,7 +232,7 @@ export interface ExcelConditionalFormatting {
     negativeBorderColor?: ExcelColor;
     axisColor?: ExcelColor;
   };
-  
+
   // For colorScale
   colorScale?: {
     cfvo: Array<{
@@ -234,12 +241,27 @@ export interface ExcelConditionalFormatting {
     }>;
     color: ExcelColor[];
   };
-  
+
   // For iconSet
   iconSet?: {
-    iconSet: '3Arrows' | '3ArrowsGray' | '3Flags' | '3TrafficLights1' | '3TrafficLights2' | 
-             '3Signs' | '3Symbols' | '3Symbols2' | '4Arrows' | '4ArrowsGray' | '4RedToBlack' | 
-             '4Rating' | '4TrafficLights' | '5Arrows' | '5ArrowsGray' | '5Rating' | '5Quarters';
+    iconSet:
+      | '3Arrows'
+      | '3ArrowsGray'
+      | '3Flags'
+      | '3TrafficLights1'
+      | '3TrafficLights2'
+      | '3Signs'
+      | '3Symbols'
+      | '3Symbols2'
+      | '4Arrows'
+      | '4ArrowsGray'
+      | '4RedToBlack'
+      | '4Rating'
+      | '4TrafficLights'
+      | '5Arrows'
+      | '5ArrowsGray'
+      | '5Rating'
+      | '5Quarters';
     showValue?: boolean;
     reverse?: boolean;
     cfvo: Array<{
@@ -255,9 +277,17 @@ export interface ExcelConditionalFormatting {
 
 export interface ExcelDataValidation {
   type: 'list' | 'whole' | 'decimal' | 'date' | 'time' | 'textLength' | 'custom';
-  operator?: 'between' | 'notBetween' | 'equal' | 'notEqual' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
-  formulae: string[];  // Validation criteria
-  
+  operator?:
+    | 'between'
+    | 'notBetween'
+    | 'equal'
+    | 'notEqual'
+    | 'greaterThan'
+    | 'lessThan'
+    | 'greaterThanOrEqual'
+    | 'lessThanOrEqual';
+  formulae: string[]; // Validation criteria
+
   // Error handling
   allowBlank?: boolean;
   showInputMessage?: boolean;
@@ -275,8 +305,8 @@ export interface ExcelDataValidation {
 
 export interface ExcelMergeInfo {
   merged: boolean;
-  master?: boolean;  // Is this the top-left cell of the merge?
-  range?: string;    // Merge range (e.g., 'A1:C3')
+  master?: boolean; // Is this the top-left cell of the merge?
+  range?: string; // Merge range (e.g., 'A1:C3')
 }
 
 // ============================================================================
@@ -287,9 +317,9 @@ export interface ExcelImage {
   type: 'image';
   imageId: string;
   range: {
-    tl: { col: number; row: number };  // Top-left anchor
-    br?: { col: number; row: number };  // Bottom-right anchor (optional)
-    ext?: { width: number; height: number };  // Size in pixels
+    tl: { col: number; row: number }; // Top-left anchor
+    br?: { col: number; row: number }; // Bottom-right anchor (optional)
+    ext?: { width: number; height: number }; // Size in pixels
   };
   hyperlinks?: {
     hyperlink?: string;
@@ -306,19 +336,19 @@ export interface ExcelJSCellData {
   value: string | number | boolean | null | Date;
   type: 'empty' | 'string' | 'number' | 'boolean' | 'date' | 'error' | 'formula' | 'richText';
   formula?: string;
-  
+
   // Rich text (alternative to plain value)
   richText?: ExcelRichTextFragment[];
-  
+
   // Styling
   style?: ExcelCellStyle;
-  
+
   // Merge info
   merge?: ExcelMergeInfo;
-  
+
   // Data validation
   dataValidation?: ExcelDataValidation;
-  
+
   // Comment/Note
   note?: {
     texts: ExcelRichTextFragment[];
@@ -332,7 +362,7 @@ export interface ExcelJSCellData {
     };
     editAs?: 'twoCells' | 'oneCells' | 'absolute';
   };
-  
+
   // Hyperlink
   hyperlink?: {
     text?: string;
@@ -351,10 +381,10 @@ export interface ExcelSheetProperties {
 
   // Conditional formatting rules
   conditionalFormattings?: ExcelConditionalFormatting[];
-  
+
   // Images
   images?: ExcelImage[];
-  
+
   // Column widths
   columns?: Array<{
     width?: number;
@@ -362,7 +392,7 @@ export interface ExcelSheetProperties {
     outlineLevel?: number;
     style?: ExcelCellStyle;
   }>;
-  
+
   // Row heights
   rows?: Array<{
     height?: number;
@@ -370,13 +400,13 @@ export interface ExcelSheetProperties {
     outlineLevel?: number;
     style?: ExcelCellStyle;
   }>;
-  
+
   // Freeze panes
   views?: Array<{
     state?: 'normal' | 'frozen' | 'split';
-    xSplit?: number;  // Number of columns visible in left pane
-    ySplit?: number;  // Number of rows visible in top pane
-    topLeftCell?: string;  // Top-left cell in bottom-right pane
+    xSplit?: number; // Number of columns visible in left pane
+    ySplit?: number; // Number of rows visible in top pane
+    topLeftCell?: string; // Top-left cell in bottom-right pane
     activeCell?: string;
     showGridLines?: boolean;
     showRowColHeaders?: boolean;
@@ -384,12 +414,12 @@ export interface ExcelSheetProperties {
     zoomScale?: number;
     zoomScaleNormal?: number;
   }>;
-  
+
   // Auto filter
   autoFilter?: {
-    ref: string;  // Range (e.g., 'A1:E10')
+    ref: string; // Range (e.g., 'A1:E10')
   };
-  
+
   // Print settings
   pageSetup?: {
     paperSize?: number;
@@ -414,7 +444,7 @@ export interface ExcelSheetProperties {
       footer?: number;
     };
   };
-  
+
   // Sheet protection
   protection?: {
     sheet?: boolean;

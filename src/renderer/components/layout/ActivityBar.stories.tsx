@@ -34,8 +34,12 @@ Default active view is \`excel\`.
         <Box sx={{ flex: 1, p: 2, bgcolor: 'background.body' }}>
           <h2>Main Content Area</h2>
           <p>Click the Activity Bar icons to see the active state.</p>
-          <p><strong>Top:</strong> Git operations (Commit, History, Branch, Config)</p>
-          <p><strong>Bottom:</strong> Excel View ⭐ and Settings ⚙️</p>
+          <p>
+            <strong>Top:</strong> Git operations (Commit, History, Branch, Config)
+          </p>
+          <p>
+            <strong>Bottom:</strong> Excel View ⭐ and Settings ⚙️
+          </p>
         </Box>
       </Box>
     ),
@@ -85,7 +89,7 @@ export const SettingsView: Story = {
 export const Interactive: Story = {
   args: {
     activeView: 'excel',
-    onViewChange: (view) => {
+    onViewChange: view => {
       console.log('View changed to:', view);
     },
   },

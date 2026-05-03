@@ -14,6 +14,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 
 import { store, persistor } from '../stores';
 import { ThemeProvider } from '../renderer/theme/ThemeProvider';
+import { I18nProvider } from '../renderer/i18n/I18nProvider';
 
 interface AppProviderProps {
   children: React.ReactNode;
@@ -23,7 +24,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <I18nProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </I18nProvider>
       </PersistGate>
     </Provider>
   );

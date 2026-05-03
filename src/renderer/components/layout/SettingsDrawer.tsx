@@ -18,15 +18,22 @@ import { useSettings } from '../../hooks/useSettings';
 import { resetDatabase, getDatabaseStats } from '../../../lib/db';
 import { persistor, useAppDispatch } from '../../../stores';
 import { resetSpreadsheetState } from '../../../stores/spreadsheetSlice';
+import { useI18n, type Locale } from '../../i18n/I18nProvider';
+import type { TranslationKey } from '../../i18n/locales/en';
 
 interface SettingsDrawerProps {
   settings: ReturnType<typeof useSettings>;
 }
 
-const colorSchemeOptions: { value: ColorSchemePreference; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+const colorSchemeOptions: { value: ColorSchemePreference; labelKey: TranslationKey }[] = [
+  { value: 'system', labelKey: 'settings.color_mode.system' },
+  { value: 'light', labelKey: 'settings.color_mode.light' },
+  { value: 'dark', labelKey: 'settings.color_mode.dark' },
+];
+
+const localeOptions: { value: Locale; labelKey: TranslationKey }[] = [
+  { value: 'en', labelKey: 'settings.language.en' },
+  { value: 'ja', labelKey: 'settings.language.ja' },
 ];
 
 export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
@@ -34,6 +41,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
 
   const { colorScheme, setColorScheme } = useThemePreset();
   const dispatch = useAppDispatch();
+  const { t, locale, setLocale } = useI18n();
 
   const [isResetting, setIsResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState<{
@@ -43,11 +51,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
 
   // Reset in-memory database
   const handleResetDatabase = useCallback(async () => {
-    if (
-      !confirm(
-        'Are you sure you want to reset the database? This will delete all table data (cells, sheets). This action cannot be undone.'
-      )
-    ) {
+    if (!confirm(t('settings.reset_db_confirm'))) {
       return;
     }
 
@@ -75,15 +79,11 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
     } finally {
       setIsResetting(false);
     }
-  }, []);
+  }, [t]);
 
   // Reset Redux persist
   const handleResetRedux = useCallback(async () => {
-    if (
-      !confirm(
-        'Are you sure you want to reset Redux state? This will clear all dirty state, tabs, and settings. This action cannot be undone.'
-      )
-    ) {
+    if (!confirm(t('settings.reset_redux_confirm'))) {
       return;
     }
 
@@ -117,15 +117,11 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
     } finally {
       setIsResetting(false);
     }
-  }, [dispatch]);
+  }, [dispatch, t]);
 
   // Reset everything
   const handleResetAll = useCallback(async () => {
-    if (
-      !confirm(
-        'Are you sure you want to reset EVERYTHING? This will delete all data including database, state, and settings. This action cannot be undone.'
-      )
-    ) {
+    if (!confirm(t('settings.reset_all_confirm'))) {
       return;
     }
 
@@ -160,7 +156,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
     } finally {
       setIsResetting(false);
     }
-  }, [dispatch]);
+  }, [dispatch, t]);
 
   return (
     <Drawer
@@ -179,11 +175,28 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
           height: '100%',
         }}
       >
-        <Typography level="title-lg">Settings</Typography>
+        <Typography level="title-lg">{t('settings.title')}</Typography>
         <Divider />
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography level="title-sm">Color Mode</Typography>
+          <Typography level="title-sm">{t('settings.language')}</Typography>
+          <Select
+            size="sm"
+            value={locale}
+            onChange={(_event, value) => {
+              if (value) setLocale(value as Locale);
+            }}
+          >
+            {localeOptions.map(option => (
+              <Option key={option.value} value={option.value}>
+                {t(option.labelKey)}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Typography level="title-sm">{t('settings.color_mode')}</Typography>
           <Select
             size="sm"
             value={colorScheme}
@@ -195,14 +208,14 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
           >
             {colorSchemeOptions.map(option => (
               <Option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </Option>
             ))}
           </Select>
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography level="title-sm">Theme</Typography>
+          <Typography level="title-sm">{t('settings.theme')}</Typography>
           <Select
             size="sm"
             value={presetId}
@@ -224,7 +237,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Typography level="title-sm" color="danger">
-            ⚠️ Danger Zone
+            {t('settings.danger_zone')}
           </Typography>
 
           {resetMessage && (
@@ -234,9 +247,9 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
           )}
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Typography level="body-sm">Reset Database</Typography>
+            <Typography level="body-sm">{t('settings.reset_db')}</Typography>
             <Typography level="body-xs" color="neutral">
-              Clears all table data (cells, sheets, workbooks) stored in IndexedDB.
+              {t('settings.reset_db_desc')}
             </Typography>
             <Button
               size="sm"
@@ -246,14 +259,14 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
               disabled={isResetting}
               loading={isResetting}
             >
-              Reset Database
+              {t('settings.reset_db')}
             </Button>
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Typography level="body-sm">Reset Redux State</Typography>
+            <Typography level="body-sm">{t('settings.reset_redux')}</Typography>
             <Typography level="body-xs" color="neutral">
-              Clears dirty state, tabs, and auto-save settings. Page will reload.
+              {t('settings.reset_redux_desc')}
             </Typography>
             <Button
               size="sm"
@@ -263,14 +276,14 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
               disabled={isResetting}
               loading={isResetting}
             >
-              Reset Redux
+              {t('settings.reset_redux')}
             </Button>
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Typography level="body-sm">Reset Everything</Typography>
+            <Typography level="body-sm">{t('settings.reset_all')}</Typography>
             <Typography level="body-xs" color="neutral">
-              Complete reset: database + state + settings. Page will reload.
+              {t('settings.reset_all_desc')}
             </Typography>
             <Button
               size="sm"
@@ -280,7 +293,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
               disabled={isResetting}
               loading={isResetting}
             >
-              Reset All Data
+              {t('settings.reset_all_button')}
             </Button>
           </Box>
         </Box>

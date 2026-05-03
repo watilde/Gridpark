@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } from 'electron';
 import type { AboutPanelOptionsOptions } from 'electron';
-import { join, basename, extname, dirname } from 'path';
-import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'fs';
+import { join, basename } from 'path';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { parseExcelFile, serializeExcelFile } from '../renderer/utils/excelUtils';
 import { ExcelFile } from '../renderer/types/excel';
 import ExcelJS from 'exceljs';
@@ -175,7 +175,11 @@ const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null
     console.log('[Main] Environment:', {
       platform: process.platform,
       arch: process.arch,
-      isWSL: process.env.WSL_DISTRO_NAME || process.platform === 'linux' && require('fs').existsSync('/proc/version') && require('fs').readFileSync('/proc/version', 'utf8').includes('microsoft'),
+      isWSL:
+        process.env.WSL_DISTRO_NAME ||
+        (process.platform === 'linux' &&
+          existsSync('/proc/version') &&
+          readFileSync('/proc/version', 'utf8').includes('microsoft')),
       nodePath: process.execPath,
     });
     console.log('[Main] Loading file:', filePath);
@@ -185,21 +189,21 @@ const loadExcelFileFromPath = async (filePath: string): Promise<ExcelFile | null
       isWSLPath: filePath.startsWith('/home/') || filePath.startsWith('/root/'),
     });
     console.time(`[Main] Load Excel: ${basename(filePath)}`);
-    
+
     const buffer = readFileSync(filePath);
     console.timeLog(`[Main] Load Excel: ${basename(filePath)}`, 'File read complete');
-    
+
     const arrayBuffer = buffer.buffer.slice(
       buffer.byteOffset,
       buffer.byteOffset + buffer.byteLength
     );
-    
+
     const workbook = await parseExcelFile(arrayBuffer, basename(filePath));
     console.timeLog(`[Main] Load Excel: ${basename(filePath)}`, 'Parse complete');
-    
+
     console.timeEnd(`[Main] Load Excel: ${basename(filePath)}`);
     console.log('[Main] ========================================');
-    
+
     return { ...workbook, path: filePath };
   } catch (error) {
     console.error('Failed to load Excel file:', filePath, error);
@@ -221,8 +225,9 @@ const handleOpenFiles = async (window: BrowserWindow) => {
     filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
   });
   if (canceled || !filePaths.length) return;
-  const files = (await Promise.all(filePaths.map(loadExcelFileFromPath)))
-    .filter((_file): file is ExcelFile => Boolean(_file));
+  const files = (await Promise.all(filePaths.map(loadExcelFileFromPath))).filter(
+    (_file): file is ExcelFile => Boolean(_file)
+  );
   sendFilesToRenderer(window, { files, directoryName: undefined });
 };
 
@@ -291,12 +296,9 @@ const setupMenu = (window: BrowserWindow) => {
         { type: 'separator' },
         { role: 'minimize' },
         { role: 'zoom' },
-        ...(isMac ? [
-          { type: 'separator' as const },
-          { role: 'front' as const },
-        ] : [
-          { role: 'close' as const },
-        ]),
+        ...(isMac
+          ? [{ type: 'separator' as const }, { role: 'front' as const }]
+          : [{ role: 'close' as const }]),
       ],
     },
   ];
@@ -377,7 +379,7 @@ ipcMain.handle('excel:open-file', async () => {
       display: process.env.DISPLAY,
       wayland: process.env.WAYLAND_DISPLAY,
     });
-    
+
     const mainWindow = BrowserWindow.getFocusedWindow();
     if (!mainWindow) {
       console.error('[Main] No active window');
@@ -386,23 +388,27 @@ ipcMain.handle('excel:open-file', async () => {
 
     console.log('[Main] Showing dialog...');
     console.time('[Main] Dialog duration');
-    
+
     // WSL-specific warning
-    const isWSL = process.env.WSL_DISTRO_NAME !== undefined || 
-                  (process.platform === 'linux' && require('fs').existsSync('/proc/version') && 
-                   require('fs').readFileSync('/proc/version', 'utf8').toLowerCase().includes('microsoft'));
-    
+    const isWSL =
+      process.env.WSL_DISTRO_NAME !== undefined ||
+      (process.platform === 'linux' &&
+        existsSync('/proc/version') &&
+        readFileSync('/proc/version', 'utf8').toLowerCase().includes('microsoft'));
+
     if (isWSL) {
       console.warn('[Main] ⚠️ Running in WSL - File dialog may be slow or unresponsive');
-      console.warn('[Main] 💡 Recommendation: Run Gridpark natively on Windows for better performance');
+      console.warn(
+        '[Main] 💡 Recommendation: Run Gridpark natively on Windows for better performance'
+      );
     }
-    
+
     const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
       title: 'Open Excel File',
       properties: ['openFile', 'multiSelections'],
       filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
     });
-    
+
     console.timeEnd('[Main] Dialog duration');
     console.log('[Main] Dialog result:', { canceled, fileCount: filePaths.length });
 
@@ -413,10 +419,11 @@ ipcMain.handle('excel:open-file', async () => {
 
     console.log('[Main] Loading files:', filePaths);
     console.time('[Main] Total file loading');
-    
-    const files = (await Promise.all(filePaths.map(loadExcelFileFromPath)))
-      .filter((file): file is ExcelFile => Boolean(file));
-    
+
+    const files = (await Promise.all(filePaths.map(loadExcelFileFromPath))).filter(
+      (file): file is ExcelFile => Boolean(file)
+    );
+
     console.timeEnd('[Main] Total file loading');
     console.log('[Main] Files loaded:', files.length);
 
@@ -427,10 +434,10 @@ ipcMain.handle('excel:open-file', async () => {
 
     console.log('[Main] Sending files to renderer...');
     console.time('[Main] Send to renderer');
-    
+
     // Send to renderer
     sendFilesToRenderer(mainWindow, { files });
-    
+
     console.timeEnd('[Main] Send to renderer');
     console.log('[Main] ===== OPEN FILE DIALOG COMPLETE =====');
 
@@ -466,23 +473,25 @@ ipcMain.handle('excel:save-file', async (_event, excelFile: ExcelFile) => {
     // Log first sheet data for debugging
     if (excelFile.sheets[0]?.data) {
       const firstSheet = excelFile.sheets[0];
-      const nonEmptyCells = firstSheet.data.flatMap((row, r) => 
-        row.map((cell, c) => ({ r, c, cell }))
-      ).filter(({ cell }) => cell && cell.value !== null && cell.value !== '');
-      console.log(`[Main] First sheet "${firstSheet.name}" has ${nonEmptyCells.length} non-empty cells`);
+      const nonEmptyCells = firstSheet.data
+        .flatMap((row, r) => row.map((cell, c) => ({ r, c, cell })))
+        .filter(({ cell }) => cell && cell.value !== null && cell.value !== '');
+      console.log(
+        `[Main] First sheet "${firstSheet.name}" has ${nonEmptyCells.length} non-empty cells`
+      );
       console.log(`[Main] First 5 cells:`, nonEmptyCells.slice(0, 5));
     }
 
     // Serialize the ExcelFile to ArrayBuffer using ExcelJS
     const buffer = await serializeExcelFile(excelFile);
-    
+
     console.log(`[Main] Serialized to buffer of ${buffer.byteLength} bytes`);
-    
+
     // Write to file system
     writeFileSync(excelFile.path, Buffer.from(buffer));
 
     console.log(`[Main] === SAVE FILE COMPLETE === ${excelFile.path}`);
-    
+
     return {
       success: true,
       path: excelFile.path,
@@ -520,12 +529,12 @@ ipcMain.handle('excel:save-file-as', async (_event, excelFile: ExcelFile) => {
 
     // Serialize the ExcelFile to ArrayBuffer using ExcelJS
     const buffer = await serializeExcelFile(excelFile);
-    
+
     // Write to file system
     writeFileSync(filePath, Buffer.from(buffer));
 
     console.log(`[Main] Saved file as: ${filePath}`);
-    
+
     return {
       success: true,
       path: filePath,

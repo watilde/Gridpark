@@ -4,12 +4,15 @@ import { ExcelFile, ExcelSheet, CellData } from '../types/excel';
 /**
  * Parse Excel file from ArrayBuffer (ExcelJS-powered for full style support)
  */
-export const parseExcelFile = async (arrayBuffer: ArrayBuffer, fileName: string): Promise<ExcelFile> => {
+export const parseExcelFile = async (
+  arrayBuffer: ArrayBuffer,
+  fileName: string
+): Promise<ExcelFile> => {
   // Use ExcelJS for full style support
   const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
-  
+
   const result = await ExcelJSAdapter.readWorkbook(arrayBuffer);
-  
+
   const sheets: ExcelSheet[] = result.sheets.map(sheet => ({
     name: sheet.name,
     data: sheet.data,
@@ -136,29 +139,15 @@ export const loadExcelFile = async (file: File): Promise<ExcelFile> => {
   });
 };
 
-const normalizeCellValue = (cell: CellData): any => {
-  if (cell.type === 'number') {
-    const num = Number(cell.value);
-    return Number.isFinite(num) ? num : 0;
-  }
-  if (cell.type === 'boolean') {
-    return Boolean(cell.value);
-  }
-  if (cell.type === 'formula') {
-    return cell.value ?? '';
-  }
-  return cell.value ?? '';
-};
-
 export const serializeExcelFile = async (file: ExcelFile): Promise<ArrayBuffer> => {
   // Use ExcelJS for full style support
   const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
-  
+
   const sheets = file.sheets.map(sheet => ({
     name: sheet.name || 'Sheet',
     data: sheet.data,
     properties: sheet.properties,
   }));
-  
+
   return await ExcelJSAdapter.writeWorkbook(sheets);
 };

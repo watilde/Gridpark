@@ -42,28 +42,28 @@ export interface CellStyleData {
   // Background and foreground
   backgroundColor?: string;
   color?: string;
-  
+
   // Font styling
   fontWeight?: string | number; // 'normal' | 'bold' | 100-900
   fontStyle?: string; // 'normal' | 'italic'
   textDecoration?: string; // 'none' | 'underline' | 'line-through'
   fontSize?: string; // '12px', '14px', etc.
   fontFamily?: string; // 'Arial', 'Helvetica', etc.
-  
+
   // Text alignment
   textAlign?: string; // 'left' | 'center' | 'right'
   verticalAlign?: string; // 'top' | 'middle' | 'bottom'
-  
+
   // Borders
   border?: string;
   borderTop?: string;
   borderRight?: string;
   borderBottom?: string;
   borderLeft?: string;
-  
+
   // Number formatting
   numberFormat?: string; // '0.00', '#,##0', etc.
-  
+
   // Additional properties
   [key: string]: string | number | undefined;
 }
@@ -71,7 +71,7 @@ export interface CellStyleData {
 /**
  * Conditional formatting rule types
  */
-export type ConditionalFormattingType = 
+export type ConditionalFormattingType =
   | 'cellIs' // Compare cell value
   | 'expression' // Formula-based
   | 'top10' // Top/bottom N values
@@ -106,7 +106,7 @@ export interface ConditionalFormattingRule {
   id: string; // Unique rule ID
   type: ConditionalFormattingType;
   priority: number; // Higher priority = evaluated first
-  
+
   // Range to apply rule
   ranges: Array<{
     startRow: number;
@@ -114,30 +114,30 @@ export interface ConditionalFormattingRule {
     endRow: number;
     endCol: number;
   }>;
-  
+
   // Rule-specific config
   operator?: ConditionalFormattingOperator;
   formula?: string; // For expression type
   value?: string | number; // For comparison
   value2?: string | number; // For between operator
-  
+
   // Formatting to apply
   style?: CellStyleData;
-  
+
   // Color scale config
   colorScale?: {
     min?: { value?: number; color: string };
     mid?: { value?: number; color: string };
     max?: { value?: number; color: string };
   };
-  
+
   // Icon set config
   iconSet?: {
     icons: string[]; // Icon names
     reverse?: boolean; // Reverse icon order
     showValue?: boolean; // Show cell value
   };
-  
+
   // Data bar config
   dataBar?: {
     color: string;
@@ -145,7 +145,7 @@ export interface ConditionalFormattingRule {
     minLength?: number;
     maxLength?: number;
   };
-  
+
   // Stop if true (don't evaluate lower priority rules)
   stopIfTrue?: boolean;
 }
@@ -198,6 +198,8 @@ export interface SheetMetadata {
   maxCol: number; // Highest column with data
   cellCount: number; // Total non-empty cells
   merges?: string[]; // Merged cell ranges (e.g., "A1:B2")
+  columnWidths?: Record<number, number>; // col index → px width
+  rowHeights?: Record<number, number>; // row index → px height
 
   // State
   dirty: boolean; // Has unsaved changes
@@ -280,7 +282,7 @@ export class AppDatabase {
       const isBatchEvent = event.tabId === '_batch_';
       const matchesTabId = !options.tabId || options.tabId === event.tabId || isBatchEvent;
       const matchesType = !options.type || options.type === event.type;
-      
+
       if (matchesTabId && matchesType) {
         try {
           listener(event);
@@ -328,12 +330,12 @@ export class AppDatabase {
         lastAccessedAt: new Date(),
       };
       this.sheetMetadataStore.set(data.tabId, updated);
-      
+
       // Notify listeners (unless silent mode)
       if (!options.silent) {
         this.notify({ type: 'metadata', tabId: data.tabId, action: 'update' });
       }
-      
+
       return existing.id!;
     } else {
       const newMetadata: SheetMetadata = {
@@ -344,12 +346,12 @@ export class AppDatabase {
         lastAccessedAt: new Date(),
       };
       this.sheetMetadataStore.set(data.tabId, newMetadata);
-      
+
       // Notify listeners (unless silent mode)
       if (!options.silent) {
         this.notify({ type: 'metadata', tabId: data.tabId, action: 'create' });
       }
-      
+
       return newMetadata.id!;
     }
   }
@@ -362,21 +364,21 @@ export class AppDatabase {
     dataArray: Array<Omit<SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>>
   ): Promise<number[]> {
     console.log(`[db] Batch upsert started: ${dataArray.length} sheets`);
-    
+
     const ids: number[] = [];
-    
+
     // Insert all metadata WITHOUT triggering events
     for (const data of dataArray) {
       const id = await this.upsertSheetMetadata(data, { silent: true });
       ids.push(id);
     }
-    
+
     // Single event notification after all inserts (for refresh)
     // Use first tabId as representative (listeners should refresh all)
     if (dataArray.length > 0) {
       this.notify({ type: 'metadata', tabId: '_batch_', action: 'create' });
     }
-    
+
     console.log(`[db] Batch upsert completed: ${ids.length} sheets`);
     return ids;
   }
@@ -410,9 +412,9 @@ export class AppDatabase {
    */
   async markSheetDirty(tabId: string, dirty = true): Promise<void> {
     console.log('[db] === MARK SHEET DIRTY ===', { tabId, dirty });
-    
+
     const metadata = await this.getSheetMetadata(tabId);
-    
+
     if (!metadata) {
       console.warn('[db] No metadata found for tabId (skipping):', tabId);
       console.warn('[db] Available tabIds:', Array.from(this.sheetMetadataStore.keys()));
@@ -420,32 +422,117 @@ export class AppDatabase {
     }
 
     const oldDirty = metadata.dirty;
-    
+
     if (oldDirty === dirty) {
       console.log('[db] Dirty flag unchanged, skipping update', { tabId, dirty });
       return;
     }
 
-    console.log('[db] Updating dirty flag', { 
-      tabId, 
-      oldDirty, 
-      newDirty: dirty 
+    console.log('[db] Updating dirty flag', {
+      tabId,
+      oldDirty,
+      newDirty: dirty,
     });
-    
+
     metadata.dirty = dirty;
     metadata.updatedAt = new Date();
     this.sheetMetadataStore.set(tabId, metadata);
-    
+
     // Notify listeners of dirty state change
     this.notify({ type: 'metadata', tabId, action: 'update' });
-    
+
     // Verify the update
     const verified = await this.getSheetMetadata(tabId);
-    console.log('[db] === DIRTY FLAG UPDATED ===', { 
-      tabId, 
+    console.log('[db] === DIRTY FLAG UPDATED ===', {
+      tabId,
       dirty: verified?.dirty,
-      success: verified?.dirty === dirty 
+      success: verified?.dirty === dirty,
     });
+  }
+
+  // ==========================================================================
+  // Sheet structural metadata (column widths, row heights, merges)
+  // ==========================================================================
+
+  /** Set or clear a single column's width (clear by passing undefined). */
+  async setColumnWidth(tabId: string, col: number, width: number | undefined): Promise<void> {
+    const meta = this.sheetMetadataStore.get(tabId);
+    if (!meta) return;
+    const widths = { ...(meta.columnWidths ?? {}) };
+    if (width === undefined) delete widths[col];
+    else widths[col] = width;
+    meta.columnWidths = widths;
+    meta.updatedAt = new Date();
+    this.sheetMetadataStore.set(tabId, meta);
+    this.notify({ type: 'metadata', tabId, action: 'update' });
+  }
+
+  /** Set or clear a single row's height. */
+  async setRowHeight(tabId: string, row: number, height: number | undefined): Promise<void> {
+    const meta = this.sheetMetadataStore.get(tabId);
+    if (!meta) return;
+    const heights = { ...(meta.rowHeights ?? {}) };
+    if (height === undefined) delete heights[row];
+    else heights[row] = height;
+    meta.rowHeights = heights;
+    meta.updatedAt = new Date();
+    this.sheetMetadataStore.set(tabId, meta);
+    this.notify({ type: 'metadata', tabId, action: 'update' });
+  }
+
+  /**
+   * Move all data from one sheet's tabId to another (cells, metadata,
+   * conditional formatting). Used when reindexing after sheet add/delete.
+   * Overwrites the destination if it exists.
+   */
+  async moveSheetData(srcTabId: string, dstTabId: string): Promise<void> {
+    if (srcTabId === dstTabId) return;
+    // Move cells
+    const newCells: StoredCellData[] = [];
+    const oldKeys: string[] = [];
+    for (const [key, cell] of this.cellsStore.entries()) {
+      if (cell.tabId === srcTabId) {
+        newCells.push({ ...cell, tabId: dstTabId });
+        oldKeys.push(key);
+      }
+    }
+    // Wipe destination first
+    for (const [key, cell] of this.cellsStore.entries()) {
+      if (cell.tabId === dstTabId) this.cellsStore.delete(key);
+    }
+    oldKeys.forEach(k => this.cellsStore.delete(k));
+    newCells.forEach(c => this.cellsStore.set(this.getCellKey(dstTabId, c.row, c.col), c));
+
+    // Move metadata
+    const meta = this.sheetMetadataStore.get(srcTabId);
+    if (meta) {
+      this.sheetMetadataStore.delete(srcTabId);
+      this.sheetMetadataStore.set(dstTabId, { ...meta, tabId: dstTabId });
+    } else {
+      this.sheetMetadataStore.delete(dstTabId);
+    }
+
+    // Move conditional formatting
+    const cf = this.conditionalFormattingStore.get(srcTabId);
+    if (cf) {
+      this.conditionalFormattingStore.delete(srcTabId);
+      this.conditionalFormattingStore.set(dstTabId, { ...cf, tabId: dstTabId });
+    } else {
+      this.conditionalFormattingStore.delete(dstTabId);
+    }
+
+    this.notify({ type: 'metadata', tabId: dstTabId, action: 'update' });
+    this.notify({ type: 'cells', tabId: dstTabId, action: 'update' });
+  }
+
+  /** Replace the merge list for a sheet. Caller passes A1-style strings. */
+  async setMerges(tabId: string, merges: string[]): Promise<void> {
+    const meta = this.sheetMetadataStore.get(tabId);
+    if (!meta) return;
+    meta.merges = merges;
+    meta.updatedAt = new Date();
+    this.sheetMetadataStore.set(tabId, meta);
+    this.notify({ type: 'metadata', tabId, action: 'update' });
   }
 
   // ==========================================================================
@@ -512,10 +599,10 @@ export class AppDatabase {
         version: (existing.version || 0) + 1,
       };
       this.cellsStore.set(key, updated);
-      
+
       // Notify listeners
       this.notify({ type: 'cells', tabId, action: 'update' });
-      
+
       return existing.id!;
     } else {
       const newCell: StoredCellData = {
@@ -530,10 +617,10 @@ export class AppDatabase {
         version: 1,
       };
       this.cellsStore.set(key, newCell);
-      
+
       // Notify listeners
       this.notify({ type: 'cells', tabId, action: 'create' });
-      
+
       return newCell.id!;
     }
   }
@@ -553,11 +640,11 @@ export class AppDatabase {
 
     try {
       const now = new Date();
-      
+
       cellUpdates.forEach(({ row, col, data }) => {
         const key = this.getCellKey(tabId, row, col);
         const existing = this.cellsStore.get(key);
-        
+
         const cellData: StoredCellData = {
           id: existing?.id || this.nextId++,
           tabId,
@@ -570,7 +657,7 @@ export class AppDatabase {
           updatedAt: now,
           version: existing ? (existing.version || 0) + 1 : 1,
         };
-        
+
         this.cellsStore.set(key, cellData);
       });
 
@@ -595,7 +682,7 @@ export class AppDatabase {
         // For now, we don't update it here to avoid incorrect counts
         metadata.updatedAt = now;
         this.sheetMetadataStore.set(tabId, metadata);
-        
+
         console.log('[db] bulkUpsertCells: metadata updated', {
           tabId,
           maxRow,
@@ -669,7 +756,7 @@ export class AppDatabase {
     // Calculate ACTUAL dimensions from cells (don't trust metadata - it may be stale!)
     let actualMaxRow = metadata?.maxRow ?? 0;
     let actualMaxCol = metadata?.maxCol ?? 0;
-    
+
     cells.forEach(cell => {
       if (cell.row > actualMaxRow) actualMaxRow = cell.row;
       if (cell.col > actualMaxCol) actualMaxCol = cell.col;
@@ -724,8 +811,7 @@ export class AppDatabase {
       console.log('[db] Cleared existing cells for', tabId);
 
       // Convert to sparse format (only save non-empty cells)
-      const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> =
-        [];
+      const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> = [];
 
       data.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
@@ -852,7 +938,10 @@ export class AppDatabase {
   /**
    * Add a conditional formatting rule
    */
-  async addConditionalFormattingRule(tabId: string, rule: ConditionalFormattingRule): Promise<void> {
+  async addConditionalFormattingRule(
+    tabId: string,
+    rule: ConditionalFormattingRule
+  ): Promise<void> {
     const existing = await this.getConditionalFormatting(tabId);
     const updated = [...existing, rule].sort((a, b) => b.priority - a.priority);
     await this.setConditionalFormatting(tabId, updated);
@@ -877,7 +966,10 @@ export class AppDatabase {
   ): Promise<void> {
     const existing = await this.getConditionalFormatting(tabId);
     const updated = existing.map(r => (r.id === ruleId ? { ...r, ...updates } : r));
-    await this.setConditionalFormatting(tabId, updated.sort((a, b) => b.priority - a.priority));
+    await this.setConditionalFormatting(
+      tabId,
+      updated.sort((a, b) => b.priority - a.priority)
+    );
   }
 }
 

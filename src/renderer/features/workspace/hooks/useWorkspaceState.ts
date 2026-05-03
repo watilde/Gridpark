@@ -14,18 +14,18 @@
  */
 
 import { useMemo, useCallback, useReducer, useState, useEffect } from 'react';
-import { useWorkspace } from '../../../renderer/hooks/useWorkspace';
-import { useSaveWorkbook } from '../../../renderer/hooks/useFileSessions';
-import { useFormulaBarOptimized } from '../../../renderer/hooks/useFormulaBarOptimized';
-import { useElectronIntegration } from '../../../renderer/hooks/useElectronAPI';
+import { useWorkspace } from '../../../hooks/useWorkspace';
+import { useSaveWorkbook } from '../../../hooks/useFileSessions';
+import { useFormulaBarOptimized } from '../../../hooks/useFormulaBarOptimized';
+import { useElectronIntegration } from '../../../hooks/useElectronAPI';
 import { useAutoSave } from './useAutoSave';
-import { db } from '../../../lib/db';
-import type { ExcelFile } from '../../../renderer/types/excel';
-import type { FileNode } from '../../../renderer/features/file-explorer/FileTree';
+import { db } from '../../../../lib/db';
+import type { ExcelFile } from '../../../types/excel';
+import type { FileNode } from '../../file-explorer/FileTree';
 import type {
   SearchNavigationCommand,
   ReplaceCommand,
-} from '../../../renderer/features/spreadsheet-v2/components/SpreadsheetContainerV2';
+} from '../../spreadsheet-v2/components/SpreadsheetContainerV2';
 
 /**
  * Search state managed by reducer
@@ -120,7 +120,6 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
   // Manifest & Code: File system access only (no useState caching)
 
-
   // ============================================
   // Workspace Management
   // ============================================
@@ -175,21 +174,20 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
     // Subscribe to database changes (event-driven)
     // FILTER: Only metadata changes (ignore cell changes for performance)
-    const unsubscribe = db.subscribe((event) => {
-      console.log('[useWorkspaceState] Metadata change detected, reloading');
-      loadMetadata();
-    }, { type: 'metadata' }); // ← FILTER: Only metadata, not cells
+    const unsubscribe = db.subscribe(
+      event => {
+        console.log('[useWorkspaceState] Metadata change detected, reloading');
+        loadMetadata();
+      },
+      { type: 'metadata' }
+    ); // ← FILTER: Only metadata, not cells
 
     return unsubscribe;
   }, []);
 
   // Compute dirty tab IDs from database metadata
   const dirtyTabIds = useMemo(() => {
-    return new Set(
-      allSheetMetadata
-        .filter(meta => meta.dirty)
-        .map(meta => meta.tabId)
-    );
+    return new Set(allSheetMetadata.filter(meta => meta.dirty).map(meta => meta.tabId));
   }, [allSheetMetadata]);
 
   // Individual callbacks that work directly with database
@@ -203,77 +201,83 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     await db.markSheetDirty(id, false);
   }, []);
 
-  const saveTab = useCallback(async (tabId: string) => {
-    console.log('[useWorkspaceState] === SAVING TAB ===', { tabId });
-    
-    // Find the tab to determine what to save
-    const tab = openTabs.find(t => t.id === tabId);
-    if (!tab) {
-      console.warn('[useWorkspaceState] Tab not found:', tabId);
-      throw new Error(`Tab not found: ${tabId}`);
-    }
+  const saveTab = useCallback(
+    async (tabId: string) => {
+      console.log('[useWorkspaceState] === SAVING TAB ===', { tabId });
 
-    // For sheet tabs, save the workbook file
-    if (tab.kind === 'sheet') {
-      const workbookNode = findWorkbookNode(tab.workbookId);
-      if (!workbookNode?.file) {
-        console.error('[useWorkspaceState] Workbook node or file not found', {
-          workbookId: tab.workbookId,
-          hasNode: !!workbookNode,
-        });
-        throw new Error(`Workbook not found for tab: ${tabId}`);
+      // Find the tab to determine what to save
+      const tab = openTabs.find(t => t.id === tabId);
+      if (!tab) {
+        console.warn('[useWorkspaceState] Tab not found:', tabId);
+        throw new Error(`Tab not found: ${tabId}`);
       }
 
-      try {
-        console.log('[useWorkspaceState] Saving workbook file...', {
-          path: workbookNode.file.path,
-          workbookId: tab.workbookId,
-        });
-        
-        // Pass workbookId so the correct tabIds are used
-        await saveWorkbookFile(workbookNode.file, tab.workbookId);
-        
-        console.log('[useWorkspaceState] Workbook saved successfully');
-      } catch (error) {
-        console.error('[useWorkspaceState] Failed to save workbook:', error);
-        throw error; // Re-throw to prevent marking as clean
-      }
-    }
-    
-    // No need to markTabClean - saveWorkbookFile already does it
-    
-    console.log('[useWorkspaceState] === TAB SAVED ===', { tabId });
-  }, [openTabs, findWorkbookNode, saveWorkbookFile]);
+      // For sheet tabs, save the workbook file
+      if (tab.kind === 'sheet') {
+        const workbookNode = findWorkbookNode(tab.workbookId);
+        if (!workbookNode?.file) {
+          console.error('[useWorkspaceState] Workbook node or file not found', {
+            workbookId: tab.workbookId,
+            hasNode: !!workbookNode,
+          });
+          throw new Error(`Workbook not found for tab: ${tabId}`);
+        }
 
-  const saveTabAs = useCallback(async (tabId: string) => {
-    console.log('[useWorkspaceState] === SAVE TAB AS ===', { tabId });
-    
-    const tab = openTabs.find(t => t.id === tabId);
-    if (!tab) {
-      throw new Error(`Tab not found: ${tabId}`);
-    }
+        try {
+          console.log('[useWorkspaceState] Saving workbook file...', {
+            path: workbookNode.file.path,
+            workbookId: tab.workbookId,
+          });
 
-    if (tab.kind === 'sheet') {
-      const workbookNode = findWorkbookNode(tab.workbookId);
-      if (!workbookNode?.file) {
-        throw new Error(`Workbook not found for tab: ${tabId}`);
+          // Pass workbookId so the correct tabIds are used
+          await saveWorkbookFile(workbookNode.file, tab.workbookId);
+
+          console.log('[useWorkspaceState] Workbook saved successfully');
+        } catch (error) {
+          console.error('[useWorkspaceState] Failed to save workbook:', error);
+          throw error; // Re-throw to prevent marking as clean
+        }
       }
 
-      try {
-        await saveWorkbookFileAs(workbookNode.file, tab.workbookId);
-        console.log('[useWorkspaceState] Workbook exported successfully');
-      } catch (error) {
-        console.error('[useWorkspaceState] Failed to export workbook:', error);
-        throw error;
+      // No need to markTabClean - saveWorkbookFile already does it
+
+      console.log('[useWorkspaceState] === TAB SAVED ===', { tabId });
+    },
+    [openTabs, findWorkbookNode, saveWorkbookFile]
+  );
+
+  const saveTabAs = useCallback(
+    async (tabId: string) => {
+      console.log('[useWorkspaceState] === SAVE TAB AS ===', { tabId });
+
+      const tab = openTabs.find(t => t.id === tabId);
+      if (!tab) {
+        throw new Error(`Tab not found: ${tabId}`);
       }
-    }
-  }, [openTabs, findWorkbookNode, saveWorkbookFileAs]);
+
+      if (tab.kind === 'sheet') {
+        const workbookNode = findWorkbookNode(tab.workbookId);
+        if (!workbookNode?.file) {
+          throw new Error(`Workbook not found for tab: ${tabId}`);
+        }
+
+        try {
+          await saveWorkbookFileAs(workbookNode.file, tab.workbookId);
+          console.log('[useWorkspaceState] Workbook exported successfully');
+        } catch (error) {
+          console.error('[useWorkspaceState] Failed to export workbook:', error);
+          throw error;
+        }
+      }
+    },
+    [openTabs, findWorkbookNode, saveWorkbookFileAs]
+  );
 
   const saveAllDirtyTabs = useCallback(async () => {
     console.log('[useWorkspaceState] saveAllDirtyTabs called', {
       dirtyCount: dirtyTabIds.size,
     });
-    
+
     // Save all dirty tabs
     const savePromises = Array.from(dirtyTabIds).map(async tabId => {
       const tab = openTabs.find(t => t.id === tabId);
@@ -293,7 +297,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     });
 
     await Promise.all(savePromises);
-    
+
     console.log('[useWorkspaceState] All tabs saved');
   }, [dirtyTabIds, openTabs, findWorkbookNode, saveWorkbookFile]);
 

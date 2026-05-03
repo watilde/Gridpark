@@ -15,7 +15,7 @@
 import React from 'react';
 import { GridparkPlayground } from '../components/layout/GridparkPlayground';
 import { SettingsDrawer } from '../components/layout/SettingsDrawer';
-import { WorkspacePage } from '../../features/workspace/components/WorkspacePage';
+import { WorkspacePage } from '../features/workspace/components/WorkspacePage';
 import { useSettings } from '../hooks/useSettings';
 
 /**

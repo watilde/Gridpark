@@ -1,6 +1,6 @@
 /**
  * ConditionalFormattingEngine - Evaluates conditional formatting rules
- * 
+ *
  * Supports:
  * - cellIs: Compare cell values
  * - expression: Formula-based rules
@@ -13,11 +13,7 @@
  * - timePeriod: Date-based rules
  */
 
-import {
-  ConditionalFormattingRule,
-  CellStyleData,
-  StoredCellData,
-} from '../../../../lib/db';
+import { ConditionalFormattingRule, CellStyleData, StoredCellData } from '../../../../lib/db';
 
 export class ConditionalFormattingEngine {
   /**
@@ -76,10 +72,7 @@ export class ConditionalFormattingEngine {
   ): boolean {
     return ranges.some(
       range =>
-        row >= range.startRow &&
-        row <= range.endRow &&
-        col >= range.startCol &&
-        col <= range.endCol
+        row >= range.startRow && row <= range.endRow && col >= range.startCol && col <= range.endCol
     );
   }
 
@@ -164,11 +157,13 @@ export class ConditionalFormattingEngine {
         return cellValue !== ruleValue;
       case 'between':
         if (rule.value2 === undefined) return false;
-        const value2 = typeof rule.value2 === 'number' ? rule.value2 : parseFloat(String(rule.value2));
+        const value2 =
+          typeof rule.value2 === 'number' ? rule.value2 : parseFloat(String(rule.value2));
         return cellValue >= ruleValue && cellValue <= value2;
       case 'notBetween':
         if (rule.value2 === undefined) return false;
-        const value2b = typeof rule.value2 === 'number' ? rule.value2 : parseFloat(String(rule.value2));
+        const value2b =
+          typeof rule.value2 === 'number' ? rule.value2 : parseFloat(String(rule.value2));
         return cellValue < ruleValue || cellValue > value2b;
       default:
         return false;

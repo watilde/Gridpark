@@ -1,9 +1,9 @@
 /**
  * VSCode Theme Preset
- * 
+ *
  * Official Visual Studio Code color palette
  * Deep respect for Microsoft's refined design language
- * 
+ *
  * References:
  * - https://code.visualstudio.com/api/references/theme-color
  * - https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts
@@ -18,39 +18,39 @@ export const vscodePreset: ThemePreset = {
   schemes: {
     // VSCode Dark Theme (Dark+)
     dark: {
-      background: { 
-        body: '#1e1e1e',      // Editor background
-        surface: '#252526'    // Panels, elevated surfaces
+      background: {
+        body: '#1e1e1e', // Editor background
+        surface: '#252526', // Panels, elevated surfaces
       },
-      text: { 
-        primary: '#cccccc',   // Main text
-        secondary: '#969696'  // Muted text
+      text: {
+        primary: '#cccccc', // Main text
+        secondary: '#969696', // Muted text
       },
-      border: '#454545',      // Border color
-      primary: { 
-        base: '#007acc',      // VSCode primary blue
-        hover: '#0e639c'      // Hover state
+      border: '#454545', // Border color
+      primary: {
+        base: '#007acc', // VSCode primary blue
+        hover: '#0e639c', // Hover state
       },
-      success: '#89d185',     // Success green
-      warning: '#cca700',     // Warning yellow
-      info: '#3794ff',        // Info blue
-      danger: '#f48771',      // Error red
+      success: '#89d185', // Success green
+      warning: '#cca700', // Warning yellow
+      info: '#3794ff', // Info blue
+      danger: '#f48771', // Error red
     },
-    
+
     // VSCode Light Theme (Light+)
     light: {
-      background: { 
+      background: {
         body: '#ffffff',
-        surface: '#f3f3f3'
+        surface: '#f3f3f3',
       },
-      text: { 
+      text: {
         primary: '#000000',
-        secondary: '#6e6e6e'
+        secondary: '#6e6e6e',
       },
       border: '#d0d0d0',
-      primary: { 
+      primary: {
         base: '#0066bf',
-        hover: '#005ba1'
+        hover: '#005ba1',
       },
       success: '#22c55e',
       warning: '#f59e0b',

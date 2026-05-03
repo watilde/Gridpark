@@ -5,7 +5,7 @@ import { WorkbookTab } from '../types/tabs';
 export const createWorkbookNode = (excelFile: ExcelFile, id: string): FileNode => {
   const sheetNodes: FileNode[] = excelFile.sheets.map((sheet, index) => {
     const sheetId = `${id}-sheet-${index}`;
-    
+
     return {
       id: sheetId,
       name: sheet.name,

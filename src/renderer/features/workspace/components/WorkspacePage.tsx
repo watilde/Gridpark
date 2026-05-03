@@ -8,18 +8,18 @@
  */
 
 import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
-import { useAppSelector, useAppDispatch } from '../../../stores';
-import { updateUndoRedo, selectCanUndo, selectCanRedo } from '../../../stores/spreadsheetSlice';
-import { AppLayout } from '../../../renderer/components/layout/AppLayout';
-import { ActivityBar, ActivityBarView } from '../../../renderer/components/layout/ActivityBar';
-import { SidebarExplorer } from '../../../renderer/components/layout/SidebarExplorer';
-import { GitPlaceholderSidebar } from '../../../renderer/components/sidebar/GitPlaceholderSidebar';
-import { WorkspaceHeader } from '../../../renderer/features/workspace/components/WorkspaceHeader';
-import { TabContentArea } from '../../../renderer/features/workspace/components/TabContentArea';
-import { EditorPanelHandle } from '../../../renderer/features/workspace/components/EditorPanel';
-import { getPlatformCapabilities } from '../../../renderer/utils/platform';
+import { useAppSelector, useAppDispatch } from '../../../../stores';
+import { updateUndoRedo, selectCanUndo, selectCanRedo } from '../../../../stores/spreadsheetSlice';
+import { AppLayout } from '../../../components/layout/AppLayout';
+import { ActivityBar, ActivityBarView } from '../../../components/layout/ActivityBar';
+import { SidebarExplorer } from '../../../components/layout/SidebarExplorer';
+import { GitPlaceholderSidebar } from '../../../components/sidebar/GitPlaceholderSidebar';
+import { WorkspaceHeader } from './WorkspaceHeader';
+import { TabContentArea } from './TabContentArea';
+import { EditorPanelHandle } from './EditorPanel';
+import { getPlatformCapabilities } from '../../../utils/platform';
 import { useWorkspaceState } from '../hooks/useWorkspaceState';
-import type { ExcelFile, GridparkCodeFile } from '../../../renderer/types/excel';
+import type { ExcelFile } from '../../../types/excel';
 
 export interface WorkspacePageProps {
   // Optional props for customization
@@ -86,17 +86,20 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     [handleTabChangeRaw]
   );
 
-  const handleViewChange = useCallback((view: ActivityBarView) => {
-    setActiveView(view);
-    if (view === 'settings' && onOpenSettings) {
-      onOpenSettings();
-      // Revert selection back to excel after opening settings, or keep it?
-      // Keeping it on settings might be confusing if the sidebar doesn't change content.
-      // Usually settings is a dialog/drawer, so we might want to switch back.
-      // For now, let's keep it simple.
-      setTimeout(() => setActiveView('excel'), 200);
-    }
-  }, [onOpenSettings]);
+  const handleViewChange = useCallback(
+    (view: ActivityBarView) => {
+      setActiveView(view);
+      if (view === 'settings' && onOpenSettings) {
+        onOpenSettings();
+        // Revert selection back to excel after opening settings, or keep it?
+        // Keeping it on settings might be confusing if the sidebar doesn't change content.
+        // Usually settings is a dialog/drawer, so we might want to switch back.
+        // For now, let's keep it simple.
+        setTimeout(() => setActiveView('excel'), 200);
+      }
+    },
+    [onOpenSettings]
+  );
 
   // ============================================
   // Platform Capabilities (memoized once)
@@ -138,16 +141,16 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
       console.log('[WorkspacePage] Calling EditorPanel.save()...');
       await editorPanelRef.current?.save();
       console.log('[WorkspacePage] EditorPanel.save() completed');
-      
+
       // Then save through saveManager (which writes to file)
       console.log('[WorkspacePage] Calling saveManager.saveTab()...');
       await saveManager.saveTab(activeTab.id);
       console.log('[WorkspacePage] saveManager.saveTab() completed');
-      
+
       console.log('[WorkspacePage] === SAVE SUCCESS ===');
     } catch (error) {
       console.error('[WorkspacePage] === SAVE ERROR ===', error);
-      
+
       // Show error to user (you can replace this with a toast/snackbar)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       alert(`Failed to save: ${errorMessage}`);
@@ -156,7 +159,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
   const handleSaveAs = useCallback(async () => {
     console.log('[WorkspacePage] Save As requested');
-    
+
     if (!activeTab) {
       console.warn('[WorkspacePage] No active tab to export');
       return;
@@ -246,7 +249,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     async (dirty: boolean) => {
       if (!activeTab) return;
       console.log('[WorkspacePage] Sheet dirty state changed', { tabId: activeTab.id, dirty });
-      
+
       // Await to ensure state is updated before next call
       if (dirty) {
         await saveManager.markTabDirty(activeTab.id);
@@ -330,7 +333,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     const updateUndoRedoState = () => {
       const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
       const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-      
+
       // Only update Redux if values actually changed
       if (newCanUndo !== canUndo || newCanRedo !== canRedo) {
         dispatch(updateUndoRedo({ canUndo: newCanUndo, canRedo: newCanRedo }));
@@ -351,12 +354,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
   return (
     <AppLayout
-      activityBar={
-        <ActivityBar
-          activeView={activeView}
-          onViewChange={handleViewChange}
-        />
-      }
+      activityBar={<ActivityBar activeView={activeView} onViewChange={handleViewChange} />}
       header={
         <WorkspaceHeader
           onUndo={handleUndo}

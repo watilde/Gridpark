@@ -2,11 +2,13 @@
 
 ## Architecture Overview
 
-Gridpark uses a clean separation between UI state and data persistence:
+Gridpark uses a clean separation between UI state and data:
 
-- **Redux**: UI state only (tabs, selection, preferences)
-- **Dexie.js (IndexedDB)**: Data persistence (sheet cells, metadata)
-- **File System**: Document storage (Excel files, manifest, code)
+- **Redux**: UI state only (tabs, selection, preferences); a small whitelist persists to `localStorage` via `redux-persist`.
+- **In-memory `AppDatabase`** (`src/lib/db.ts`): runtime data store for cells, sheet metadata, and conditional-formatting rules. Backed by `Map`s, not IndexedDB. Data is lost on app restart — durability comes from saving the workbook to disk.
+- **File System**: Document storage (Excel files, manifest, code) via Electron IPC + ExcelJS.
+
+> Earlier revisions used Dexie.js / IndexedDB for the data layer. That was reverted; the current store is purely in-memory. The API uses `db.subscribe(listener, { tabId, type })` instead of Dexie's `useLiveQuery`.
 
 ## Project Structure
 
@@ -32,22 +34,34 @@ src/
 
 ## State Management
 
-### Dexie.js (Data Storage)
+### `AppDatabase` (in-memory data store)
 
-Store spreadsheet cells in IndexedDB for efficient persistence:
+Cell data lives in `Map`s keyed by `tabId:row:col`. Reads return arrays/snapshots; writes go through `upsertCell` / `bulkUpsertCells` / `upsertSheetMetadata`. Subscribe for reactivity:
 
 ```typescript
-// Use reactive queries
+import { db } from '@/lib/db';
+
+const unsubscribe = db.subscribe(
+  event => { /* event.type, event.tabId, event.action */ },
+  { tabId, type: 'cells' } // optional filters
+);
+```
+
+Or use the higher-level hook:
+
+```typescript
 const sheet = useExcelSheet({ tabId, workbookId, sheetName, sheetIndex });
 const { cells, isDirty, updateCell } = sheet;
-
-// Update cells
 await updateCell({ row: 0, col: 0, value: "Hello" });
 ```
 
-**Schema**:
-- `cells`: Sparse matrix storage (tabId, row, col, value, type, formula)
-- `sheetMetadata`: Sheet dimensions and statistics
+**Stores**:
+- `cellsStore`: sparse matrix (only non-empty cells)
+- `sheetMetadataStore`: dimensions, dirty flag, timestamps
+- `workbooksStore`: workbook-level metadata
+- `conditionalFormattingStore`: per-sheet CF rules
+
+The `_batch_` sentinel `tabId` is used by bulk operations to fan out a single notification to all listeners.
 
 ### Redux (UI State)
 
@@ -98,44 +112,52 @@ export const Button = ({ children, onClick }) => (
 4. Use in page: `src/pages/MyPage.tsx`
 
 ```typescript
-// Feature hook bridges Dexie + Redux
-export function useMyFeature() {
-  const data = useLiveQuery(() => db.myTable.toArray());
+// Feature hook bridges AppDatabase + Redux
+export function useMyFeature(tabId: string) {
+  const [data, setData] = useState<MyType[]>([]);
   const uiState = useAppSelector(selectMyState);
+
+  useEffect(() => {
+    const refresh = async () => setData(await db.getCellsForSheet(tabId));
+    refresh();
+    return db.subscribe(refresh, { tabId, type: 'cells' });
+  }, [tabId]);
+
   return { data, uiState };
 }
 ```
 
 ### Adding State
 
-**Table data?** → Add to `src/lib/db.ts` (Dexie)
-**UI state?** → Add to `src/stores/` (Redux slice)
+**Domain data?** → extend `AppDatabase` in `src/lib/db.ts`
+**UI state?** → add to `src/stores/` (Redux slice)
 
 ## Performance Optimization
 
 - **Sparse Matrix**: Only non-empty cells are stored
-- **Indexed Queries**: O(1) cell lookups with compound indexes
+- **O(1) cell lookups** via the `tabId:row:col` map key
 - **Web Workers**: Offload formula calculation from main thread
-- **Batch Updates**: Use `bulkPut` for multiple cell updates
+- **Batch Updates**: Use `bulkUpsertCells` for multiple cell updates (single notification)
 - **Formula Caching**: Automatic result caching with dependency tracking
 
 ## Key Files
 
-- `src/lib/db.ts` - Dexie database schema
+- `src/lib/db.ts` - In-memory `AppDatabase` (cells, metadata, conditional formatting)
+- `src/lib/exceljs-adapter.ts` - ExcelJS ↔ `AppDatabase` translation layer
 - `src/stores/index.ts` - Redux store configuration
 - `src/features/spreadsheet/hooks/useExcelSheet.ts` - Sheet state management
-- `src/features/formula/hooks/useFormulaWorker.ts` - Formula calculation
-- `src/renderer/App.tsx` - Application root
+- `src/features/formula/hooks/useFormulaWorker.ts` - Formula calculation client
+- `src/workers/formula.worker.ts` - HyperFormula worker (separate cell store, message-driven)
+- `src/renderer/app/App.tsx` - Application root
 
 ## Common Tasks
 
 ### Query cells from database
 
 ```typescript
-const cells = useLiveQuery(
-  async () => await db.cells.where('tabId').equals(tabId).toArray(),
-  [tabId]
-);
+const cells = await db.getCellsForSheet(tabId);
+// or in a range:
+const range = await db.getCellsInRange(tabId, startRow, endRow, startCol, endCol);
 ```
 
 ### Update multiple cells
@@ -156,14 +178,14 @@ dispatch(markDirty(tabId));
 
 ## Best Practices
 
-1. **Use reactive queries**: `useLiveQuery` for Dexie, `useAppSelector` for Redux
-2. **Batch updates**: Combine multiple database operations
+1. **Reactive reads**: `db.subscribe(...)` for `AppDatabase`, `useAppSelector` for Redux
+2. **Batch updates**: prefer `bulkUpsertCells` over many `upsertCell` calls (single notification, fewer re-renders)
 3. **Memoize callbacks**: Use `useCallback` to prevent unnecessary re-renders
 4. **Keep pages thin**: Move business logic to feature hooks
 5. **Test each layer**: Unit test components, integration test features
 
 ## External Resources
 
-- [Dexie.js Documentation](https://dexie.org/)
 - [Redux Toolkit Documentation](https://redux-toolkit.js.org/)
 - [HyperFormula Documentation](https://hyperformula.handsontable.com/)
+- [ExcelJS Documentation](https://github.com/exceljs/exceljs)
