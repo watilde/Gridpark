@@ -8,6 +8,7 @@ import {
   SaveAs as ExportIcon,
 } from '@mui/icons-material';
 import iconImage from '../../../assets/icon.png';
+import { useT } from '../../../i18n/I18nProvider';
 
 interface HeaderProps {
   onUndo?: () => void;
@@ -254,6 +255,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
   hasUnsavedChanges = false,
   disabled = false,
 }) => {
+  const t = useT();
   const [localAutoSave, setLocalAutoSave] = useState(autoSaveEnabled);
 
   const handleAutoSaveToggle = () => {
@@ -266,17 +268,22 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
   return (
     <HeaderContainer>
       <LeftSection>
-        <AppIconButton onClick={() => console.log('Gridpark icon clicked')} title="Gridpark">
-          <img src={iconImage} alt="Gridpark" />
+        <AppIconButton
+          onClick={() => console.log('Gridpark icon clicked')}
+          title={t('header.gridpark')}
+        >
+          <img src={iconImage} alt={t('header.gridpark')} />
         </AppIconButton>
 
         <AutoSaveToggle
           enabled={localAutoSave}
           onClick={handleAutoSaveToggle}
-          title={`AutoSave: ${localAutoSave ? 'On' : 'Off'}`}
+          title={t('header.autosave_state', {
+            state: localAutoSave ? t('header.autosave_on') : t('header.autosave_off'),
+          })}
           disabled={disabled}
         >
-          AutoSave
+          {t('header.autosave')}
         </AutoSaveToggle>
 
         <ActionButton
@@ -286,16 +293,16 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           }}
           disabled={disabled || !hasUnsavedChanges}
           active={hasUnsavedChanges}
-          title={hasUnsavedChanges ? 'Save (Ctrl+S)' : 'No changes to save'}
+          title={hasUnsavedChanges ? t('header.save_tooltip') : t('header.no_changes')}
         >
           <SaveIcon />
         </ActionButton>
 
-        <ActionButton onClick={onUndo} disabled={disabled || !canUndo} title="Undo (Cmd+Z)">
+        <ActionButton onClick={onUndo} disabled={disabled || !canUndo} title={t('header.undo')}>
           <UndoIcon />
         </ActionButton>
 
-        <ActionButton onClick={onRedo} disabled={disabled || !canRedo} title="Redo (Cmd+Shift+Z)">
+        <ActionButton onClick={onRedo} disabled={disabled || !canRedo} title={t('header.redo')}>
           <RedoIcon />
         </ActionButton>
       </LeftSection>
@@ -307,7 +314,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           </SearchIconOverlay>
           <SearchInput
             type="text"
-            placeholder="Search"
+            placeholder={t('header.search')}
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
             spellCheck={false}
@@ -318,7 +325,7 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
       </CenterSection>
 
       <RightSection>
-        <ActionButton onClick={onSaveAs} title="Export (Save As)" disabled={disabled}>
+        <ActionButton onClick={onSaveAs} title={t('header.export_as')} disabled={disabled}>
           <ExportIcon />
         </ActionButton>
       </RightSection>

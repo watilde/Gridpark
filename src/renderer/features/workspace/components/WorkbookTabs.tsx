@@ -3,6 +3,7 @@ import { Box, Tabs, TabList, Tab, IconButton } from '@mui/joy';
 import CloseIcon from '@mui/icons-material/Close';
 import { WorkbookTab } from '../../../types/tabs';
 import { colors } from '../../../theme/tokens';
+import { useT } from '../../../i18n/I18nProvider';
 
 interface WorkbookTabsProps {
   openTabs: WorkbookTab[];
@@ -34,6 +35,7 @@ export const WorkbookTabs: React.FC<WorkbookTabsProps> = ({
   onCloseTab,
   tabIsDirty,
 }) => {
+  const t = useT();
   if (openTabs.length === 0) return null;
 
   return (
@@ -95,7 +97,7 @@ export const WorkbookTabs: React.FC<WorkbookTabsProps> = ({
                     onCloseTab(tab.id);
                   }}
                   role="button"
-                  aria-label="Close tab"
+                  aria-label={t('tabs.close_tab')}
                   sx={{
                     minWidth: '16px',
                     minHeight: '16px',

@@ -157,4 +157,40 @@ export const ja: Record<TranslationKey, string> = {
   'filter.select_all': '(すべて選択)',
   'filter.blank': '(空白)',
   'filter.no_match': '該当なし',
+
+  // ----- Activity bar -----
+  'activity.excel_explorer': 'Excel エクスプローラー',
+  'activity.source_control': 'ソース管理',
+  'activity.settings': '設定',
+
+  // ----- Workspace header -----
+  'header.gridpark': 'Gridpark',
+  'header.undo': '元に戻す (Cmd+Z)',
+  'header.redo': 'やり直し (Cmd+Shift+Z)',
+  'header.search': '検索',
+  'header.export_as': '名前を付けて書き出し',
+  'header.save': '保存',
+  'header.save_tooltip': '保存 (Ctrl+S)',
+  'header.no_changes': '保存する変更はありません',
+  'header.autosave': '自動保存',
+  'header.autosave_state': '自動保存: {state}',
+  'header.autosave_on': 'オン',
+  'header.autosave_off': 'オフ',
+
+  // ----- Workbook tabs -----
+  'tabs.close_tab': 'タブを閉じる',
+
+  // ----- Formula bar -----
+  'formula_bar.name_box': '名前ボックス',
+  'formula_bar.cancel': 'キャンセル (Esc)',
+  'formula_bar.confirm': '確定 (Enter)',
+  'formula_bar.insert_function': '関数を挿入',
+  'formula_bar.search_formulas': '関数を検索...',
+
+  // ----- Misc UI -----
+  'editor.empty_state': 'ファイルツリーからシートを開いてください。',
+  'placeholder.coming_soon': '近日公開',
+  'modal.close': 'モーダルを閉じる',
+  'sidebar.explore': 'エクスプローラー',
+  'sidebar.no_files_match': '「{query}」に一致するファイルはありません',
 };

@@ -11,6 +11,7 @@ import type { ModalProps as JoyModalProps } from '@mui/joy';
 import { styled } from '@mui/joy/styles';
 import { Close } from '@mui/icons-material';
 import { Button } from '../Button/Button';
+import { useT } from '../../../i18n/I18nProvider';
 
 const GridparkModalDialog = styled(ModalDialog)(({ theme }) => ({
   borderRadius: theme.radius.lg,
@@ -102,6 +103,7 @@ export const Modal: React.FC<ModalProps> = ({
   open,
   ...props
 }) => {
+  const t = useT();
   const handleClose = () => {
     onClose?.();
   };
@@ -133,7 +135,7 @@ export const Modal: React.FC<ModalProps> = ({
                   size="sm"
                   className="modal-close-button"
                   onClick={handleClose}
-                  aria-label="Close modal"
+                  aria-label={t('modal.close')}
                 >
                   <Close />
                 </Button>

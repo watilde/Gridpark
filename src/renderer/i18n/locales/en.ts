@@ -157,6 +157,42 @@ export const en = {
   'filter.select_all': '(Select all)',
   'filter.blank': '(Blank)',
   'filter.no_match': 'No matches',
+
+  // ----- Activity bar -----
+  'activity.excel_explorer': 'Excel Explorer',
+  'activity.source_control': 'Source Control',
+  'activity.settings': 'Settings',
+
+  // ----- Workspace header -----
+  'header.gridpark': 'Gridpark',
+  'header.undo': 'Undo (Cmd+Z)',
+  'header.redo': 'Redo (Cmd+Shift+Z)',
+  'header.search': 'Search',
+  'header.export_as': 'Export (Save As)',
+  'header.save': 'Save',
+  'header.save_tooltip': 'Save (Ctrl+S)',
+  'header.no_changes': 'No changes to save',
+  'header.autosave': 'AutoSave',
+  'header.autosave_state': 'AutoSave: {state}',
+  'header.autosave_on': 'On',
+  'header.autosave_off': 'Off',
+
+  // ----- Workbook tabs -----
+  'tabs.close_tab': 'Close tab',
+
+  // ----- Formula bar -----
+  'formula_bar.name_box': 'Name Box',
+  'formula_bar.cancel': 'Cancel (Esc)',
+  'formula_bar.confirm': 'Confirm (Enter)',
+  'formula_bar.insert_function': 'Insert Function',
+  'formula_bar.search_formulas': 'Search formulas...',
+
+  // ----- Misc UI -----
+  'editor.empty_state': 'Open a sheet from the file tree.',
+  'placeholder.coming_soon': 'Coming Soon',
+  'modal.close': 'Close modal',
+  'sidebar.explore': 'Explore',
+  'sidebar.no_files_match': 'No files match "{query}"',
 } as const;
 
 export type TranslationKey = keyof typeof en;

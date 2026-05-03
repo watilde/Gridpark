@@ -19,6 +19,7 @@ import {
   AccountTree as BranchIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
+import { useT } from '../../i18n/I18nProvider';
 
 // ============================================================================
 // Types
@@ -126,6 +127,7 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
   onViewChange,
   className,
 }) => {
+  const t = useT();
   const handleViewChange = (view: ActivityBarView) => {
     if (onViewChange) {
       onViewChange(view);
@@ -136,11 +138,11 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
     <ActivityBarContainer className={className}>
       <TopSection>
         {/* Excel View - Topmost item */}
-        <Tooltip title="Excel Explorer" placement="right" arrow>
+        <Tooltip title={t('activity.excel_explorer')} placement="right" arrow>
           <ActivityButton
             active={activeView === 'excel'}
             onClick={() => handleViewChange('excel')}
-            aria-label="Excel View"
+            aria-label={t('activity.excel_explorer')}
             aria-pressed={activeView === 'excel'}
           >
             <ExcelIcon />
@@ -148,11 +150,11 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
         </Tooltip>
 
         {/* Git Operations (Placeholder for future features) */}
-        <Tooltip title="Source Control" placement="right" arrow>
+        <Tooltip title={t('activity.source_control')} placement="right" arrow>
           <ActivityButton
             active={activeView === 'branch'}
             onClick={() => handleViewChange('branch')}
-            aria-label="Source Control"
+            aria-label={t('activity.source_control')}
             aria-pressed={activeView === 'branch'}
           >
             <BranchIcon />
@@ -162,11 +164,11 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
 
       <BottomSection>
         {/* Settings - Bottommost item */}
-        <Tooltip title="Settings" placement="right" arrow>
+        <Tooltip title={t('activity.settings')} placement="right" arrow>
           <ActivityButton
             active={activeView === 'settings'}
             onClick={() => handleViewChange('settings')}
-            aria-label="Settings"
+            aria-label={t('activity.settings')}
             aria-pressed={activeView === 'settings'}
           >
             <SettingsIcon />

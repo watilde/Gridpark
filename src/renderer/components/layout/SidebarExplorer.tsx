@@ -4,6 +4,7 @@ import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
 import { useTheme } from '@mui/joy/styles';
 import { FileTree, FileNode } from '../../features/file-explorer/FileTree';
+import { useT } from '../../i18n/I18nProvider';
 
 interface SidebarExplorerProps {
   workbookNodes: FileNode[];
@@ -20,9 +21,11 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   selectedNodeId,
   onNodeSelect,
   dirtyNodeIds,
-  title = 'Explore',
+  title,
 }) => {
   const theme = useTheme();
+  const t = useT();
+  const resolvedTitle = title ?? t('sidebar.explore');
 
   // Filter nodes based on search query
   const filteredTreeNodes = useMemo(() => {
@@ -72,7 +75,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
         files={displayNodes}
         selectedNodeId={selectedNodeId}
         onNodeSelect={onNodeSelect}
-        title={title}
+        title={resolvedTitle}
         dirtyNodeIds={dirtyNodeIds}
         fullHeight
       />
@@ -87,7 +90,9 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
             backgroundColor: 'transparent',
           }}
         >
-          <Typography level="body-sm">No files match "{searchQuery.trim()}"</Typography>
+          <Typography level="body-sm">
+            {t('sidebar.no_files_match', { query: searchQuery.trim() })}
+          </Typography>
         </Sheet>
       )}
     </Box>

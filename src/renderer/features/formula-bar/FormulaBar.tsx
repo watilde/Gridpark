@@ -1,6 +1,7 @@
 import React from 'react';
 import { styled } from '@mui/joy/styles';
 import { Close, Check, ArrowDropDown } from '@mui/icons-material';
+import { useT } from '../../i18n/I18nProvider';
 
 // Excel-style formula bar container
 const FormulaBarContainer = styled('div')(({ theme }) => ({
@@ -258,6 +259,7 @@ export interface FormulaBarProps {
  * - Keyboard shortcuts: Enter (confirm), Escape (cancel)
  */
 export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
+  const t = useT();
   const {
     activeCellAddress,
     formulaBarValue,
@@ -300,7 +302,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
           <CellReferenceText>{activeCellAddress}</CellReferenceText>
           <CellReferenceDropdown
             type="button"
-            title="Name Box"
+            title={t('formula_bar.name_box')}
             onClick={() => console.log('Name box dropdown')}
             disabled={formulaBarDisabled}
           >
@@ -316,7 +318,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
               const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
               formulaInputRef.current?.dispatchEvent(event);
             }}
-            title="Cancel (Esc)"
+            title={t('formula_bar.cancel')}
             type="button"
             visible={isEditing}
             disabled={formulaBarDisabled}
@@ -331,7 +333,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
               const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
               formulaInputRef.current?.dispatchEvent(event);
             }}
-            title="Confirm (Enter)"
+            title={t('formula_bar.confirm')}
             type="button"
             visible={isEditing}
             disabled={formulaBarDisabled}
@@ -342,7 +344,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
           <ActionButton
             variant="function"
             onClick={handleFormulaFxToggle}
-            title="Insert Function"
+            title={t('formula_bar.insert_function')}
             type="button"
             disabled={formulaBarDisabled}
           >
@@ -385,7 +387,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({ formulaBarState }) => {
             <FormulaSearchInput
               ref={formulaSearchInputRef}
               type="text"
-              placeholder="Search formulas..."
+              placeholder={t('formula_bar.search_formulas')}
               value={formulaSearchQuery}
               onChange={e => setFormulaSearchQuery(e.target.value)}
               autoFocus

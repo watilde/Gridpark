@@ -9,6 +9,7 @@ import React from 'react';
 import { styled } from '@mui/joy/styles';
 import { Box, Typography } from '@mui/joy';
 import { Construction as ConstructionIcon } from '@mui/icons-material';
+import { useT } from '../../i18n/I18nProvider';
 
 // ============================================================================
 // Types
@@ -94,6 +95,7 @@ export const GitPlaceholderSidebar: React.FC<GitPlaceholderSidebarProps> = ({
   className,
 }) => {
   const config = VIEW_CONFIGS[viewType];
+  const t = useT();
 
   return (
     <PlaceholderContainer className={className}>
@@ -102,7 +104,7 @@ export const GitPlaceholderSidebar: React.FC<GitPlaceholderSidebarProps> = ({
       </IconWrapper>
       <Title>{config.title}</Title>
       <Description>{config.description}</Description>
-      <Description sx={{ mt: 2, fontStyle: 'italic' }}>Coming Soon</Description>
+      <Description sx={{ mt: 2, fontStyle: 'italic' }}>{t('placeholder.coming_soon')}</Description>
     </PlaceholderContainer>
   );
 };

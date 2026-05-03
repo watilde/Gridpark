@@ -17,6 +17,7 @@ import { WorkbookTab } from '../../../types/tabs';
 import { CellPosition, CellRange, ExcelFile } from '../../../types/excel';
 import { useAppDispatch } from '../../../../stores';
 import { updateWorkbook } from '../../../../stores/spreadsheetSlice';
+import { useT } from '../../../i18n/I18nProvider';
 
 interface EditorPanelProps {
   activeTab: WorkbookTab | null;
@@ -79,6 +80,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
   ) => {
     const sheetViewerRef = useRef<SpreadsheetContainerV2Handle | null>(null);
     const dispatch = useAppDispatch();
+    const t = useT();
 
     const handleFileChange = React.useCallback(
       (nextFile: ExcelFile) => {
@@ -124,7 +126,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
           }}
         >
           <Typography level="body-md" sx={{ color: 'neutral.500' }}>
-            Open a sheet from the file tree.
+            {t('editor.empty_state')}
           </Typography>
         </Sheet>
       );
