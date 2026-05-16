@@ -1,8 +1,17 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react'; // render used by renderWithStore helper
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
 import { StoredCellData } from '../../../../lib/db';
+import spreadsheetReducer from '../../../../stores/spreadsheetSlice';
+
+const createTestStore = () =>
+  configureStore({ reducer: { spreadsheet: spreadsheetReducer } });
+
+const renderWithStore = (ui: React.ReactElement) =>
+  render(<Provider store={createTestStore()}>{ui}</Provider>);
 
 describe('SpreadsheetGrid v2', () => {
   const mockOnCellSelect = jest.fn();
@@ -26,12 +35,12 @@ describe('SpreadsheetGrid v2', () => {
   });
 
   it('renders correctly', () => {
-    const { container } = render(<SpreadsheetGrid {...defaultProps} />);
+    const { container } = renderWithStore(<SpreadsheetGrid {...defaultProps} />);
     expect(container).toBeInTheDocument();
   });
 
   it('handles arrow key navigation', () => {
-    const { container } = render(<SpreadsheetGrid {...defaultProps} />);
+    const { container } = renderWithStore(<SpreadsheetGrid {...defaultProps} />);
     
     // Press ArrowDown
     fireEvent.keyDown(window, { key: 'ArrowDown' });
@@ -43,7 +52,7 @@ describe('SpreadsheetGrid v2', () => {
   });
 
   it('handles Tab navigation', () => {
-    render(<SpreadsheetGrid {...defaultProps} />);
+    renderWithStore(<SpreadsheetGrid {...defaultProps} />);
     
     // Press Tab
     fireEvent.keyDown(window, { key: 'Tab' });
@@ -56,7 +65,7 @@ describe('SpreadsheetGrid v2', () => {
   });
 
   it('prevents navigation out of bounds', () => {
-    render(<SpreadsheetGrid {...defaultProps} selectedCell={{ row: 0, col: 0 }} />);
+    renderWithStore(<SpreadsheetGrid {...defaultProps} selectedCell={{ row: 0, col: 0 }} />);
     
     // Press ArrowUp at top row
     fireEvent.keyDown(window, { key: 'ArrowUp' });
@@ -68,7 +77,7 @@ describe('SpreadsheetGrid v2', () => {
   });
 
   it('enters edit mode on F2', () => {
-    const { container } = render(<SpreadsheetGrid {...defaultProps} />);
+    const { container } = renderWithStore(<SpreadsheetGrid {...defaultProps} />);
     
     fireEvent.keyDown(window, { key: 'F2' });
     
@@ -77,7 +86,7 @@ describe('SpreadsheetGrid v2', () => {
   });
 
   it('enters edit mode on Enter', () => {
-    const { container } = render(<SpreadsheetGrid {...defaultProps} />);
+    const { container } = renderWithStore(<SpreadsheetGrid {...defaultProps} />);
     
     fireEvent.keyDown(window, { key: 'Enter' });
     

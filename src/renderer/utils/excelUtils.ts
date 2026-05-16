@@ -2,20 +2,31 @@
 import { ExcelFile, ExcelSheet, CellData } from '../types/excel';
 
 /**
- * Parse Excel file from ArrayBuffer (ExcelJS-powered for full style support)
+ * Parse Excel, CSV, or Gridpark file from ArrayBuffer
  */
 export const parseExcelFile = async (arrayBuffer: ArrayBuffer, fileName: string): Promise<ExcelFile> => {
-  // Use ExcelJS for full style support
-  const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
+  const extension = fileName.split('.').pop()?.toLowerCase();
   
-  const result = await ExcelJSAdapter.readWorkbook(arrayBuffer);
+  let result;
+  
+  if (extension === 'csv') {
+    const { CSVAdapter } = await import('../../lib/csv-adapter');
+    result = await CSVAdapter.readCSV(arrayBuffer, fileName);
+  } else if (extension === 'gridpark') {
+    const { GridparkAdapter } = await import('../../lib/gridpark-adapter');
+    result = await GridparkAdapter.readWorkbook(arrayBuffer);
+  } else {
+    // Default to ExcelJS for .xlsx and others
+    const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
+    result = await ExcelJSAdapter.readWorkbook(arrayBuffer);
+  }
   
   const sheets: ExcelSheet[] = result.sheets.map(sheet => ({
     name: sheet.name,
     data: sheet.data,
     rowCount: sheet.data.length,
     colCount: sheet.data[0]?.length ?? 0,
-    properties: sheet.properties,
+    properties: (sheet as any).properties,
   }));
 
   return {
@@ -150,15 +161,27 @@ const normalizeCellValue = (cell: CellData): any => {
   return cell.value ?? '';
 };
 
+/**
+ * Serialize ExcelFile to ArrayBuffer (routing based on file name/extension)
+ */
 export const serializeExcelFile = async (file: ExcelFile): Promise<ArrayBuffer> => {
-  // Use ExcelJS for full style support
-  const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
+  const extension = (file.path || file.name).split('.').pop()?.toLowerCase();
   
   const sheets = file.sheets.map(sheet => ({
     name: sheet.name || 'Sheet',
     data: sheet.data,
     properties: sheet.properties,
   }));
-  
-  return await ExcelJSAdapter.writeWorkbook(sheets);
+
+  if (extension === 'csv') {
+    const { CSVAdapter } = await import('../../lib/csv-adapter');
+    return await CSVAdapter.writeCSV(sheets);
+  } else if (extension === 'gridpark') {
+    const { GridparkAdapter } = await import('../../lib/gridpark-adapter');
+    return await GridparkAdapter.writeWorkbook(sheets);
+  } else {
+    // Default to ExcelJS for .xlsx
+    const { ExcelJSAdapter } = await import('../../lib/exceljs-adapter');
+    return await ExcelJSAdapter.writeWorkbook(sheets);
+  }
 };

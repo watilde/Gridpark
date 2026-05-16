@@ -4,8 +4,6 @@ import Sheet from '@mui/joy/Sheet';
 import Box from '@mui/joy/Box';
 import Typography from '@mui/joy/Typography';
 import Button from '@mui/joy/Button';
-import Select from '@mui/joy/Select';
-import Option from '@mui/joy/Option';
 import Alert from '@mui/joy/Alert';
 import Divider from '@mui/joy/Divider';
 import {
@@ -184,40 +182,44 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ settings }) => {
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Typography level="title-sm">Color Mode</Typography>
-          <Select
-            size="sm"
+          <Box
+            component="select"
             value={colorScheme}
-            onChange={(_event, value) => {
-              if (value) {
-                setColorScheme(value as ColorSchemePreference);
-              }
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              if (e.target.value) setColorScheme(e.target.value as ColorSchemePreference);
+            }}
+            sx={{
+              fontSize: '14px', border: '1px solid', borderColor: 'neutral.outlinedBorder',
+              borderRadius: 'sm', px: 1, py: 0.5, backgroundColor: 'background.surface',
+              color: 'text.primary', cursor: 'pointer',
+              '&:focus': { outline: 'none', borderColor: 'primary.outlinedBorder' },
             }}
           >
             {colorSchemeOptions.map(option => (
-              <Option key={option.value} value={option.value}>
-                {option.label}
-              </Option>
+              <option key={option.value} value={option.value}>{option.label}</option>
             ))}
-          </Select>
+          </Box>
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Typography level="title-sm">Theme</Typography>
-          <Select
-            size="sm"
+          <Box
+            component="select"
             value={presetId}
-            onChange={(_event, value) => {
-              if (value && typeof value === 'string') {
-                setPresetId(value as ThemePresetId);
-              }
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              if (e.target.value) setPresetId(e.target.value as ThemePresetId);
+            }}
+            sx={{
+              fontSize: '14px', border: '1px solid', borderColor: 'neutral.outlinedBorder',
+              borderRadius: 'sm', px: 1, py: 0.5, backgroundColor: 'background.surface',
+              color: 'text.primary', cursor: 'pointer',
+              '&:focus': { outline: 'none', borderColor: 'primary.outlinedBorder' },
             }}
           >
             {themeOptions.map(option => (
-              <Option key={option.id} value={option.id}>
-                {option.name}
-              </Option>
+              <option key={option.id} value={option.id}>{option.name}</option>
             ))}
-          </Select>
+          </Box>
         </Box>
 
         <Divider />

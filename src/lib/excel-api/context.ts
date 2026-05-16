@@ -1,36 +1,7 @@
 import { IRequestContext, IWorkbook, ICommand } from './interfaces';
 import { WorkbookProxy, BaseProxy, RangeProxy, WorksheetProxy } from './proxies';
 import { db as defaultDb, AppDatabase } from '../db';
-
-/**
- * Helper to parse A1 notation to row/col indices.
- */
-function parseA1Range(address: string) {
-  if (address === 'SELECTED_RANGE_PLACEHOLDER' || address === 'USED_RANGE_PLACEHOLDER') {
-    return { startRow: 0, startCol: 0, endRow: 0, endCol: 0 };
-  }
-  const parts = address.split(':');
-  const start = parseA1Cell(parts[0]);
-  const end = parts[1] ? parseA1Cell(parts[1]) : start;
-  return {
-    startRow: Math.min(start.row, end.row),
-    startCol: Math.min(start.col, end.col),
-    endRow: Math.max(start.row, end.row),
-    endCol: Math.max(start.col, end.col)
-  };
-}
-
-function parseA1Cell(cell: string) {
-  const match = cell.match(/^([A-Z]+)([0-9]+)$/);
-  if (!match) return { row: 0, col: 0 };
-  const letters = match[1];
-  const row = parseInt(match[2], 10) - 1;
-  let col = 0;
-  for (let i = 0; i < letters.length; i++) {
-    col = col * 26 + (letters.charCodeAt(i) - 64);
-  }
-  return { row, col: col - 1 };
-}
+import { parseA1Range } from '../utils';
 
 export type SyncListener = (changes: { tabId: string; address: string }[]) => void;
 let syncListener: SyncListener | null = null;

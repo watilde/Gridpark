@@ -53,8 +53,7 @@ import 'monaco-editor/esm/vs/language/html/monaco.contribution';
 // Configure loader with imported monaco to prevent CDN usage
 loader.config({ monaco });
 
-// No need for additional configuration
-const _monacoConfigured = false;
+let monacoConfigured = false;
 
 const configureMonaco = () => {
   monacoConfigured = true;
@@ -65,8 +64,10 @@ const EditorContainer = styled(Box)(({ theme }) => ({
   height: '100%',
   minHeight: '200px',
   border: `1px solid ${theme.palette.divider}`,
-  borderRadius: 0,
+  borderRadius: '8px',
   fontFamily: '"JetBrains Mono", monospace',
+  fontSize: '14px',
+  lineHeight: 1.6,
   backgroundColor: theme.palette.background.surface,
   overflow: 'hidden',
   '& .monaco-editor': {

@@ -4,6 +4,7 @@ import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
 import IconButton from '@mui/joy/IconButton';
 import AddIcon from '@mui/icons-material/Add';
+import ImportIcon from '@mui/icons-material/Publish';
 import { useTheme } from '@mui/joy/styles';
 import { FileTree, FileNode } from '../../features/file-explorer/FileTree';
 
@@ -15,6 +16,7 @@ interface SidebarExplorerProps {
   dirtyNodeIds: Record<string, boolean>;
   title?: string;
   onFileCreate?: () => void;
+  onFileImport?: () => void;
 }
 
 export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
@@ -25,6 +27,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   dirtyNodeIds,
   title = 'Explore',
   onFileCreate,
+  onFileImport,
 }) => {
   const theme = useTheme();
 
@@ -68,7 +71,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
         backgroundColor: theme.palette.background.surface,
       }}
     >
-      {onFileCreate && (
+      {(onFileCreate || onFileImport) && (
         <Box
           sx={{
             display: 'flex',
@@ -78,19 +81,35 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
             py: 0.5,
             borderBottom: '1px solid',
             borderColor: 'divider',
+            gap: 0.5,
           }}
         >
-          <IconButton
-            size="sm"
-            variant="plain"
-            color="neutral"
-            onClick={onFileCreate}
-            aria-label="New File"
-            title="New File"
-            sx={{ minWidth: 'auto', minHeight: 'auto' }}
-          >
-            <AddIcon fontSize="small" />
-          </IconButton>
+          {onFileImport && (
+            <IconButton
+              size="sm"
+              variant="plain"
+              color="neutral"
+              onClick={onFileImport}
+              aria-label="Import File"
+              title="Import File"
+              sx={{ minWidth: 'auto', minHeight: 'auto' }}
+            >
+              <ImportIcon fontSize="small" />
+            </IconButton>
+          )}
+          {onFileCreate && (
+            <IconButton
+              size="sm"
+              variant="plain"
+              color="neutral"
+              onClick={onFileCreate}
+              aria-label="New File"
+              title="New File"
+              sx={{ minWidth: 'auto', minHeight: 'auto' }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       )}
       {workbookNodes.length > 0 && (

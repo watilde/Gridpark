@@ -10,14 +10,12 @@ import {
 import { useAppDispatch, useAppSelector } from '../../stores';
 import {
   selectWorkbookNodes,
-  selectCurrentDirectoryName,
   selectOpenTabs,
-  selectActiveTabId,
   selectSelectedNodeId,
   updateWorkbook,
   openTab,
   closeTab,
-  focusTab,
+  setActiveTab,
   resetWorkspace as resetWorkspaceAction,
 } from '../../stores/spreadsheetSlice';
 
@@ -45,9 +43,9 @@ export const useWorkspace = (
   // ✅ Use Redux instead of useReducer
   const dispatch = useAppDispatch();
   const workbookNodes = useAppSelector(selectWorkbookNodes);
-  const currentDirectoryName = useAppSelector(selectCurrentDirectoryName);
+  const currentDirectoryName = useAppSelector((state) => state.spreadsheet.currentDirectoryName);
   const openTabs = useAppSelector(selectOpenTabs);
-  const activeTabId = useAppSelector(selectActiveTabId);
+  const activeTabId = useAppSelector((state) => state.spreadsheet.activeTabId);
   const selectedNodeId = useAppSelector(selectSelectedNodeId);
 
   // useTransition for non-blocking file operations
@@ -175,7 +173,7 @@ export const useWorkspace = (
 
   const focusTabAction = useCallback(
     (tab: WorkbookTab) => {
-      dispatch(focusTab(tab));
+      dispatch(setActiveTab(tab.id));
     },
     [dispatch]
   );

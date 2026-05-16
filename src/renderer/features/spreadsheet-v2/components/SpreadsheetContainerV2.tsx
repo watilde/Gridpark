@@ -8,30 +8,24 @@
  * - 91-95% faster
  * - 99% less memory
  * - HyperFormula for full Excel compatibility
- import React, { forwardRef, useImperativeHandle, useState, useCallback, useEffect } from 'react';
- import { useSelector } from 'react-redux';
- import { Box, CircularProgress, Snackbar, Typography } from '@mui/joy';
- import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
- import { SpreadsheetGrid } from './SpreadsheetGrid';
- import { StyleToolbar } from './StyleToolbar';
- import { useSpreadsheet } from '../hooks/useSpreadsheet';
- import { selectTransientHighlights } from '../../../stores/spreadsheetSlice';
- import { CellStyleData } from '../../../../lib/db';
- import InfoIcon from '@mui/icons-material/Info';
+ */
+import React, { forwardRef, useImperativeHandle, useState, useCallback, useEffect, useRef } from 'react';
+import { Box, CircularProgress, Snackbar, Typography } from '@mui/joy';
+import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
+import { SpreadsheetGrid } from './SpreadsheetGrid';
+import { StyleToolbar } from './StyleToolbar';
+import { useSpreadsheet } from '../hooks/useSpreadsheet';
+import { CellStyleData } from '../../../../lib/db';
+import InfoIcon from '@mui/icons-material/Info';
 
- // Re-export types for compatibility
- export type { CellPosition, CellRange };
+// Re-export types for compatibility
+export type { CellPosition, CellRange };
 
- export interface SearchNavigationCommand {
- ...
-     },
-     ref
-   ) => {
-     // Get transient highlights from store
-     const transientHighlights = useSelector(selectTransientHighlights);
+export interface SearchNavigationCommand {
+  direction: 'next' | 'prev';
+  timestamp: number;
+}
 
-     // Get current sheet
-     const currentSheet = file?.sheets?.[sheetIndex];
 export interface ReplaceCommand {
   searchTerm: string;
   replaceTerm: string;
@@ -40,8 +34,8 @@ export interface ReplaceCommand {
 }
 
 export interface FormulaCommitCommand {
-  formula: string;
-  timestamp: number;
+  requestId: number;
+  value: string;
 }
 
 export interface ActiveCellDetails {
@@ -176,12 +170,12 @@ export const SpreadsheetContainerV2 = forwardRef<
       [save, undo, redo, canUndo, canRedo]
     );
 
-    // Notify dirty changes
+    // Notify dirty changes — use ref to decouple from callback identity
+    const onDirtyChangeRef = useRef(onDirtyChange);
+    onDirtyChangeRef.current = onDirtyChange;
     useEffect(() => {
-      if (onDirtyChange) {
-        onDirtyChange(isDirty);
-      }
-    }, [isDirty, onDirtyChange]);
+      onDirtyChangeRef.current?.(isDirty);
+    }, [isDirty]);
 
     // Handle cell selection
     const handleCellSelect = useCallback(
@@ -244,7 +238,7 @@ export const SpreadsheetContainerV2 = forwardRef<
           onActiveCellDetails({
             address: `${indexToColumn(col)}${row + 1}`,
             value: cell?.value ?? value,
-            formula: cell?.formula ?? (value.startsWith('=') ? value : ''),
+            formula: cell?.formula ?? (typeof value === 'string' && value.startsWith('=') ? value : ''),
             type: cell?.type ?? 'string',
           });
         }
@@ -253,10 +247,13 @@ export const SpreadsheetContainerV2 = forwardRef<
     );
 
     // Handle formula commit from formula bar
+    // Use requestId to prevent re-processing when handleCellChange reference changes
+    const lastFormulaRequestId = useRef<number | null>(null);
     useEffect(() => {
-      if (formulaCommit && selectedCell) {
-        handleCellChange(selectedCell.row, selectedCell.col, formulaCommit.formula);
-      }
+      if (!formulaCommit || !selectedCell || formulaCommit.value == null) return;
+      if (lastFormulaRequestId.current === formulaCommit.requestId) return;
+      lastFormulaRequestId.current = formulaCommit.requestId;
+      handleCellChange(selectedCell.row, selectedCell.col, formulaCommit.value);
     }, [formulaCommit, selectedCell, handleCellChange]);
 
     // Get selected cell style
@@ -347,7 +344,7 @@ export const SpreadsheetContainerV2 = forwardRef<
             searchQuery={searchQuery}
             activeDrawTool={activeDrawTool}
             penColor={penColor}
-            transientHighlights={transientHighlights}
+            tabId={tabId}
           />
         </Box>
         

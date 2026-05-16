@@ -37,7 +37,7 @@ This backlog follows our **Excel Subset Strategy** with breaking changes allowed
 
 ---
 
-#### US-002: Excel JavaScript API Core Objects
+#### DONE-US-002: Excel JavaScript API Core Objects
 **As a** developer familiar with Excel APIs  
 **I want** basic Excel.run() pattern with Workbook/Worksheet/Range objects  
 **So that** I can use familiar Excel programming patterns  

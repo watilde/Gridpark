@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, createMockAction } from '../../../../../test/utils';
+import { render, screen, fireEvent, createMockAction } from '../../../test/utils';
 import { Toolbar } from './Toolbar';
 
 describe('Toolbar Component', () => {

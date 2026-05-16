@@ -28,57 +28,59 @@ export type ParsedGridSelector = {
 export const parseGridSelector = (selector: string): ParsedGridSelector => {
   const result: ParsedGridSelector = { selectorString: selector };
 
-  const parts = selector.split('!'); // Split by '!' for sheet part
-
-  let mainPart = parts[parts.length - 1]; // Assume last part is element + identifier + conditions
+  const parts = selector.split('!');
+  let mainPart = parts[parts.length - 1];
   const sheetPart = parts.length > 1 ? parts.slice(0, -1).join('!') : '';
 
   if (sheetPart.startsWith('Sheet:')) {
     result.sheetName = sheetPart.substring('Sheet:'.length);
   }
 
-  // Separate pseudo-selectors from main part
-  const pseudoSelectorRegex = /(:[a-zA-Z0-9_-]+)/g; // Captures :active, :dirty etc.
-  const pseudoSelectors: string[] = [];
-  mainPart = mainPart.replace(pseudoSelectorRegex, match => {
-    pseudoSelectors.push(match);
-    return ''; // Remove from mainPart for further parsing
-  });
+  // Process tokens in document order to preserve condition ordering.
+  // Pseudo-selectors are lowercase-only (:active, :dirty) — uppercase (:A1, :Active) are identifiers.
+  const tokenRegex = /(\[[^\]]+\])|(:[a-z][a-z0-9_-]*)/g;
+  const conditions: NonNullable<ParsedGridSelector['conditions']> = [];
 
-  // Separate attribute conditions from main part
-  const attributeConditionRegex = /(\[[^\]]+\])/g; // Captures [value="Total"] etc.
-  let attributeConditionsString = '';
-  mainPart = mainPart.replace(attributeConditionRegex, match => {
-    attributeConditionsString += match;
-    return ''; // Remove from mainPart for further parsing
-  });
+  let tokenMatch;
+  while ((tokenMatch = tokenRegex.exec(mainPart)) !== null) {
+    if (tokenMatch[1]) {
+      const parsed = parseAttributeConditions(tokenMatch[1]);
+      if (parsed) conditions.push(...parsed);
+    } else {
+      conditions.push({ attribute: tokenMatch[2].substring(1), operator: '=', value: 'true' });
+    }
+  }
 
-  // Now parse the core element type and identifier
+  // Remove all tokens to get the core element string
+  let corePart = mainPart.replace(tokenRegex, '').trim();
+
+  // Handle compound selectors like "Col:A Cell[...]" — take the first element token
+  const spaceIdx = corePart.indexOf(' ');
+  if (spaceIdx !== -1) {
+    corePart = corePart.substring(0, spaceIdx).trim();
+  }
+
   const coreElementRegex = /^(?<elementType>Cell|Range|Col|Row|Sheet)(?::(?<identifier>.*))?$/;
-  const coreMatch = mainPart.match(coreElementRegex);
+  const coreMatch = corePart.match(coreElementRegex);
 
   if (coreMatch?.groups) {
     result.elementType = coreMatch.groups.elementType as any;
-    result.identifier = coreMatch.groups.identifier || undefined;
-  } else if (attributeConditionsString || pseudoSelectors.length > 0) {
-    // If no explicit element type, but conditions or pseudo-selectors, assume 'Cell'
+    const identifier = coreMatch.groups.identifier || undefined;
+    // For standalone Sheet:Name (no !), the identifier is the sheet name
+    if (result.elementType === 'Sheet' && identifier) {
+      result.sheetName = identifier;
+    } else {
+      result.identifier = identifier;
+    }
+  } else if (conditions.length > 0) {
     result.elementType = 'Cell';
   } else {
-    console.warn(`Invalid Gridpark selector syntax: "${selector}"`);
+    console.warn('Invalid Gridpark selector syntax:', selector);
     return result;
   }
 
-  if (attributeConditionsString) {
-    result.conditions = parseAttributeConditions(attributeConditionsString);
-  }
-
-  // Convert pseudo-selectors to conditions
-  if (pseudoSelectors.length > 0) {
-    if (!result.conditions) result.conditions = [];
-    pseudoSelectors.forEach(ps => {
-      const attr = ps.substring(1); // Remove leading ':'
-      result.conditions?.push({ attribute: attr, operator: '=', value: 'true' }); // Treat as boolean attribute
-    });
+  if (conditions.length > 0) {
+    result.conditions = conditions;
   }
 
   return result;

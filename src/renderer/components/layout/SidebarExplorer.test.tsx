@@ -78,10 +78,30 @@ describe('SidebarExplorer: New File ボタン', () => {
     expect(onFileCreate).toHaveBeenCalledTimes(1);
   });
 
-  it('onFileCreate が渡されない場合、New File ボタンが表示されない', () => {
+  it('onFileImport が渡された場合、Import File ボタンが表示される', () => {
+    const onFileImport = jest.fn();
+    render(<SidebarExplorer {...createDefaultProps({ onFileImport })} />);
+
+    const button = screen.getByRole('button', { name: 'Import File' });
+    expect(button).toBeInTheDocument();
+  });
+
+  it('Import ボタンクリック時に onFileImport が呼ばれる', () => {
+    const onFileImport = jest.fn();
+    render(<SidebarExplorer {...createDefaultProps({ onFileImport })} />);
+
+    const button = screen.getByRole('button', { name: 'Import File' });
+    fireEvent.click(button);
+
+    expect(onFileImport).toHaveBeenCalledTimes(1);
+  });
+
+  it('onFileCreate/Import が渡されない場合、ボタンが表示されない', () => {
     render(<SidebarExplorer {...createDefaultProps()} />);
 
-    const button = screen.queryByRole('button', { name: 'New File' });
-    expect(button).not.toBeInTheDocument();
+    const newButton = screen.queryByRole('button', { name: 'New File' });
+    const importButton = screen.queryByRole('button', { name: 'Import File' });
+    expect(newButton).not.toBeInTheDocument();
+    expect(importButton).not.toBeInTheDocument();
   });
 });

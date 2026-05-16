@@ -1,3 +1,9 @@
+import { TextEncoder, TextDecoder } from 'util';
+
+// Add TextEncoder/TextDecoder to global for jsdom environment
+global.TextEncoder = TextEncoder as any;
+global.TextDecoder = TextDecoder as any;
+
 import '@testing-library/jest-dom';
 
 // Mock electron APIs for renderer process tests

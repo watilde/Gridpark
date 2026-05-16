@@ -359,7 +359,7 @@ export class ExcelJSAdapter {
       // Apply column widths
       if (sheetData.properties?.columns) {
         worksheet.columns = sheetData.properties.columns.map((col, index) => ({
-          key: String.fromCharCode(65 + index),  // A, B, C, ...
+          key: this.columnIndexToName(index),  // A, B, C, ... AA, AB...
           width: col.width || 10,
           hidden: col.hidden,
         }));
@@ -467,6 +467,18 @@ export class ExcelJSAdapter {
     return buffer;
   }
   
+  /**
+   * Convert column index (0-based) to Excel column name (A, B, ..., AA, AB, ...)
+   */
+  static columnIndexToName(index: number): string {
+    let name = '';
+    while (index >= 0) {
+      name = String.fromCharCode((index % 26) + 65) + name;
+      index = Math.floor(index / 26) - 1;
+    }
+    return name;
+  }
+
   /**
    * Convert StoredCellData to CellData with ExcelJS style support
    */

@@ -34,5 +34,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createNewFile: () => ipcRenderer.invoke('excel:create-new-file'),
   openFile: () => ipcRenderer.invoke('excel:open-file'),
   saveFile: (excelFile: unknown) => ipcRenderer.invoke('excel:save-file', excelFile),
-  saveFileAs: (excelFile: unknown) => ipcRenderer.invoke('excel:save-file-as', excelFile),
+  saveFileAs: (excelFile: unknown, formatHint?: string) => 
+    ipcRenderer.invoke('excel:save-file-as', excelFile, formatHint),
 });

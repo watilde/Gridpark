@@ -180,7 +180,7 @@ export const useSaveWorkbook = () => {
     }
   }, []);
 
-  const saveWorkbookFileAs = useCallback(async (file: ExcelFile, workbookId?: string) => {
+  const saveWorkbookFileAs = useCallback(async (file: ExcelFile, workbookId?: string, formatHint?: string) => {
     // Use the new electron API for saving
     const electronAPI = window.electronAPI;
     if (!electronAPI?.saveFileAs) {
@@ -190,6 +190,7 @@ export const useSaveWorkbook = () => {
     console.log('[useSaveWorkbook] === SAVE AS START ===', { 
       path: file.path, 
       workbookId,
+      formatHint,
       sheetCount: file.sheets.length 
     });
 
@@ -222,7 +223,7 @@ export const useSaveWorkbook = () => {
 
       // STEP 2: Save As dialog
       console.log('[useSaveWorkbook] Opening Save As dialog...');
-      const result = await electronAPI.saveFileAs(updatedFile);
+      const result = await electronAPI.saveFileAs(updatedFile, formatHint);
       
       if (result.canceled) {
         console.log('[useSaveWorkbook] Save As canceled');

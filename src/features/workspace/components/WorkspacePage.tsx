@@ -1,15 +1,13 @@
 /**
  * WorkspacePage Component
  *
- * This is the SMART component that contains all business logic.
- * It uses the useWorkspaceState hook to get all data and actions.
- *
- * Pages should import THIS component, not implement logic directly.
+ * Smart component containing all workspace business logic.
+ * Uses useWorkspaceState for all data and actions.
  */
 
 import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
-import { useAppSelector, useAppDispatch } from '../../../stores';
-import { updateUndoRedo, selectCanUndo, selectCanRedo } from '../../../stores/spreadsheetSlice';
+import { useAppSelector } from '../../../stores';
+import { selectCanUndo, selectCanRedo } from '../../../stores/spreadsheetSlice';
 import { AppLayout } from '../../../renderer/components/layout/AppLayout';
 import { ActivityBar, ActivityBarView } from '../../../renderer/components/layout/ActivityBar';
 import { SidebarExplorer } from '../../../renderer/components/layout/SidebarExplorer';
@@ -20,30 +18,21 @@ import { EditorPanelHandle } from '../../../renderer/features/workspace/componen
 import { getPlatformCapabilities } from '../../../renderer/utils/platform';
 import { useWorkspaceState } from '../hooks/useWorkspaceState';
 import { useExcelFileOperations } from '../../../renderer/hooks/useExcelFileOperations';
-import type { ExcelFile, GridparkCodeFile } from '../../../renderer/types/excel';
 
 export interface WorkspacePageProps {
-  // Optional props for customization
   onUndo?: () => void;
   onRedo?: () => void;
   onOpenSettings?: () => void;
 }
 
 export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, onOpenSettings }) => {
-  // ============================================
-  // Get ALL state from single hook
-  // ============================================
-
   const state = useWorkspaceState();
   const editorPanelRef = useRef<EditorPanelHandle>(null);
   const [activeView, setActiveView] = useState<ActivityBarView>('excel');
-  const { createNewFile, lastCreatedFile } = useExcelFileOperations();
+  const { createNewFile, openFile, lastCreatedFile, lastOpenedFiles } = useExcelFileOperations();
 
-  // Get undo/redo state from Redux
-  const dispatch = useAppDispatch();
   const canUndo = useAppSelector(selectCanUndo);
   const canRedo = useAppSelector(selectCanRedo);
-
 
   const {
     workbookNodes,
@@ -58,15 +47,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     handleTabChange: handleTabChangeRaw,
     handleCloseTab,
     handleNodeSelect: handleNodeSelectRaw,
-    handleManifestChange,
-    handleCodeChange,
-    readManifestFile,
     formulaBarState,
-    activeManifestSession,
-    activeCodeSession,
-    manifestEditorData,
-    manifestIsDirty,
-    canEditManifest,
     dirtyNodeIds,
     resetWorkbooks,
     electron,
@@ -77,16 +58,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   // ============================================
 
   const handleNodeSelect = useCallback(
-    (node: any) => {
-      handleNodeSelectRaw(node);
-    },
+    (node: any) => handleNodeSelectRaw(node),
     [handleNodeSelectRaw]
   );
 
   const handleTabChange = useCallback(
-    (event: React.SyntheticEvent, value: string | number) => {
-      handleTabChangeRaw(event, value);
-    },
+    (event: React.SyntheticEvent, value: string | number) => handleTabChangeRaw(event, value),
     [handleTabChangeRaw]
   );
 
@@ -94,10 +71,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     setActiveView(view);
     if (view === 'settings' && onOpenSettings) {
       onOpenSettings();
-      // Revert selection back to excel after opening settings, or keep it?
-      // Keeping it on settings might be confusing if the sidebar doesn't change content.
-      // Usually settings is a dialog/drawer, so we might want to switch back.
-      // For now, let's keep it simple.
       setTimeout(() => setActiveView('excel'), 200);
     }
   }, [onOpenSettings]);
@@ -108,13 +81,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
   const platformCapabilities = useMemo(() => {
     const caps = getPlatformCapabilities();
-    // Transform to TabContentArea expected format
     return {
       isMac: typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac'),
-      isWindows:
-        typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('win'),
-      isLinux:
-        typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('linux'),
+      isWindows: typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('win'),
+      isLinux: typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('linux'),
       isWeb: caps.platform === 'web',
       hasFilesystem: caps.canAccessFileSystem,
       hasShell: caps.hasSystemIntegration,
@@ -126,50 +96,21 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   // ============================================
 
   const handleSave = useCallback(async () => {
-    console.log('[WorkspacePage] === SAVE REQUESTED ===', {
-      hasActiveTab: !!activeTab,
-      tabKind: activeTab?.kind,
-      tabId: activeTab?.id,
-    });
-
-    if (!activeTab) {
-      console.warn('[WorkspacePage] No active tab to save');
-      return;
-    }
-
+    if (!activeTab) return;
     try {
-      // Force immediate save through EditorPanel
-      console.log('[WorkspacePage] Calling EditorPanel.save()...');
       await editorPanelRef.current?.save();
-      console.log('[WorkspacePage] EditorPanel.save() completed');
-
-      // Then save through saveManager (which writes to file)
-      console.log('[WorkspacePage] Calling saveManager.saveTab()...');
       await saveManager.saveTab(activeTab.id);
-      console.log('[WorkspacePage] saveManager.saveTab() completed');
-
-      console.log('[WorkspacePage] === SAVE SUCCESS ===');
     } catch (error) {
-      console.error('[WorkspacePage] === SAVE ERROR ===', error);
-
-      // Show error to user (you can replace this with a toast/snackbar)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       alert(`Failed to save: ${errorMessage}`);
     }
   }, [activeTab, saveManager]);
 
-  const handleSaveAs = useCallback(async () => {
-    console.log('[WorkspacePage] Save As requested');
-
-    if (!activeTab) {
-      console.warn('[WorkspacePage] No active tab to export');
-      return;
-    }
-
+  const handleSaveAs = useCallback(async (formatHint?: string) => {
+    if (!activeTab) return;
     try {
-      await saveManager.saveTabAs(activeTab.id);
+      await saveManager.saveTabAs(activeTab.id, formatHint);
     } catch (error) {
-      console.error('[WorkspacePage] Failed to export:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       alert(`Failed to export: ${errorMessage}`);
     }
@@ -180,79 +121,27 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
       onUndo();
     } else {
       editorPanelRef.current?.undo();
-      // Update undo/redo state after operation
-      setTimeout(() => {
-        const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
-        const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-        if (newCanUndo !== canUndo || newCanRedo !== canRedo) {
-          dispatch(updateUndoRedo({ canUndo: newCanUndo, canRedo: newCanRedo }));
-        }
-      }, 0);
     }
-  }, [onUndo, canUndo, canRedo, dispatch]);
+  }, [onUndo]);
 
   const handleRedo = useCallback(() => {
     if (onRedo) {
       onRedo();
     } else {
       editorPanelRef.current?.redo();
-      // Update undo/redo state after operation
-      setTimeout(() => {
-        const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
-        const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-        if (newCanUndo !== canUndo || newCanRedo !== canRedo) {
-          dispatch(updateUndoRedo({ canUndo: newCanUndo, canRedo: newCanRedo }));
-        }
-      }, 0);
     }
-  }, [onRedo, canUndo, canRedo, dispatch]);
+  }, [onRedo]);
 
-  const handleCellSelect = useCallback((_pos: any) => {
-    // TODO: Implement cell selection handling
-  }, []);
-
-  const handleRangeSelect = useCallback((_range: any) => {
-    // TODO: Implement range selection handling
-  }, []);
-
+  const handleCellSelect = useCallback((_pos: any) => {}, []);
+  const handleRangeSelect = useCallback((_range: any) => {}, []);
 
   // ============================================================================
-  // Save handlers for different content types
+  // Sheet dirty tracking
   // ============================================================================
 
-  const handleSaveManifest = useCallback(
-    async (workbookId: string, _file: ExcelFile) => {
-      const tab = openTabs.find(t => t.kind === 'manifest' && t.workbookId === workbookId);
-      if (tab) {
-        await saveManager.saveTab(tab.id);
-      }
-    },
-    [openTabs, saveManager]
-  );
-
-  const handleSaveCode = useCallback(
-    async (_codeFile: GridparkCodeFile) => {
-      const tab = openTabs.find(
-        t => t.kind === 'code' && t._codeFile.absolutePath === _codeFile.absolutePath
-      );
-      if (tab) {
-        await saveManager.saveTab(tab.id);
-      }
-    },
-    [openTabs, saveManager]
-  );
-
-  // ============================================================================
-  // Sheet dirty tracking (Database-powered)
-  // ============================================================================
-
-  // ExcelViewerDB calls this directly when sheet is edited
   const handleDirtyChange = useCallback(
     async (dirty: boolean) => {
       if (!activeTab) return;
-      console.log('[WorkspacePage] Sheet dirty state changed', { tabId: activeTab.id, dirty });
-
-      // Await to ensure state is updated before next call
       if (dirty) {
         await saveManager.markTabDirty(activeTab.id);
       } else {
@@ -268,62 +157,41 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Cmd+S (Mac) or Ctrl+S (Windows/Linux) for save
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-        console.log('[WorkspacePage] Ctrl+S / Cmd+S pressed');
         event.preventDefault();
-        handleSave();
-        return;
+        if (event.shiftKey) {
+          handleSaveAs();
+        } else {
+          handleSave();
+        }
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave]);
+  }, [handleSave, handleSaveAs]);
 
   // ============================================================================
-  // Menu Save/Save As handlers
+  // Menu handlers (Electron)
   // ============================================================================
 
   useEffect(() => {
     const electronAPI = window.electronAPI;
     if (!electronAPI) return;
-
-    // Listen for menu save event
-    const unsubscribeSave = electronAPI.onMenuSave?.(() => {
-      console.log('[WorkspacePage] Menu Save triggered');
-      handleSave();
-    });
-
-    // Listen for menu save as event
-    const unsubscribeSaveAs = electronAPI.onMenuSaveAs?.(() => {
-      console.log('[WorkspacePage] Menu Save As triggered');
-      // TODO: Implement Save As functionality
-    });
-
+    const unsubscribeSave = electronAPI.onMenuSave?.(() => handleSave());
+    const unsubscribeSaveAs = electronAPI.onMenuSaveAs?.(() => handleSaveAs());
     return () => {
       unsubscribeSave?.();
       unsubscribeSaveAs?.();
     };
-  }, [handleSave]);
-
-  // ============================================================================
-  // Menu New File handler
-  // ============================================================================
+  }, [handleSave, handleSaveAs]);
 
   useEffect(() => {
-    const unsubscribeNewFile = window.electronAPI?.onMenuNewFile?.(() => {
-      console.log("[WorkspacePage] Menu New File triggered");
-      createNewFile();
-    });
-
-    return () => {
-      unsubscribeNewFile?.();
-    };
+    const unsubscribeNewFile = window.electronAPI?.onMenuNewFile?.(() => createNewFile());
+    return () => unsubscribeNewFile?.();
   }, [createNewFile]);
 
   // ============================================================================
-  // New File Creation - Workspace Integration
+  // New File / Import integration
   // ============================================================================
 
   useEffect(() => {
@@ -333,49 +201,26 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     }
   }, [lastCreatedFile, resetWorkbooks, electron]);
 
+  useEffect(() => {
+    if (lastOpenedFiles.length > 0) {
+      resetWorkbooks(lastOpenedFiles);
+      electron.setWindowTitle(lastOpenedFiles[0].name);
+    }
+  }, [lastOpenedFiles, resetWorkbooks, electron]);
+
   // ============================================================================
-  // Update window title
+  // Window title
   // ============================================================================
 
   const activeTitle = useMemo(() => {
     if (!activeTab) return 'Gridpark';
-    if (activeTab.kind === 'sheet') {
-      return `${activeTab.sheetName} - ${activeTab.fileName}`;
-    }
-    if (activeTab.kind === 'manifest') {
-      return `${activeTab.fileName} (Manifest)`;
-    }
-    return `${activeTab._codeFile.name} - ${activeTab.fileName}`;
+    if (activeTab.kind === 'sheet') return `${activeTab.sheetName} - ${activeTab.fileName}`;
+    return 'Gridpark';
   }, [activeTab]);
 
   useEffect(() => {
     electron.setWindowTitle(activeTitle);
   }, [activeTitle, electron]);
-
-  // ============================================================================
-  // Update undo/redo availability when active tab changes
-  // ============================================================================
-
-  useEffect(() => {
-    // Update undo/redo state when active tab changes
-    const updateUndoRedoState = () => {
-      const newCanUndo = editorPanelRef.current?.canUndo() ?? false;
-      const newCanRedo = editorPanelRef.current?.canRedo() ?? false;
-
-      // Only update Redux if values actually changed
-      if (newCanUndo !== canUndo || newCanRedo !== canRedo) {
-        dispatch(updateUndoRedo({ canUndo: newCanUndo, canRedo: newCanRedo }));
-      }
-    };
-
-    updateUndoRedoState();
-
-    // Poll for updates (Monaco editor doesn't provide change events for undo stack)
-    const interval = setInterval(updateUndoRedoState, 200);
-
-    return () => clearInterval(interval);
-  }, [activeTab, canUndo, canRedo, dispatch]);
-
 
   // ============================================================================
   // Render
@@ -384,10 +229,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
   return (
     <AppLayout
       activityBar={
-        <ActivityBar
-          activeView={activeView}
-          onViewChange={handleViewChange}
-        />
+        <ActivityBar activeView={activeView} onViewChange={handleViewChange} />
       }
       header={
         <WorkspaceHeader
@@ -395,14 +237,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
           onRedo={handleRedo}
           onSave={handleSave}
           onSaveAs={handleSaveAs}
+          onImport={openFile}
           searchQuery={searchState.treeSearchQuery}
           onSearchChange={setTreeSearchQuery}
-          onOpenSettings={
-            onOpenSettings ||
-            (() => {
-              /* noop */
-            })
-          }
+          onOpenSettings={onOpenSettings || (() => {})}
           autoSaveEnabled={autoSave.autoSaveEnabled}
           onAutoSaveToggle={autoSave.toggleAutoSave}
           canUndo={canUndo}
@@ -420,6 +258,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
             onNodeSelect={handleNodeSelect}
             dirtyNodeIds={dirtyNodeIds}
             onFileCreate={createNewFile}
+            onFileImport={openFile}
           />
         ) : activeView === 'branch' ? (
           <GitPlaceholderSidebar viewType="branch" />
@@ -435,22 +274,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
         onCloseTab={handleCloseTab}
         tabIsDirty={saveManager.tabIsDirty}
         activeTab={activeTab}
-        activeCodeSession={activeCodeSession}
-        activeManifestSession={activeManifestSession}
-        manifestEditorData={manifestEditorData}
-        manifestIsDirty={manifestIsDirty}
-        canEditManifest={canEditManifest}
         platformCapabilities={platformCapabilities}
         onDirtyChange={handleDirtyChange}
         onCellSelect={handleCellSelect}
         onRangeSelect={handleRangeSelect}
         onActiveCellDetails={formulaBarState.handleActiveCellDetails}
-        onManifestChange={handleManifestChange}
-        onSaveManifest={handleSaveManifest}
-        onReloadManifest={readManifestFile}
-        onCodeChange={handleCodeChange}
-        onSaveCode={handleSaveCode}
-        onCloseCodeTab={handleCloseTab}
         sheetSearchQuery={searchState.sheetSearchQuery}
         searchNavigation={searchState.searchNavigation}
         replaceCommand={searchState.replaceCommand}

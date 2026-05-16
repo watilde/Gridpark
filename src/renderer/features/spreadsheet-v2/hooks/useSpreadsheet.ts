@@ -10,7 +10,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { addTransientHighlight, clearTransientHighlights } from '../../../stores/spreadsheetSlice';
+import { addTransientHighlight, clearTransientHighlights, updateUndoRedo } from '../../../../stores/spreadsheetSlice';
 import {
   db,
   StoredCellData,
@@ -66,6 +66,11 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   // Flag to prevent recording history during undo/redo
   const isUndoRedoRef = useRef(false);
 
+  // Sync undo/redo availability to Redux
+  useEffect(() => {
+    dispatch(updateUndoRedo({ canUndo: undoStack.length > 0, canRedo: redoStack.length > 0 }));
+  }, [undoStack.length, redoStack.length, dispatch]);
+
   // State for cells, metadata, and CF rules (replacing useLiveQuery)
   const [cells, setCells] = useState<Map<string, StoredCellData>>(new Map());
   const [metadata, setMetadata] = useState<SheetMetadata | undefined>(undefined);
@@ -82,13 +87,9 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   // Register Excel API Sync Listener
   useEffect(() => {
     setSyncListener((changes) => {
-      // Filter changes for this tab
       const tabChanges = changes.filter(c => c.tabId === tabId);
       if (tabChanges.length === 0) return;
 
-      console.log(`[useSpreadsheet] Received ${tabChanges.length} sync changes for tab:`, tabId);
-
-      // Trigger data reload from DB
       reloadData();
 
       // Add transient highlights
@@ -113,54 +114,30 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   // Load data from DB
   useEffect(() => {
     const loadData = async () => {
-      console.log('[useSpreadsheet] Loading data for tabId:', tabId);
-
-      // Load cells
       const cellArray = await db.getCellsForSheet(tabId);
-      console.log('[useSpreadsheet] Loaded cells:', cellArray.length);
 
       const cellMap = new Map<string, StoredCellData>();
       cellArray.forEach(cell => {
-        const key = `${cell.row},${cell.col}`;
-        cellMap.set(key, cell);
+        cellMap.set(`${cell.row},${cell.col}`, cell);
       });
 
-      // Populate Formula Engine (Batch)
       formulaEngine.clear();
-      const cellUpdates = cellArray.map(cell => ({
+      formulaEngine.batchUpdate(cellArray.map(cell => ({
         row: cell.row,
         col: cell.col,
-        cell: {
-          row: cell.row,
-          col: cell.col,
-          value: cell.value,
-          formula: cell.formula,
-          type: cell.type,
-        },
-      }));
-      formulaEngine.batchUpdate(cellUpdates);
-
-      // Set cells state after engine is ready
+        cell: { row: cell.row, col: cell.col, value: cell.value, formula: cell.formula, type: cell.type },
+      })));
       setCells(cellMap);
 
-      // Load metadata
       const meta = await db.getSheetMetadata(tabId);
-      console.log('[useSpreadsheet] Loaded metadata:', meta);
       setMetadata(meta);
 
-      // Load CF rules
       const cfRules = await db.getConditionalFormatting(tabId);
-      console.log('[useSpreadsheet] Loaded CF rules:', cfRules.length);
       setConditionalFormattingRules(cfRules);
     };
 
     loadData();
   }, [tabId, reloadTrigger, formulaEngine]);
-
-  // Trigger reload manually
-  const reloadData = useCallback(() => {
-    setReloadTrigger(prev => prev + 1);
-  }, []);
 
   // Compute all formulas when cells change (READ-ONLY from Engine)
   const computedValues = useMemo(() => {
@@ -241,7 +218,7 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
         : null;
 
       // Parse value
-      const isFormula = value.startsWith('=');
+      const isFormula = typeof value === 'string' && value.startsWith('=');
       const formula = isFormula ? value : undefined;
       const rawValue = isFormula ? null : value;
 
@@ -440,14 +417,12 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
 
       try {
         await navigator.clipboard.writeText(JSON.stringify({ type: 'range', data: rangeData }));
-        console.log(`[Copy] Range copied: ${rangeData.length}x${rangeData[0]?.length || 0}`);
-      } catch (err) {
-        console.error('[Copy] Failed to copy range:', err);
+      } catch {
+        // clipboard not available
       }
       return;
     }
 
-    // Single cell copy
     if (!selectedCell) return;
 
     const key = `${selectedCell.row},${selectedCell.col}`;
@@ -467,9 +442,8 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
 
     try {
       await navigator.clipboard.writeText(JSON.stringify(clipboardData));
-      console.log('[Copy] Cell copied to clipboard');
-    } catch (err) {
-      console.error('[Copy] Failed to copy:', err);
+    } catch {
+      // clipboard not available
     }
   }, [selectedCell, selectedRange, cells]);
 
@@ -499,35 +473,29 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
               }
             }
           }
-          console.log(`[Paste] Range pasted: ${rangeData.length}x${rangeData[0]?.length || 0}`);
           return;
         }
 
-        // Single cell paste
         if (clipboardData.type === 'cell' && clipboardData.data) {
           const cellData = clipboardData.data;
           const value = cellData.formula || cellData.value?.toString() || '';
           await updateCell(selectedCell.row, selectedCell.col, value, cellData.style);
-          console.log('[Paste] Cell pasted from clipboard');
           return;
         }
 
-        // Legacy format (backwards compatibility)
+        // Legacy format
         if (clipboardData && typeof clipboardData === 'object' && !clipboardData.type) {
           const value = clipboardData.formula || clipboardData.value?.toString() || '';
           await updateCell(selectedCell.row, selectedCell.col, value, clipboardData.style);
-          console.log('[Paste] Cell pasted (legacy format)');
           return;
         }
       } catch {
         // Not JSON, treat as plain text
       }
 
-      // Plain text paste
       await updateCell(selectedCell.row, selectedCell.col, text);
-      console.log('[Paste] Plain text pasted');
-    } catch (err) {
-      console.error('[Paste] Failed to paste:', err);
+    } catch {
+      // clipboard not available
     }
   }, [selectedCell, updateCell]);
 
@@ -558,25 +526,15 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
           }
         }
 
-        console.log(`[Style] Range styled: ${maxRow - minRow + 1}x${maxCol - minCol + 1} cells`);
         return;
       }
 
-      // Apply to single cell if selected
       if (selectedCell) {
         const key = `${selectedCell.row},${selectedCell.col}`;
         const cell = cells?.get(key);
-
-        // Merge existing style with new style
         const mergedStyle = { ...(cell?.style || {}), ...style };
-
-        // Get current value or empty string
         const currentValue = cell?.formula || cell?.value?.toString() || '';
-
-        // Update cell with new style
         await updateCell(selectedCell.row, selectedCell.col, currentValue, mergedStyle);
-
-        console.log('[Style] Cell styled');
       }
     },
     [selectedCell, selectedRange, cells, updateCell]
@@ -598,14 +556,11 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
         }
       }
 
-      console.log(`[Delete] Range deleted: ${maxRow - minRow + 1}x${maxCol - minCol + 1} cells`);
       return;
     }
 
-    // Delete single cell if selected
     if (selectedCell) {
       await updateCell(selectedCell.row, selectedCell.col, '');
-      console.log('[Delete] Cell deleted');
     }
   }, [selectedCell, selectedRange, updateCell]);
 
@@ -613,7 +568,6 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   const addConditionalFormattingRule = useCallback(
     async (rule: ConditionalFormattingRule) => {
       await db.addConditionalFormattingRule(tabId, rule);
-      console.log('[CF] Rule added:', rule.id);
       reloadData();
     },
     [tabId, reloadData]
@@ -622,7 +576,6 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   const removeConditionalFormattingRule = useCallback(
     async (ruleId: string) => {
       await db.removeConditionalFormattingRule(tabId, ruleId);
-      console.log('[CF] Rule removed:', ruleId);
       reloadData();
     },
     [tabId, reloadData]
@@ -631,7 +584,6 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
   const updateConditionalFormattingRule = useCallback(
     async (ruleId: string, updates: Partial<ConditionalFormattingRule>) => {
       await db.updateConditionalFormattingRule(tabId, ruleId, updates);
-      console.log('[CF] Rule updated:', ruleId);
       reloadData();
     },
     [tabId, reloadData]

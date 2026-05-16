@@ -434,15 +434,3 @@ export const ExcelViewSidebar: React.FC<ExcelViewSidebarProps> = ({
 };
 
 ExcelViewSidebar.displayName = 'ExcelViewSidebar';
-</TreeItem>
-                ))}
-              </Box>
-            );
-          })}
-        </Section>
-      </SidebarContent>
-    </SidebarContainer>
-  );
-};
-
-ExcelViewSidebar.displayName = 'ExcelViewSidebar';

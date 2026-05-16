@@ -48,12 +48,11 @@ export interface ActivityBarProps {
 const ActivityBarContainer = styled(Box)(({ theme }) => ({
   width: '48px',
   height: '100%',
-  // Use specific VSCode activity bar colors or fallback to theme
-  backgroundColor: theme.palette.mode === 'dark' ? '#333333' : '#2c2c2c',
+  backgroundColor: theme.palette.background.surface,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  borderRight: `1px solid ${theme.palette.mode === 'dark' ? '#252526' : '#3e3e42'}`,
+  borderRight: `1px solid ${theme.palette.divider}`,
   flexShrink: 0,
   zIndex: 1000,
 }));
@@ -88,13 +87,13 @@ const ActivityButton = styled('button')<ActivityButtonProps>(({ theme, active })
   alignItems: 'center',
   justifyContent: 'center',
   border: 'none',
-  backgroundColor: 'transparent',
+  backgroundColor: active ? `${theme.palette.primary.outlinedColor}1A` : 'transparent',
   color: active
-    ? '#ffffff'
-    : 'rgba(255, 255, 255, 0.4)',
+    ? theme.palette.primary.outlinedColor
+    : theme.palette.text.secondary,
   cursor: 'pointer',
   position: 'relative',
-  transition: 'color 0.1s ease',
+  transition: 'color 0.15s ease, background-color 0.15s ease',
   padding: 0,
   outline: 'none',
 
@@ -103,15 +102,17 @@ const ActivityButton = styled('button')<ActivityButtonProps>(({ theme, active })
     content: '""',
     position: 'absolute',
     left: 0,
-    top: 0,
-    bottom: 0,
+    top: '25%',
+    bottom: '25%',
     width: '2px',
-    backgroundColor: active ? (theme.palette.mode === 'dark' ? '#ffffff' : '#007acc') : 'transparent',
-    transition: 'background-color 0.1s ease',
+    borderRadius: '0 2px 2px 0',
+    backgroundColor: active ? theme.palette.primary.outlinedColor : 'transparent',
+    transition: 'background-color 0.15s ease, top 0.15s ease, bottom 0.15s ease',
   },
 
   '&:hover': {
-    color: '#ffffff',
+    backgroundColor: `${theme.palette.primary.outlinedColor}0F`,
+    color: theme.palette.text.primary,
   },
 
   '&:focus-visible': {
@@ -120,7 +121,7 @@ const ActivityButton = styled('button')<ActivityButtonProps>(({ theme, active })
   },
 
   '& svg': {
-    fontSize: '24px',
+    fontSize: '22px',
   },
 }));
 

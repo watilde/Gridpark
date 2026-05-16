@@ -59,15 +59,7 @@ jest.mock('../hooks/useWorkspaceState', () => ({
     handleNodeSelect: jest.fn(),
     findWorkbookNode: jest.fn(),
     updateWorkbookReferences: jest.fn(),
-    handleManifestChange: jest.fn(),
-    handleCodeChange: jest.fn(),
-    readManifestFile: jest.fn(),
     formulaBarState: {},
-    activeManifestSession: null,
-    activeCodeSession: null,
-    manifestEditorData: null,
-    manifestIsDirty: false,
-    canEditManifest: false,
     dirtyNodeIds: {},
     resetWorkbooks: mockResetWorkbooks,
     electron: { setWindowTitle: mockSetWindowTitle },
@@ -75,12 +67,10 @@ jest.mock('../hooks/useWorkspaceState', () => ({
 }));
 
 jest.mock('../../../stores', () => ({
-  useAppDispatch: () => jest.fn(),
   useAppSelector: () => false,
 }));
 
 jest.mock('../../../stores/spreadsheetSlice', () => ({
-  updateUndoRedo: jest.fn(),
   selectCanUndo: jest.fn(),
   selectCanRedo: jest.fn(),
 }));

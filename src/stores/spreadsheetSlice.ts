@@ -33,17 +33,9 @@ export interface SpreadsheetState {
   selectedNodeId: string;
   openTabs: WorkbookTab[];
   activeTabId: string;
-  dirtyTabIds: string[];
-  
+
   // Transient UI State
   transientHighlights: TransientHighlight[];
-
-  formulaBar: {
-    activeCellAddress: string;
-    formulaBarValue: string;
-    formulaBaselineValue: string;
-    isEditing: boolean;
-  };
 
   undoRedo: {
     canUndo: boolean;
@@ -60,14 +52,7 @@ const initialState: SpreadsheetState = {
   selectedNodeId: '',
   openTabs: [],
   activeTabId: '',
-  dirtyTabIds: [],
   transientHighlights: [],
-  formulaBar: {
-    activeCellAddress: '',
-    formulaBarValue: '',
-    formulaBaselineValue: '',
-    isEditing: false,
-  },
   undoRedo: {
     canUndo: false,
     canRedo: false,
@@ -156,20 +141,16 @@ const spreadsheetSlice = createSlice({
       state.transientHighlights = [];
     },
 
-    setDirtyTabIds: (state, action: PayloadAction<string[]>) => {
-      state.dirtyTabIds = action.payload;
-    },
-
-    updateFormulaBar: (state, action: PayloadAction<{ address?: string; value?: string; baseline?: string; isEditing?: boolean; }>) => {
-      const { address, value, baseline, isEditing } = action.payload;
-      if (address !== undefined) state.formulaBar.activeCellAddress = address;
-      if (value !== undefined) state.formulaBar.formulaBarValue = value;
-      if (baseline !== undefined) state.formulaBar.formulaBaselineValue = baseline;
-      if (isEditing !== undefined) state.formulaBar.isEditing = isEditing;
-    },
-
     updateUndoRedo: (state, action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>) => {
       state.undoRedo = action.payload;
+    },
+
+    setAutoSaveEnabled: (state, action: PayloadAction<boolean>) => {
+      state.autoSaveEnabled = action.payload;
+    },
+
+    setAutoSaveInterval: (state, action: PayloadAction<number>) => {
+      state.autoSaveInterval = action.payload;
     },
 
     resetSpreadsheetState: () => initialState,
@@ -186,9 +167,9 @@ export const {
   addTransientHighlight,
   removeTransientHighlight,
   clearTransientHighlights,
-  setDirtyTabIds,
-  updateFormulaBar,
   updateUndoRedo,
+  setAutoSaveEnabled,
+  setAutoSaveInterval,
   resetSpreadsheetState,
 } = spreadsheetSlice.actions;
 
@@ -196,4 +177,11 @@ export default spreadsheetSlice.reducer;
 
 import { RootState } from './index';
 export const selectActiveTab = (state: RootState) => state.spreadsheet.openTabs.find(tab => tab.id === state.spreadsheet.activeTabId) || null;
+export const selectOpenTabs = (state: RootState) => state.spreadsheet.openTabs;
+export const selectWorkbookNodes = (state: RootState) => state.spreadsheet.workbookNodes;
+export const selectSelectedNodeId = (state: RootState) => state.spreadsheet.selectedNodeId;
 export const selectTransientHighlights = (state: RootState) => state.spreadsheet.transientHighlights;
+export const selectCanUndo = (state: RootState) => state.spreadsheet.undoRedo.canUndo;
+export const selectCanRedo = (state: RootState) => state.spreadsheet.undoRedo.canRedo;
+export const selectAutoSaveEnabled = (state: RootState) => state.spreadsheet.autoSaveEnabled;
+export const selectAutoSaveInterval = (state: RootState) => state.spreadsheet.autoSaveInterval;

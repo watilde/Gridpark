@@ -49,8 +49,15 @@ module.exports = {
     '<rootDir>/node_modules/',
     '<rootDir>/.webpack/',
     '<rootDir>/out/',
+    '<rootDir>/src/features/spreadsheet/hooks/__tests__/performanceDemoData.ts',
   ],
   
+  // Module name mapping (e.g., Vite ?worker imports, ESM-only packages)
+  moduleNameMapper: {
+    '\\?worker$': '<rootDir>/src/test/__mocks__/worker.js',
+    '^monaco-editor(.*)$': '<rootDir>/src/test/__mocks__/monaco-editor.js',
+  },
+
   // Module paths to ignore for transforming
   transformIgnorePatterns: [
     'node_modules/(?!(@mui/joy|@emotion|@babel/runtime)/)',

@@ -9,14 +9,7 @@ import {
   ReplaceCommand,
   FormulaCommitCommand,
 } from '../../spreadsheet-v2/components/SpreadsheetContainerV2';
-import { ManifestSession } from '../../../hooks/useFileSessions';
-import {
-  CellPosition,
-  CellRange,
-  ExcelFile,
-  GridparkCodeFile,
-  GridparkManifest,
-} from '../../../types/excel';
+import { CellPosition, CellRange } from '../../../types/excel';
 
 export interface TabContentAreaProps {
   openTabs: WorkbookTab[];
@@ -27,19 +20,6 @@ export interface TabContentAreaProps {
 
   activeTab: WorkbookTab | null;
 
-  activeCodeSession:
-    | {
-        content: string;
-        originalContent: string;
-        loading: boolean;
-        saving: boolean;
-        error?: string;
-      }
-    | undefined;
-  activeManifestSession: ManifestSession | undefined;
-  manifestEditorData: GridparkManifest | null;
-  manifestIsDirty: boolean;
-  canEditManifest: boolean;
   platformCapabilities: {
     isMac: boolean;
     isWindows: boolean;
@@ -50,21 +30,15 @@ export interface TabContentAreaProps {
   };
 
   onDirtyChange: (dirty: boolean) => void;
-
   onCellSelect: (position: CellPosition) => void;
   onRangeSelect: (range: CellRange) => void;
   onActiveCellDetails: (details: ActiveCellDetails) => void;
-  onManifestChange: (workbookId: string, file: ExcelFile, nextManifest: GridparkManifest) => void;
-  onSaveManifest: (workbookId: string, file: ExcelFile) => Promise<void>;
-  onReloadManifest: (file: ExcelFile) => Promise<void>;
-  onCodeChange: (codeFile: GridparkCodeFile, value: string) => void;
-  onSaveCode: (codeFile: GridparkCodeFile) => Promise<void>;
-  onCloseCodeTab: (tabId: string) => void;
+
   sheetSearchQuery: string;
   searchNavigation: SearchNavigationCommand | undefined;
   replaceCommand: ReplaceCommand | null;
   formulaCommitCommand: FormulaCommitCommand | null;
-  formulaBarState: any; // FormulaBar state from useFormulaBarOptimized
+  formulaBarState: any;
 }
 
 export const TabContentArea = forwardRef<EditorPanelHandle, TabContentAreaProps>(
@@ -75,24 +49,12 @@ export const TabContentArea = forwardRef<EditorPanelHandle, TabContentAreaProps>
       onTabChange,
       onCloseTab,
       tabIsDirty,
-
       activeTab,
-      activeCodeSession,
-      activeManifestSession,
-      manifestEditorData,
-      manifestIsDirty,
-      canEditManifest,
       platformCapabilities,
       onDirtyChange,
       onCellSelect,
       onRangeSelect,
       onActiveCellDetails,
-      onManifestChange,
-      onSaveManifest,
-      onReloadManifest,
-      onCodeChange,
-      onSaveCode,
-      onCloseCodeTab,
       sheetSearchQuery,
       searchNavigation,
       replaceCommand,
@@ -114,22 +76,11 @@ export const TabContentArea = forwardRef<EditorPanelHandle, TabContentAreaProps>
           <EditorPanel
             ref={ref}
             activeTab={activeTab}
-            activeCodeSession={activeCodeSession}
-            activeManifestSession={activeManifestSession}
-            manifestEditorData={manifestEditorData}
-            manifestIsDirty={manifestIsDirty}
-            canEditManifest={canEditManifest}
             platformCapabilities={platformCapabilities}
             onDirtyChange={onDirtyChange}
             onCellSelect={onCellSelect}
             onRangeSelect={onRangeSelect}
             onActiveCellDetails={onActiveCellDetails}
-            onManifestChange={onManifestChange}
-            onSaveManifest={onSaveManifest}
-            onReloadManifest={onReloadManifest}
-            onCodeChange={onCodeChange}
-            onSaveCode={onSaveCode}
-            onCloseCodeTab={onCloseCodeTab}
             sheetSearchQuery={sheetSearchQuery}
             searchNavigation={searchNavigation}
             replaceCommand={replaceCommand}

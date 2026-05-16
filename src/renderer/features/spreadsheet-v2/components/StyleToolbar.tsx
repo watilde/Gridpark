@@ -5,7 +5,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { Box, Select, Option, IconButton, Stack, useTheme, Tooltip, Tabs, TabList, Tab } from '@mui/joy';
+import { Box, IconButton, Stack, useTheme, Tooltip } from '@mui/joy';
 import {
   BorderAll as BorderAllIcon,
   BorderOuter as BorderOuterIcon,
@@ -86,14 +86,6 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
 
-  const handleFontFamilyChange = useCallback((_: any, value: string | null) => {
-    if (value) onStyleChange({ fontFamily: value });
-  }, [onStyleChange]);
-
-  const handleFontSizeChange = useCallback((_: any, value: string | null) => {
-    if (value) onStyleChange({ fontSize: value });
-  }, [onStyleChange]);
-
   const toggleBold = useCallback(() => {
     const isBold = selectedCellStyle.fontWeight === 'bold' || selectedCellStyle.fontWeight === 700;
     onStyleChange({ fontWeight: isBold ? 'normal' : 'bold' });
@@ -144,42 +136,33 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
         width: '100%',
       }}
     >
-      <Tabs
-        value={activeTab}
-        onChange={(e, val) => setActiveTab(val as number)}
-        size="sm"
-        sx={{
-          backgroundColor: 'transparent',
-          '& .MuiTab-root': {
-            fontWeight: 500,
-            fontSize: '12px',
-            minHeight: '32px',
-            borderRadius: '4px 4px 0 0',
-            '&.Mui-selected': {
-              backgroundColor: 'background.body',
-              borderTop: `2px solid ${theme.palette.primary.main}`,
-              borderBottom: 'none',
-              color: 'text.primary',
-            },
-            '&:hover': {
-              backgroundColor: 'background.level1',
-            }
-          },
-          '& .MuiTabList-root': {
-            padding: '4px 8px 0',
-            gap: 0.5,
-            borderBottom: 'none',
-          }
-        }}
-      >
-        <TabList disableUnderline>
-          <Tab>Home</Tab>
-          <Tab>Insert</Tab>
-          <Tab>Draw</Tab>
-          <Tab>Page Layout</Tab>
-          <Tab>Formulas</Tab>
-          <Tab>Data</Tab>
-        </TabList>
+      <Box>
+        <Box sx={{ display: 'flex', padding: '4px 8px 0', gap: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+          {(['Home', 'Insert', 'Draw', 'Page Layout', 'Formulas', 'Data'] as const).map((label, index) => (
+            <Box
+              key={label}
+              component="button"
+              onClick={() => setActiveTab(index)}
+              sx={{
+                fontWeight: 500,
+                fontSize: '12px',
+                minHeight: '32px',
+                borderRadius: '4px 4px 0 0',
+                border: 'none',
+                borderTop: activeTab === index ? `2px solid ${theme.palette.primary.outlinedColor}` : '2px solid transparent',
+                background: 'none',
+                cursor: 'pointer',
+                padding: '2px 10px',
+                color: activeTab === index ? 'inherit' : theme.palette.text.secondary,
+                backgroundColor: activeTab === index ? theme.palette.background.body : 'transparent',
+                marginBottom: '-1px',
+                '&:hover': { backgroundColor: theme.palette.background.level1 },
+              }}
+            >
+              {label}
+            </Box>
+          ))}
+        </Box>
 
         <Box
           sx={{
@@ -198,25 +181,37 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
             <Stack direction="row" spacing={1} alignItems="center">
               {/* Font */}
               <Stack direction="row" spacing={1} alignItems="center">
-                <Select
+                <Box
+                  component="select"
                   value={selectedCellStyle.fontFamily || 'Arial'}
-                  onChange={handleFontFamilyChange}
-                  size="sm"
-                  variant="outlined"
-                  sx={{ minWidth: 130 }}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    if (e.target.value) onStyleChange({ fontFamily: e.target.value });
+                  }}
+                  sx={{
+                    fontSize: '12px', border: '1px solid', borderColor: 'neutral.outlinedBorder',
+                    borderRadius: 'sm', px: 0.75, py: 0.25, minWidth: 130,
+                    backgroundColor: 'background.surface', color: 'text.primary', cursor: 'pointer',
+                    '&:focus': { outline: 'none', borderColor: 'primary.outlinedBorder' },
+                  }}
                 >
-                  {FONT_FAMILIES.map(font => <Option key={font} value={font}>{font}</Option>)}
-                </Select>
+                  {FONT_FAMILIES.map(font => <option key={font} value={font}>{font}</option>)}
+                </Box>
 
-                <Select
+                <Box
+                  component="select"
                   value={selectedCellStyle.fontSize || '13px'}
-                  onChange={handleFontSizeChange}
-                  size="sm"
-                  variant="outlined"
-                  sx={{ minWidth: 70 }}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    if (e.target.value) onStyleChange({ fontSize: e.target.value });
+                  }}
+                  sx={{
+                    fontSize: '12px', border: '1px solid', borderColor: 'neutral.outlinedBorder',
+                    borderRadius: 'sm', px: 0.75, py: 0.25, minWidth: 70,
+                    backgroundColor: 'background.surface', color: 'text.primary', cursor: 'pointer',
+                    '&:focus': { outline: 'none', borderColor: 'primary.outlinedBorder' },
+                  }}
                 >
-                  {FONT_SIZES.map(size => <Option key={size} value={size}>{size}</Option>)}
-                </Select>
+                  {FONT_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
+                </Box>
               </Stack>
 
               <Divider />
@@ -539,7 +534,7 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
             </Stack>
           )}
         </Box>
-      </Tabs>
+      </Box>
     </Box>
   );
 };

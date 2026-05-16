@@ -218,7 +218,7 @@ const sendFilesToRenderer = (
 const handleOpenFiles = async (window: BrowserWindow) => {
   const { canceled, filePaths } = await dialog.showOpenDialog(window, {
     properties: ['openFile', 'multiSelections'],
-    filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
+    filters: [{ name: 'Spreadsheet Files', extensions: ['xlsx', 'xls', 'csv', 'gridpark'] }],
   });
   if (canceled || !filePaths.length) return;
   const files = (await Promise.all(filePaths.map(loadExcelFileFromPath)))
@@ -325,9 +325,9 @@ ipcMain.handle('excel:create-new-file', async () => {
     }
 
     const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-      title: 'Create New Excel File',
+      title: 'Create New Spreadsheet File',
       defaultPath: 'Untitled.xlsx',
-      filters: [{ name: 'Excel Files', extensions: ['xlsx'] }],
+      filters: [{ name: 'Spreadsheet Files', extensions: ['xlsx', 'csv', 'gridpark'] }],
       properties: ['createDirectory', 'showOverwriteConfirmation'],
     });
 
@@ -403,9 +403,9 @@ ipcMain.handle('excel:open-file', async () => {
     }
     
     const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-      title: 'Open Excel File',
+      title: 'Open Spreadsheet File',
       properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
+      filters: [{ name: 'Spreadsheet Files', extensions: ['xlsx', 'xls', 'csv', 'gridpark'] }],
     });
     
     console.timeEnd('[Main] Dialog duration');
@@ -505,17 +505,34 @@ ipcMain.handle('excel:save-file', async (_event, excelFile: ExcelFile) => {
  * Save Excel File As
  * Shows save dialog and saves to a new location
  */
-ipcMain.handle('excel:save-file-as', async (_event, excelFile: ExcelFile) => {
+ipcMain.handle('excel:save-file-as', async (_event, excelFile: ExcelFile, formatHint?: string) => {
   try {
     const mainWindow = BrowserWindow.getFocusedWindow();
     if (!mainWindow) {
       return { success: false, error: 'No active window' };
     }
 
+    // Determine default extension and name
+    const currentExt = extname(excelFile.path || excelFile.name || '').toLowerCase();
+    const targetExt = formatHint ? (formatHint.startsWith('.') ? formatHint : `.${formatHint}`) : (currentExt || '.xlsx');
+    
+    let defaultName = excelFile.name || 'Untitled';
+    if (!extname(defaultName)) {
+      defaultName += targetExt;
+    } else if (formatHint) {
+      // Replace existing extension if formatHint is provided
+      defaultName = defaultName.replace(/\.[^/.]+$/, targetExt);
+    }
+
     const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-      title: 'Save Excel File As',
-      defaultPath: excelFile.name || 'Untitled.xlsx',
-      filters: [{ name: 'Excel Files', extensions: ['xlsx'] }],
+      title: 'Save Spreadsheet File As',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'Excel Workbook', extensions: ['xlsx'] },
+        { name: 'CSV File', extensions: ['csv'] },
+        { name: 'Gridpark Project', extensions: ['gridpark'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
       properties: ['createDirectory', 'showOverwriteConfirmation'],
     });
 
@@ -523,18 +540,27 @@ ipcMain.handle('excel:save-file-as', async (_event, excelFile: ExcelFile) => {
       return { success: false, canceled: true };
     }
 
-    // Serialize the ExcelFile to ArrayBuffer using ExcelJS
-    const buffer = await serializeExcelFile(excelFile);
+    // CRITICAL: Update the file object with the NEW path before serialization
+    // This ensures serializeExcelFile uses the correct adapter based on the chosen extension
+    const updatedFile = {
+      ...excelFile,
+      path: filePath,
+      name: basename(filePath)
+    };
+
+    // Serialize the ExcelFile to ArrayBuffer
+    const buffer = await serializeExcelFile(updatedFile);
     
     // Write to file system
     writeFileSync(filePath, Buffer.from(buffer));
 
-    console.log(`[Main] Saved file as: ${filePath}`);
+    console.log(`[Main] Saved file as: ${filePath} (Format: ${extname(filePath)})`);
     
     return {
       success: true,
       path: filePath,
       name: basename(filePath),
+      file: updatedFile // Return the updated file object
     };
   } catch (error) {
     console.error('Failed to save file as:', error);
