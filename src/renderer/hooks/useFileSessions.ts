@@ -149,6 +149,7 @@ export const useSaveWorkbook = () => {
               merges: meta?.merges?.length ? meta.merges : baseProps.merges,
               columns,
               rows,
+              drawingData: meta?.drawingData ?? baseProps.drawingData,
             };
 
             return {
@@ -240,11 +241,19 @@ export const useSaveWorkbook = () => {
             return { ...sheet, data: [], rowCount: 0, colCount: sheet.colCount };
           }
 
+          const meta = await db.getSheetMetadata(tabId);
+          const baseProps = (sheet.properties ?? {}) as any;
+          const mergedProps = {
+            ...baseProps,
+            drawingData: meta?.drawingData ?? baseProps.drawingData,
+          };
+
           return {
             ...sheet,
             data,
             rowCount: data.length,
             colCount: data[0]?.length ?? sheet.colCount,
+            properties: mergedProps,
           };
         })
       );
@@ -254,38 +263,25 @@ export const useSaveWorkbook = () => {
       // STEP 2: Save As dialog
       console.log('[useSaveWorkbook] Opening Save As dialog...');
 
-      let result: Awaited<ReturnType<NonNullable<typeof electronAPI>['saveFileAs']>>;
-      if (electronAPI!.isWSL && electronAPI!.saveFileAsToPath) {
-        const defaultPath = file.path
-          ? file.path.replace(/[^/\\]+$/, file.name || 'export.xlsx')
-          : `/home/${file.name || 'export.xlsx'}`;
-        const filePath = window.prompt('Save as (enter full path):', defaultPath);
-        if (!filePath) {
-          console.log('[useSaveWorkbook] Save As canceled');
-          return null;
-        }
-        result = await electronAPI!.saveFileAsToPath(updatedFile, filePath);
-      } else {
-        result = await electronAPI!.saveFileAs(updatedFile);
-      }
+      const result = await electronAPI!.saveFileAs(updatedFile);
 
       if (result.canceled) {
         console.log('[useSaveWorkbook] Save As canceled');
         return null;
       }
 
-      if (!result.success || !result.file) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to save file');
       }
 
-      console.log('[useSaveWorkbook] File saved as:', result.file.path);
+      console.log('[useSaveWorkbook] File saved as:', result.path ?? result.file?.path);
 
       // Note: We do NOT mark sheets as clean here because the "Save As" creates a COPY.
       // The original workbook in the editor is still open and potentially dirty.
       // If we wanted to "switch" to the new file, we would need to reload the workspace with the new file.
       // For a simple "Export", we don't change the active workspace state.
 
-      return result.file;
+      return result.file ?? null;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('[useSaveWorkbook] === SAVE AS FAILED ===', message);

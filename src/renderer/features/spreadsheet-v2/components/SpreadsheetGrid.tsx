@@ -11,7 +11,7 @@
 
 import React, { useRef, useCallback, useMemo, CSSProperties, useState, useEffect } from 'react';
 import { Box, Input, useTheme } from '@mui/joy';
-import { StoredCellData, CellStyleData } from '../../../../lib/db';
+import { StoredCellData, CellStyleData, db } from '../../../../lib/db';
 import { useT } from '../../../i18n/I18nProvider';
 
 // Constants
@@ -92,6 +92,7 @@ interface SpreadsheetGridProps {
   activeMatch?: CellPosition | null;
 
   // Drawing
+  tabId?: string;
   activeDrawTool?: 'pen' | 'highlighter' | 'eraser' | 'spray' | null;
   penColor?: string;
 
@@ -160,6 +161,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   computedValues,
   searchQuery,
   activeMatch,
+  tabId,
   activeDrawTool,
   penColor = '#000000',
   onInsertRow,
@@ -349,6 +351,45 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const sprayAnimationRef = useRef<number | null>(null);
   const sprayPos = useRef<{ x: number; y: number } | null>(null);
 
+  // Cache drawing data so it survives canvas resizes
+  const drawingDataRef = useRef<string | null>(null);
+
+  const applyDrawingToCanvas = useCallback((dataUrl: string) => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0);
+    img.src = dataUrl;
+  }, []);
+
+  // Subscribe to db metadata so restoration works even when metadata is
+  // inserted asynchronously (setTimeout in useWorkspace after file open).
+  useEffect(() => {
+    if (!tabId) return;
+
+    const restore = async () => {
+      const meta = await db.getSheetMetadata(tabId);
+      if (meta?.drawingData) {
+        drawingDataRef.current = meta.drawingData;
+        applyDrawingToCanvas(meta.drawingData);
+      } else {
+        drawingDataRef.current = null;
+        if (canvasRef.current) {
+          const ctx = canvasRef.current.getContext('2d');
+          ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+      }
+    };
+
+    restore();
+
+    const unsubscribe = db.subscribe(restore, { tabId, type: 'metadata' });
+    return unsubscribe;
+  }, [tabId, applyDrawingToCanvas]);
+
+
   // Scroll active find match into view when it changes
   useEffect(() => {
     if (!activeMatch || !containerRef.current) return;
@@ -415,6 +456,13 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   // Total content dimensions
   const contentWidth = colLefts[visibleCols];
   const contentHeight = rowTops[visibleRows];
+
+  // Re-apply drawing after canvas is resized (React clears canvas when width/height attrs change)
+  useEffect(() => {
+    if (drawingDataRef.current) {
+      applyDrawingToCanvas(drawingDataRef.current);
+    }
+  }, [contentWidth, contentHeight, applyDrawingToCanvas]);
 
   // Spray animation loop
   const startSprayLoop = useCallback(
@@ -519,7 +567,12 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
       cancelAnimationFrame(sprayAnimationRef.current);
       sprayAnimationRef.current = null;
     }
-  }, []);
+    if (tabId && canvasRef.current) {
+      const dataUrl = canvasRef.current.toDataURL('image/png');
+      db.setDrawingData(tabId, dataUrl);
+      db.markSheetDirty(tabId, true);
+    }
+  }, [tabId]);
 
   // Get cell value (computed or raw, with optional number format applied)
   const getCellValue = useCallback(

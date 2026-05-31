@@ -204,6 +204,9 @@ export interface SheetMetadata {
   // State
   dirty: boolean; // Has unsaved changes
 
+  // Drawing overlay (base64 PNG data URL)
+  drawingData?: string;
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -447,6 +450,18 @@ export class AppDatabase {
       dirty: verified?.dirty,
       success: verified?.dirty === dirty,
     });
+  }
+
+  // ==========================================================================
+  // Drawing data
+  // ==========================================================================
+
+  async setDrawingData(tabId: string, drawingData: string | undefined): Promise<void> {
+    const meta = this.sheetMetadataStore.get(tabId);
+    if (!meta) return;
+    meta.drawingData = drawingData;
+    meta.updatedAt = new Date();
+    this.sheetMetadataStore.set(tabId, meta);
   }
 
   // ==========================================================================

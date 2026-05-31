@@ -794,6 +794,7 @@ export const SpreadsheetContainerV2 = forwardRef<
             onRangeSelect={handleRangeSelect}
             searchQuery={findOpen ? findText : searchQuery}
             activeMatch={activeMatch}
+            tabId={effectiveTabId}
             activeDrawTool={activeDrawTool}
             penColor={penColor}
             onInsertRow={insertRow}

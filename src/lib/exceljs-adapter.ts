@@ -276,6 +276,34 @@ export class ExcelJSAdapter {
         });
       });
 
+      // Extract drawing overlay (ink/draw tool) — look for images marked with gridpark://ink
+      let drawingData: string | undefined;
+      try {
+        const images = worksheet.getImages();
+        for (const img of images) {
+          const imgModel = (img as any).model ?? img;
+          const hyperlinks = imgModel.hyperlinks ?? (img as any).range?.hyperlinks;
+          if (
+            hyperlinks?.tooltip === '__gridpark_ink__' ||
+            hyperlinks?.hyperlink === 'gridpark://ink'
+          ) {
+            const imageId = imgModel.imageId ?? (img as any).imageId;
+            const medium = workbook.getImage(imageId as unknown as number);
+            if ((medium as any)?.buffer) {
+              const ext = (medium as any).extension || 'png';
+              drawingData = `data:image/${ext};base64,${(medium as any).buffer.toString('base64')}`;
+            } else if ((medium as any)?.base64) {
+              const ext = (medium as any).extension || 'png';
+              const b64 = (medium as any).base64;
+              drawingData = b64.startsWith('data:') ? b64 : `data:image/${ext};base64,${b64}`;
+            }
+            break;
+          }
+        }
+      } catch (e) {
+        console.warn('[ExcelJS] Failed to extract drawing overlay:', e);
+      }
+
       // Extract sheet properties
       const properties: ExcelSheetProperties = {
         merges: (worksheet as any).model?.merges || [],
@@ -302,6 +330,7 @@ export class ExcelJSAdapter {
                   : (worksheet.autoFilter as any).ref,
             }
           : undefined,
+        drawingData,
       };
 
       return {
@@ -332,7 +361,7 @@ export class ExcelJSAdapter {
     workbook.created = new Date();
     workbook.modified = new Date();
 
-    for (const sheetData of sheets) {
+    for (const [sheetIndex, sheetData] of sheets.entries()) {
       const worksheet = workbook.addWorksheet(sheetData.name);
 
       // Apply column widths
@@ -425,6 +454,25 @@ export class ExcelJSAdapter {
         sheetData.properties.conditionalFormattings.forEach(cf => {
           worksheet.addConditionalFormatting(cf as any);
         });
+      }
+
+      // Apply drawing overlay (ink/draw tool result)
+      if (sheetData.properties?.drawingData) {
+        const dataUrl: string = sheetData.properties.drawingData;
+        const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+        const imageName = `gridpark_ink_${sheetIndex}`;
+        const imageId = workbook.addImage({ base64, extension: 'png', name: imageName } as any);
+        const rowCount = sheetData.data.length || 100;
+        const colCount = sheetData.data[0]?.length || 26;
+        worksheet.addImage(imageId, {
+          tl: { col: 0, row: 0 },
+          br: { col: colCount, row: rowCount },
+          editAs: 'absolute',
+          hyperlinks: {
+            hyperlink: 'gridpark://ink',
+            tooltip: '__gridpark_ink__',
+          },
+        } as any);
       }
 
       // Apply images

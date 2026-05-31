@@ -535,8 +535,10 @@ ipcMain.handle('excel:save-file-as', async (_event, excelFile: ExcelFile) => {
 
     console.log(`[Main] Saved file as: ${filePath}`);
 
+    const savedFile = await loadExcelFileFromPath(filePath);
     return {
       success: true,
+      file: savedFile,
       path: filePath,
       name: basename(filePath),
     };

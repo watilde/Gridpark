@@ -237,8 +237,16 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
             workbookId: tab.workbookId,
           });
 
-          // Pass workbookId so the correct tabIds are used
-          await saveWorkbookFile(workbookNode.file, tab.workbookId);
+          if (!workbookNode.file.path) {
+            // No path yet — fall back to Save As; mark clean manually since
+            // saveWorkbookFileAs only creates a copy and doesn't mark clean.
+            const savedFile = await saveWorkbookFileAs(workbookNode.file, tab.workbookId);
+            if (savedFile !== null) {
+              await db.markSheetDirty(tabId, false);
+            }
+          } else {
+            await saveWorkbookFile(workbookNode.file, tab.workbookId);
+          }
 
           console.log('[useWorkspaceState] Workbook saved successfully');
         } catch (error) {
@@ -251,7 +259,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
       console.log('[useWorkspaceState] === TAB SAVED ===', { tabId });
     },
-    [openTabs, findWorkbookNode, saveWorkbookFile]
+    [openTabs, findWorkbookNode, saveWorkbookFile, saveWorkbookFileAs]
   );
 
   const saveTabAs = useCallback(
@@ -295,8 +303,11 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
         const workbookNode = findWorkbookNode(tab.workbookId);
         if (workbookNode?.file) {
           try {
-            // Pass workbookId so the correct tabIds are used
-            await saveWorkbookFile(workbookNode.file, tab.workbookId);
+            if (!workbookNode.file.path) {
+              await saveWorkbookFileAs(workbookNode.file, tab.workbookId);
+            } else {
+              await saveWorkbookFile(workbookNode.file, tab.workbookId);
+            }
           } catch (error) {
             console.error('[useWorkspaceState] Failed to save workbook:', error);
           }
@@ -307,7 +318,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     await Promise.all(savePromises);
 
     console.log('[useWorkspaceState] All tabs saved');
-  }, [dirtyTabIds, openTabs, findWorkbookNode, saveWorkbookFile]);
+  }, [dirtyTabIds, openTabs, findWorkbookNode, saveWorkbookFile, saveWorkbookFileAs]);
 
   const saveManager = useMemo(
     () => ({

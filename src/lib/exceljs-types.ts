@@ -385,6 +385,9 @@ export interface ExcelSheetProperties {
   // Images
   images?: ExcelImage[];
 
+  // Drawing overlay (base64 PNG data URL for ink/draw tool)
+  drawingData?: string;
+
   // Column widths
   columns?: Array<{
     width?: number;

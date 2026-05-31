@@ -138,6 +138,7 @@ export const useWorkspace = (_dirtyTrackingDeps: DirtyTrackingDeps) => {
                 merges: Array.isArray(props.merges) ? props.merges : undefined,
                 columnWidths: Object.keys(columnWidths).length ? columnWidths : undefined,
                 rowHeights: Object.keys(rowHeights).length ? rowHeights : undefined,
+                drawingData: typeof props.drawingData === 'string' ? props.drawingData : undefined,
               });
             }
           }
