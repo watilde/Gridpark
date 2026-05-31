@@ -44,7 +44,6 @@ export interface TabContentAreaProps {
     isMac: boolean;
     isWindows: boolean;
     isLinux: boolean;
-    isWeb: boolean;
     hasFilesystem: boolean;
     hasShell: boolean;
   };

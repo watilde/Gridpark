@@ -1,16 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
+import Input from '@mui/joy/Input';
 import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
 import { useTheme } from '@mui/joy/styles';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import SearchIcon from '@mui/icons-material/Search';
 import { FileTree, FileNode } from '../../features/file-explorer/FileTree';
 import { useT } from '../../i18n/I18nProvider';
 
 interface SidebarExplorerProps {
   workbookNodes: FileNode[];
-  searchQuery: string;
+  searchQuery?: string; // kept for API compat but not used
   selectedNodeId: string;
   onNodeSelect: (node: FileNode) => void;
   dirtyNodeIds: Record<string, boolean>;
@@ -20,47 +22,43 @@ interface SidebarExplorerProps {
 
 export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
   workbookNodes,
-  searchQuery,
   selectedNodeId,
   onNodeSelect,
   dirtyNodeIds,
-  title,
   onOpenFile,
 }) => {
   const theme = useTheme();
   const t = useT();
-  const resolvedTitle = title ?? t('sidebar.explore');
+  const [query, setQuery] = useState('');
 
-  // Filter nodes based on search query
-  const filteredTreeNodes = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return workbookNodes;
-    }
-    const filterNode = (node: FileNode): FileNode | null => {
-      const nameMatches = node.name.toLowerCase().includes(query);
-      if (nameMatches) {
-        return node;
-      }
-      if (node.children && node.children.length > 0) {
-        const filteredChildren = node.children
-          .map(filterNode)
-          .filter((child): child is FileNode => Boolean(child));
-        if (filteredChildren.length > 0) {
-          return {
-            ...node,
-            children: filteredChildren,
-          };
-        }
+  const filteredNodes = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return workbookNodes;
+    const filter = (node: FileNode): FileNode | null => {
+      if (node.name.toLowerCase().includes(q)) return node;
+      if (node.children?.length) {
+        const children = node.children.map(filter).filter((n): n is FileNode => n !== null);
+        if (children.length) return { ...node, children };
       }
       return null;
     };
-    return workbookNodes.map(filterNode).filter((node): node is FileNode => Boolean(node));
-  }, [searchQuery, workbookNodes]);
+    return workbookNodes.map(filter).filter((n): n is FileNode => n !== null);
+  }, [query, workbookNodes]);
 
-  const isFiltering = Boolean(searchQuery.trim());
-  const displayNodes = isFiltering ? filteredTreeNodes : workbookNodes;
-  const noMatches = isFiltering && filteredTreeNodes.length === 0;
+  const noMatches = query.trim() !== '' && filteredNodes.length === 0;
+
+  const searchBar = (
+    <Box sx={{ padding: '14px 14px 13px 13px', borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Input
+        size="sm"
+        placeholder={t('sidebar.explore')}
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        startDecorator={<SearchIcon sx={{ fontSize: 16 }} />}
+        sx={{ '--Input-focusedThickness': '1px' }}
+      />
+    </Box>
+  );
 
   if (workbookNodes.length === 0) {
     return (
@@ -72,9 +70,7 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
           backgroundColor: theme.palette.background.surface,
         }}
       >
-        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Typography level="title-md">{resolvedTitle}</Typography>
-        </Box>
+        {searchBar}
         <Box
           sx={{
             flex: 1,
@@ -113,30 +109,26 @@ export const SidebarExplorer: React.FC<SidebarExplorerProps> = ({
         backgroundColor: theme.palette.background.surface,
       }}
     >
-      <FileTree
-        files={displayNodes}
-        selectedNodeId={selectedNodeId}
-        onNodeSelect={onNodeSelect}
-        title={resolvedTitle}
-        dirtyNodeIds={dirtyNodeIds}
-        fullHeight
-      />
-      {noMatches && (
-        <Sheet
-          variant="plain"
-          sx={{
-            p: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            color: 'text.secondary',
-            backgroundColor: 'transparent',
-          }}
-        >
-          <Typography level="body-sm">
-            {t('sidebar.no_files_match', { query: searchQuery.trim() })}
-          </Typography>
-        </Sheet>
-      )}
+      {searchBar}
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <FileTree
+          files={filteredNodes}
+          selectedNodeId={selectedNodeId}
+          onNodeSelect={onNodeSelect}
+          dirtyNodeIds={dirtyNodeIds}
+          fullHeight={false}
+        />
+        {noMatches && (
+          <Sheet
+            variant="plain"
+            sx={{ p: 2, color: 'text.secondary', backgroundColor: 'transparent' }}
+          >
+            <Typography level="body-sm">
+              {t('sidebar.no_files_match', { query: query.trim() })}
+            </Typography>
+          </Sheet>
+        )}
+      </Box>
     </Box>
   );
 };

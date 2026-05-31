@@ -67,6 +67,7 @@ export const ja: Record<TranslationKey, string> = {
   'toolbar.draw_pen': 'ペン',
   'toolbar.draw_highlighter': '蛍光ペン',
   'toolbar.draw_eraser': '消しゴム',
+  'toolbar.draw_spray': 'スプレー',
 
   // ----- Toolbar tooltips (Formulas) -----
   'toolbar.insert_function': '関数を挿入 (fx)',

@@ -241,9 +241,9 @@ export const SpreadsheetContainerV2 = forwardRef<
     const selectedRange = hookSelectedRange;
 
     // Drawing state
-    const [activeDrawTool, setActiveDrawTool] = useState<'pen' | 'highlighter' | 'eraser' | null>(
-      null
-    );
+    const [activeDrawTool, setActiveDrawTool] = useState<
+      'pen' | 'highlighter' | 'eraser' | 'spray' | null
+    >(null);
     const [penColor, setPenColor] = useState('#000000');
 
     // Freeze pane state (0 = no freeze, 1 = freeze first row/col)

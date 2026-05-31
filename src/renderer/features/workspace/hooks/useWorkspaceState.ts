@@ -70,6 +70,7 @@ export interface UseWorkspaceStateReturn {
   // Search state
   searchState: SearchState;
   setTreeSearchQuery: (query: string) => void;
+  setSheetSearchQuery: (query: string) => void;
 
   // Save manager
   saveManager: {
@@ -97,6 +98,7 @@ export interface UseWorkspaceStateReturn {
   handleNodeSelect: (node: any) => void;
   findWorkbookNode: (workbookId: string) => any;
   updateWorkbookReferences: (workbookId: string, file: ExcelFile) => void;
+  loadFiles: (files: ExcelFile[]) => void;
 
   // Formula bar
   formulaBarState: any;
@@ -137,6 +139,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     handleTabChange,
     handleNodeSelect,
     handleCloseTab,
+    loadFiles,
   } = workspace;
 
   // ============================================
@@ -152,6 +155,11 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
   const setTreeSearchQuery = useCallback(
     (query: string) => dispatchSearch({ type: 'SET_TREE_SEARCH', payload: query }),
+    []
+  );
+
+  const setSheetSearchQuery = useCallback(
+    (query: string) => dispatchSearch({ type: 'SET_SHEET_SEARCH', payload: query }),
     []
   );
 
@@ -396,6 +404,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     // Search state
     searchState,
     setTreeSearchQuery,
+    setSheetSearchQuery,
 
     // Save manager
     saveManager,
@@ -415,6 +424,9 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
 
     // Computed values
     dirtyNodeIds,
+
+    // Direct file loading
+    loadFiles,
 
     // Electron
     electron,

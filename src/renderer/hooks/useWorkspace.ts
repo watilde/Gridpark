@@ -314,5 +314,8 @@ export const useWorkspace = (dirtyTrackingDeps: DirtyTrackingDeps) => {
     // Tab Operations
     handleNodeSelect,
     handleCloseTab,
+
+    // Direct file loading (Chromium file picker → renderer-side parse)
+    loadFiles: resetWorkbooks,
   };
 };

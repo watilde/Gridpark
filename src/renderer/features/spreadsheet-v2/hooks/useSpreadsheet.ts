@@ -304,6 +304,59 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     await db.markSheetDirty(tabId, false);
   }, [tabId]);
 
+  // Apply a history item to DB + formula engine + cells state directly (no async reload)
+  const applyHistoryState = useCallback(
+    async (
+      row: number,
+      col: number,
+      state: { value: any; formula?: string; type: string; style?: CellStyleData } | null
+    ) => {
+      const key = `${row},${col}`;
+      if (state) {
+        await db.upsertCell(tabId, row, col, {
+          value: state.value,
+          type: state.type,
+          formula: state.formula,
+          style: state.style || {},
+        });
+        formulaEngine.setCell(row, col, {
+          row,
+          col,
+          value: state.value,
+          formula: state.formula,
+          type: state.type,
+        });
+        setCells(prev => {
+          const next = new Map(prev);
+          const existing = prev.get(key);
+          next.set(key, {
+            id: existing?.id,
+            tabId,
+            row,
+            col,
+            value: state.value,
+            type: state.type as StoredCellData['type'],
+            formula: state.formula,
+            style: state.style || {},
+            updatedAt: new Date(),
+            version: (existing?.version || 0) + 1,
+          });
+          return next;
+        });
+      } else {
+        await db.deleteCell(tabId, row, col);
+        // Clear cell in formula engine
+        formulaEngine.setCell(row, col, { row, col, value: null, formula: undefined, type: 'empty' });
+        setCells(prev => {
+          const next = new Map(prev);
+          next.delete(key);
+          return next;
+        });
+      }
+    },
+    [tabId, formulaEngine]
+  );
+
   // Undo
   const undo = useCallback(async () => {
     if (undoStack.length === 0) return;
@@ -312,39 +365,14 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     isUndoRedoRef.current = true;
 
     try {
-      // Restore previous value
-      if (item.before) {
-        await db.upsertCell(tabId, item.row, item.col, {
-          value: item.before.value,
-          type: item.before.type,
-          formula: item.before.formula,
-          style: item.before.style || {},
-        });
-
-        formulaEngine.setCell(item.row, item.col, {
-          row: item.row,
-          col: item.col,
-          value: item.before.value,
-          formula: item.before.formula,
-          type: item.before.type,
-        });
-      } else {
-        // Delete cell (was empty before)
-        await db.deleteCell(tabId, item.row, item.col);
-      }
-
-      // Move to redo stack
+      await applyHistoryState(item.row, item.col, item.before);
       setRedoStack(prev => [...prev, item]);
       setUndoStack(prev => prev.slice(0, -1));
-
       await db.markSheetDirty(tabId, true);
-
-      // Reload data to reflect changes
-      reloadData();
     } finally {
       isUndoRedoRef.current = false;
     }
-  }, [tabId, undoStack, formulaEngine, reloadData]);
+  }, [tabId, undoStack, applyHistoryState]);
 
   // Redo
   const redo = useCallback(async () => {
@@ -354,34 +382,14 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
     isUndoRedoRef.current = true;
 
     try {
-      // Restore next value
-      await db.upsertCell(tabId, item.row, item.col, {
-        value: item.after.value,
-        type: item.after.type,
-        formula: item.after.formula,
-        style: item.after.style || {},
-      });
-
-      formulaEngine.setCell(item.row, item.col, {
-        row: item.row,
-        col: item.col,
-        value: item.after.value,
-        formula: item.after.formula,
-        type: item.after.type,
-      });
-
-      // Move to undo stack
+      await applyHistoryState(item.row, item.col, item.after);
       setUndoStack(prev => [...prev, item]);
       setRedoStack(prev => prev.slice(0, -1));
-
       await db.markSheetDirty(tabId, true);
-
-      // Reload data to reflect changes
-      reloadData();
     } finally {
       isUndoRedoRef.current = false;
     }
-  }, [tabId, redoStack, formulaEngine, reloadData]);
+  }, [tabId, redoStack, applyHistoryState]);
 
   // Copy selected cell or range to clipboard
   const copyCell = useCallback(async () => {

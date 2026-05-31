@@ -92,7 +92,7 @@ interface SpreadsheetGridProps {
   activeMatch?: CellPosition | null;
 
   // Drawing
-  activeDrawTool?: 'pen' | 'highlighter' | 'eraser' | null;
+  activeDrawTool?: 'pen' | 'highlighter' | 'eraser' | 'spray' | null;
   penColor?: string;
 
   // Structural ops (row/column insert/delete)
@@ -346,6 +346,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   // Drawing state
   const isDrawing = useRef(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
+  const sprayAnimationRef = useRef<number | null>(null);
+  const sprayPos = useRef<{ x: number; y: number } | null>(null);
 
   // Scroll active find match into view when it changes
   useEffect(() => {
@@ -414,6 +416,41 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const contentWidth = colLefts[visibleCols];
   const contentHeight = rowTops[visibleRows];
 
+  // Spray animation loop
+  const startSprayLoop = useCallback(
+    (ctx: CanvasRenderingContext2D) => {
+      const loop = () => {
+        if (!isDrawing.current || !sprayPos.current) return;
+
+        const { x, y } = sprayPos.current;
+        const radius = 30;
+        const density = 40;
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = penColor;
+
+        for (let i = 0; i < density; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          // Gaussian-like falloff: bias toward center
+          const r = Math.pow(Math.random(), 0.5) * radius;
+          const dotX = x + r * Math.cos(angle);
+          const dotY = y + r * Math.sin(angle);
+          const dotRadius = Math.random() * 1.5 + 0.5;
+
+          ctx.globalAlpha = Math.random() * 0.5 + 0.4;
+          ctx.beginPath();
+          ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        sprayAnimationRef.current = requestAnimationFrame(loop);
+      };
+      sprayAnimationRef.current = requestAnimationFrame(loop);
+    },
+    [penColor]
+  );
+
   // Handle canvas drawing
   const handleCanvasMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -421,24 +458,37 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
 
       isDrawing.current = true;
       const rect = canvasRef.current.getBoundingClientRect();
-      lastPos.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
+      const pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      lastPos.current = pos;
+
+      if (activeDrawTool === 'spray') {
+        const ctx = canvasRef.current.getContext('2d');
+        if (!ctx) return;
+        sprayPos.current = pos;
+        startSprayLoop(ctx);
+      }
     },
-    [activeDrawTool]
+    [activeDrawTool, startSprayLoop]
   );
 
   const handleCanvasMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (!isDrawing.current || !activeDrawTool || !canvasRef.current || !lastPos.current) return;
-
-      const ctx = canvasRef.current.getContext('2d');
-      if (!ctx) return;
+      if (!isDrawing.current || !activeDrawTool || !canvasRef.current) return;
 
       const rect = canvasRef.current.getBoundingClientRect();
       const currentX = e.clientX - rect.left;
       const currentY = e.clientY - rect.top;
+
+      if (activeDrawTool === 'spray') {
+        sprayPos.current = { x: currentX, y: currentY };
+        lastPos.current = { x: currentX, y: currentY };
+        return;
+      }
+
+      if (!lastPos.current) return;
+
+      const ctx = canvasRef.current.getContext('2d');
+      if (!ctx) return;
 
       ctx.beginPath();
       ctx.moveTo(lastPos.current.x, lastPos.current.y);
@@ -464,6 +514,11 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const handleCanvasMouseUp = useCallback(() => {
     isDrawing.current = false;
     lastPos.current = null;
+    sprayPos.current = null;
+    if (sprayAnimationRef.current !== null) {
+      cancelAnimationFrame(sprayAnimationRef.current);
+      sprayAnimationRef.current = null;
+    }
   }, []);
 
   // Get cell value (computed or raw, with optional number format applied)
@@ -528,7 +583,14 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
       if (style.fontSize !== undefined) out.fontSize = style.fontSize;
       if (style.fontFamily !== undefined) out.fontFamily = style.fontFamily;
       if (style.textAlign !== undefined) out.textAlign = style.textAlign as any;
-      if (style.verticalAlign !== undefined) out.verticalAlign = style.verticalAlign as any;
+      if (style.verticalAlign !== undefined) {
+        const vaMap: Record<string, string> = {
+          top: 'flex-start',
+          middle: 'center',
+          bottom: 'flex-end',
+        };
+        out.alignItems = (vaMap[style.verticalAlign] ?? 'flex-end') as any;
+      }
       if (top !== undefined) out.borderTop = top;
       if (right !== undefined) out.borderRight = right;
       if (bottom !== undefined) out.borderBottom = bottom;
@@ -616,13 +678,31 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     setEditValue('');
   }, []);
 
-  // Handle double-click to edit
+  // Extract URL from =HYPERLINK("url","label") formula
+  const getHyperlinkUrl = useCallback((formula?: string): string | null => {
+    if (!formula) return null;
+    const match = formula.match(/^=HYPERLINK\("((?:[^"]|"")*)"/i);
+    if (!match) return null;
+    return match[1].replace(/""/g, '"');
+  }, []);
+
+  // Handle double-click: open URL for HYPERLINK cells, edit otherwise
   const handleCellDoubleClick = useCallback(
     (row: number, col: number) => {
       if (activeDrawTool) return; // Disable edit when drawing
+      const formula = cells.get(`${row},${col}`)?.formula;
+      const url = getHyperlinkUrl(formula);
+      if (url) {
+        if (window.electronAPI?.openExternal) {
+          window.electronAPI.openExternal(url);
+        } else {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+        return;
+      }
       startEditing(row, col);
     },
-    [startEditing, activeDrawTool]
+    [cells, getHyperlinkUrl, startEditing, activeDrawTool]
   );
 
   // Move selected cell by (dRow, dCol), clamped to grid; clears range selection.
@@ -780,6 +860,52 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     [selectedCell, onCellSelect, onRangeSelect, activeDrawTool]
   );
 
+  // Handle column header click — select entire column
+  const handleColHeaderMouseDown = useCallback(
+    (col: number, e: React.MouseEvent) => {
+      if (activeDrawTool) return;
+      e.preventDefault();
+      const range = { start: { row: 0, col }, end: { row: visibleRows - 1, col } };
+      onCellSelect({ row: 0, col });
+      onRangeSelect?.(range);
+    },
+    [activeDrawTool, visibleRows, onCellSelect, onRangeSelect]
+  );
+
+  // Handle row header click — select entire row
+  const handleRowHeaderMouseDown = useCallback(
+    (row: number, e: React.MouseEvent) => {
+      if (activeDrawTool) return;
+      e.preventDefault();
+      const range = { start: { row, col: 0 }, end: { row, col: visibleCols - 1 } };
+      onCellSelect({ row, col: 0 });
+      onRangeSelect?.(range);
+    },
+    [activeDrawTool, visibleCols, onCellSelect, onRangeSelect]
+  );
+
+  // Check if an entire column is currently selected
+  const isColSelected = useCallback(
+    (col: number) =>
+      !!selectedRange &&
+      selectedRange.start.col === col &&
+      selectedRange.end.col === col &&
+      selectedRange.start.row === 0 &&
+      selectedRange.end.row === visibleRows - 1,
+    [selectedRange, visibleRows]
+  );
+
+  // Check if an entire row is currently selected
+  const isRowSelected = useCallback(
+    (row: number) =>
+      !!selectedRange &&
+      selectedRange.start.row === row &&
+      selectedRange.end.row === row &&
+      selectedRange.start.col === 0 &&
+      selectedRange.end.col === visibleCols - 1,
+    [selectedRange, visibleCols]
+  );
+
   // Handle cell mouse enter (extend selection)
   const handleCellMouseEnter = useCallback(
     (row: number, col: number) => {
@@ -927,8 +1053,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             borderLeft: defaultBorder,
             padding: '4px 8px',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'flex-end', // default: bottom (matches Excel default)
             backgroundColor: isSelected
               ? selectedBg
               : inRange
@@ -941,14 +1067,13 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             fontSize: '13px',
             // Apply cell-specific styles (override defaults)
             ...cellStyle,
-            // But always keep selection/range/search background if specific priority needed
-            // Actually standard Excel behavior is selection overlay on top of cell styles
-            // But here we're mixing background color.
             ...(isSelected && { backgroundColor: selectedBg }),
             ...(inRange && !isSelected && { backgroundColor: rangeBg }),
             ...(isMatch && !isSelected && !inRange && { backgroundColor: matchBg }),
             ...(isActiveMatch && { backgroundColor: activeMatchBg, color: '#fff' }),
           };
+
+          const isHyperlink = !!getHyperlinkUrl(cells.get(key)?.formula);
 
           cellElements.push(
             <div
@@ -963,7 +1088,22 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                 setContextMenu({ x: e.clientX, y: e.clientY, kind: 'cell', row, col });
               }}
             >
-              {value}
+              <span
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  minWidth: 0,
+                  maxWidth: '100%',
+                  ...(isHyperlink && {
+                    color: '#1a73e8',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                  }),
+                }}
+              >
+                {value}
+              </span>
             </div>
           );
 
@@ -1060,6 +1200,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
 
     for (let col = startCol; col < endCol; col++) {
       if (hiddenCols?.has(col)) continue;
+      const colSelected = isColSelected(col);
       const style: CSSProperties = {
         position: 'absolute',
         left: colLefts[col],
@@ -1067,20 +1208,23 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         width: colWidth(col),
         height: HEADER_HEIGHT,
         border: `1px solid ${borderColor}`,
-        backgroundColor: headerBg,
-        color: textColor,
+        backgroundColor: colSelected ? theme.palette.primary.softBg : headerBg,
+        color: colSelected ? theme.palette.primary.plainColor : textColor,
         fontWeight: 'bold',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '12px',
         zIndex: 20,
+        cursor: 'pointer',
+        userSelect: 'none',
       };
 
       headers.push(
         <div
           key={`col-${col}`}
           style={style}
+          onMouseDown={e => handleColHeaderMouseDown(col, e)}
           onContextMenu={e => {
             e.preventDefault();
             setContextMenu({ x: e.clientX, y: e.clientY, kind: 'col', col });
@@ -1088,7 +1232,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         >
           {getColumnLabel(col)}
           <div
-            onMouseDown={e => startColResize(col, e)}
+            onMouseDown={e => { e.stopPropagation(); startColResize(col, e); }}
             style={{
               position: 'absolute',
               top: 0,
@@ -1104,7 +1248,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return headers;
-  }, [viewport, getColumnLabel, theme, colLefts, colWidth, startColResize, scrollTop, hiddenCols]);
+  }, [viewport, getColumnLabel, theme, colLefts, colWidth, startColResize, scrollTop, hiddenCols, handleColHeaderMouseDown, isColSelected]);
 
   // Render row headers
   const renderRowHeaders = useMemo(() => {
@@ -1118,6 +1262,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
 
     for (let row = startRow; row < endRow; row++) {
       if (hiddenRows?.has(row)) continue;
+      const rowSelected = isRowSelected(row);
       const style: CSSProperties = {
         position: 'absolute',
         left: scrollLeft, // sticky to left of viewport
@@ -1125,20 +1270,23 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         width: HEADER_WIDTH,
         height: rowH(row),
         border: `1px solid ${borderColor}`,
-        backgroundColor: headerBg,
-        color: textColor,
+        backgroundColor: rowSelected ? theme.palette.primary.softBg : headerBg,
+        color: rowSelected ? theme.palette.primary.plainColor : textColor,
         fontWeight: 'bold',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '12px',
         zIndex: 20,
+        cursor: 'pointer',
+        userSelect: 'none',
       };
 
       headers.push(
         <div
           key={`row-${row}`}
           style={style}
+          onMouseDown={e => handleRowHeaderMouseDown(row, e)}
           onContextMenu={e => {
             e.preventDefault();
             setContextMenu({ x: e.clientX, y: e.clientY, kind: 'row', row });
@@ -1146,7 +1294,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         >
           {row + 1}
           <div
-            onMouseDown={e => startRowResize(row, e)}
+            onMouseDown={e => { e.stopPropagation(); startRowResize(row, e); }}
             style={{
               position: 'absolute',
               left: 0,
@@ -1162,7 +1310,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return headers;
-  }, [viewport, theme, rowTops, rowH, startRowResize, scrollLeft, hiddenRows]);
+  }, [viewport, theme, rowTops, rowH, startRowResize, scrollLeft, hiddenRows, handleRowHeaderMouseDown, isRowSelected]);
 
   return (
     <Box
@@ -1174,7 +1322,9 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         overflow: 'auto',
         position: 'relative',
         backgroundColor: theme.palette.background.body,
-        cursor: activeDrawTool
+        cursor: activeDrawTool === 'spray'
+          ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" fill="black"><circle cx="16" cy="16" r="2"/><circle cx="10" cy="10" r="1.2"/><circle cx="22" cy="11" r="1"/><circle cx="9" cy="20" r="1.2"/><circle cx="23" cy="21" r="1"/><circle cx="16" cy="7" r="1"/><circle cx="7" cy="15" r="1"/><circle cx="25" cy="16" r="1.2"/><circle cx="14" cy="24" r="1"/><circle cx="20" cy="25" r="1.2"/></svg>') 16 16, crosshair`
+          : activeDrawTool
           ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewport="0 0 24 24" fill="black"><circle cx="12" cy="12" r="6" /></svg>') 12 12, auto`
           : 'default',
       }}

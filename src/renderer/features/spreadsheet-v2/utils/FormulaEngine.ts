@@ -64,9 +64,8 @@ export class FormulaEngine {
   setCell(row: number, col: number, cell: Cell) {
     try {
       if (cell.formula && cell.formula.startsWith('=')) {
-        // Set formula (HyperFormula expects formulas without '=')
-        const formula = cell.formula.slice(1);
-        this.hf.setCellContents({ sheet: this.sheetId, col, row }, formula);
+        // HyperFormula identifies formulas by the '=' prefix — pass it as-is
+        this.hf.setCellContents({ sheet: this.sheetId, col, row }, cell.formula);
       } else if (cell.value !== null && cell.value !== undefined) {
         // Set value
         this.hf.setCellContents({ sheet: this.sheetId, col, row }, cell.value);

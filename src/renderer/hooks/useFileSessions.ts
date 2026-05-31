@@ -49,14 +49,10 @@ const isManifestSessionDirty = (session?: ManifestSession) => {
  */
 export const useSaveWorkbook = () => {
   const saveWorkbookFile = useCallback(async (file: ExcelFile, workbookId?: string) => {
+    const electronAPI = window.electronAPI;
+
     if (!file.path) {
       throw new Error('Cannot save workbook without a file path');
-    }
-
-    // Use the new electron API for saving
-    const electronAPI = window.electronAPI;
-    if (!electronAPI?.saveFile) {
-      throw new Error('File saving is only available in the desktop app');
     }
 
     console.log('[useSaveWorkbook] === SAVE START ===', {
@@ -176,8 +172,7 @@ export const useSaveWorkbook = () => {
 
       // STEP 2: Save to file system
       console.log('[useSaveWorkbook] Writing to file system...');
-      const result = await electronAPI.saveFile(updatedFile);
-
+      const result = await electronAPI!.saveFile(updatedFile);
       if (!result.success) {
         throw new Error(result.error || 'Failed to save file');
       }
@@ -223,11 +218,7 @@ export const useSaveWorkbook = () => {
   }, []);
 
   const saveWorkbookFileAs = useCallback(async (file: ExcelFile, workbookId?: string) => {
-    // Use the new electron API for saving
     const electronAPI = window.electronAPI;
-    if (!electronAPI?.saveFileAs) {
-      throw new Error('File saving is only available in the desktop app');
-    }
 
     console.log('[useSaveWorkbook] === SAVE AS START ===', {
       path: file.path,
@@ -262,7 +253,21 @@ export const useSaveWorkbook = () => {
 
       // STEP 2: Save As dialog
       console.log('[useSaveWorkbook] Opening Save As dialog...');
-      const result = await electronAPI.saveFileAs(updatedFile);
+
+      let result: Awaited<ReturnType<NonNullable<typeof electronAPI>['saveFileAs']>>;
+      if (electronAPI!.isWSL && electronAPI!.saveFileAsToPath) {
+        const defaultPath = file.path
+          ? file.path.replace(/[^/\\]+$/, file.name || 'export.xlsx')
+          : `/home/${file.name || 'export.xlsx'}`;
+        const filePath = window.prompt('Save as (enter full path):', defaultPath);
+        if (!filePath) {
+          console.log('[useSaveWorkbook] Save As canceled');
+          return null;
+        }
+        result = await electronAPI!.saveFileAsToPath(updatedFile, filePath);
+      } else {
+        result = await electronAPI!.saveFileAs(updatedFile);
+      }
 
       if (result.canceled) {
         console.log('[useSaveWorkbook] Save As canceled');

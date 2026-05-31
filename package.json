@@ -20,7 +20,10 @@
     "build-storybook": "storybook build",
     "docs:dev": "vite --config src/site/vite.config.ts",
     "docs:build": "vite build --config src/site/vite.config.ts",
-    "docs:preview": "vite preview --config src/site/vite.config.ts"
+    "docs:preview": "vite preview --config src/site/vite.config.ts",
+    "web:dev": "vite --config vite.web.config.ts",
+    "web:build": "vite build --config vite.web.config.ts",
+    "web:preview": "vite preview --config vite.web.config.ts --outDir dist/web"
   },
   "keywords": [],
   "author": {
@@ -96,6 +99,7 @@
     "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^2.2.3",
     "redux-persist": "^6.0.0",
+    "simple-git": "^3.36.0",
     "xlsx": "^0.18.5"
   }
 }

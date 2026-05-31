@@ -67,6 +67,7 @@ export const en = {
   'toolbar.draw_pen': 'Pen',
   'toolbar.draw_highlighter': 'Highlighter',
   'toolbar.draw_eraser': 'Eraser',
+  'toolbar.draw_spray': 'Spray',
 
   // ----- Toolbar tooltips (Formulas) -----
   'toolbar.insert_function': 'Insert Function (fx)',

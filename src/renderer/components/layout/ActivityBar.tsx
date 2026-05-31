@@ -17,7 +17,6 @@ import { Box, Tooltip } from '@mui/joy';
 import {
   GridOn as ExcelIcon,
   AccountTree as BranchIcon,
-  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useT } from '../../i18n/I18nProvider';
 
@@ -162,19 +161,7 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
         </Tooltip>
       </TopSection>
 
-      <BottomSection>
-        {/* Settings - Bottommost item */}
-        <Tooltip title={t('activity.settings')} placement="right" arrow>
-          <ActivityButton
-            active={activeView === 'settings'}
-            onClick={() => handleViewChange('settings')}
-            aria-label={t('activity.settings')}
-            aria-pressed={activeView === 'settings'}
-          >
-            <SettingsIcon />
-          </ActivityButton>
-        </Tooltip>
-      </BottomSection>
+      <BottomSection />
     </ActivityBarContainer>
   );
 };

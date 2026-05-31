@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage, shell } from 'electron';
 import type { AboutPanelOptionsOptions } from 'electron';
 import { join, basename } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -548,3 +548,63 @@ ipcMain.handle('excel:save-file-as', async (_event, excelFile: ExcelFile) => {
     };
   }
 });
+
+/**
+ * Open Excel File(s) from Buffer (WSL-safe)
+ * Called from renderer when native dialog is unavailable (e.g. WSL).
+ * Renderer reads file via <input type="file"> and sends the ArrayBuffer here.
+ */
+ipcMain.handle(
+  'excel:open-file-from-buffer',
+  async (_event, files: Array<{ buffer: ArrayBuffer; name: string; path: string }>) => {
+    try {
+      const mainWindow = BrowserWindow.getFocusedWindow();
+      if (!mainWindow) return { success: false, error: 'No active window' };
+
+      const loadedFiles = (
+        await Promise.all(
+          files.map(async ({ buffer, name, path: filePath }) => {
+            const workbook = await parseExcelFile(buffer, name);
+            return workbook ? { ...workbook, path: filePath } : null;
+          })
+        )
+      ).filter((f): f is ExcelFile => Boolean(f));
+
+      if (!loadedFiles.length) return { success: false, error: 'No valid Excel files' };
+
+      sendFilesToRenderer(mainWindow, { files: loadedFiles });
+      return { success: true, files: loadedFiles, count: loadedFiles.length };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+);
+
+/**
+ * Save Excel File As to explicit path (WSL-safe)
+ * Called from renderer when native save dialog is unavailable (e.g. WSL).
+ * Renderer provides the target path directly.
+ */
+ipcMain.handle(
+  'excel:save-file-as-to-path',
+  async (_event, { excelFile, filePath }: { excelFile: ExcelFile; filePath: string }) => {
+    try {
+      const buffer = await serializeExcelFile(excelFile);
+      writeFileSync(filePath, Buffer.from(buffer));
+      const savedFile = await loadExcelFileFromPath(filePath);
+      return { success: true, file: savedFile, path: filePath, name: basename(filePath) };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+);
+
+ipcMain.handle('shell:open-external', async (_event, url: string) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+

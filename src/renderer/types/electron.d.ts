@@ -16,6 +16,13 @@ export interface ElectronAPI {
   // Theme events
   onThemePresetChange: (callback: (presetId: string) => void) => () => void;
 
+  // Menu events
+  onMenuSave: (callback: () => void) => () => void;
+  onMenuSaveAs: (callback: () => void) => () => void;
+
+  // Platform info
+  isWSL: boolean;
+
   // Excel file operations
   createNewFile: () => Promise<{
     success: boolean;
@@ -31,6 +38,43 @@ export interface ElectronAPI {
     canceled?: boolean;
     error?: string;
   }>;
+
+  openFileFromBuffer: (
+    files: Array<{ buffer: ArrayBuffer; name: string; path: string }>
+  ) => Promise<{
+    success: boolean;
+    files?: ExcelFile[];
+    count?: number;
+    error?: string;
+  }>;
+
+  saveFile: (excelFile: ExcelFile) => Promise<{
+    success: boolean;
+    canceled?: boolean;
+    error?: string;
+  }>;
+
+  saveFileAs: (excelFile: ExcelFile) => Promise<{
+    success: boolean;
+    file?: ExcelFile;
+    path?: string;
+    name?: string;
+    canceled?: boolean;
+    error?: string;
+  }>;
+
+  saveFileAsToPath: (
+    excelFile: ExcelFile,
+    filePath: string
+  ) => Promise<{
+    success: boolean;
+    file?: ExcelFile;
+    path?: string;
+    name?: string;
+    error?: string;
+  }>;
+
+  openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

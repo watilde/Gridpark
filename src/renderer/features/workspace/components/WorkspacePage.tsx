@@ -11,14 +11,13 @@ import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react'
 import { useAppSelector, useAppDispatch } from '../../../../stores';
 import { updateUndoRedo, selectCanUndo, selectCanRedo } from '../../../../stores/spreadsheetSlice';
 import { AppLayout } from '../../../components/layout/AppLayout';
-import { ActivityBar, ActivityBarView } from '../../../components/layout/ActivityBar';
 import { SidebarExplorer } from '../../../components/layout/SidebarExplorer';
-import { GitPlaceholderSidebar } from '../../../components/sidebar/GitPlaceholderSidebar';
 import { WorkspaceHeader } from './WorkspaceHeader';
 import { TabContentArea } from './TabContentArea';
 import { EditorPanelHandle } from './EditorPanel';
 import { getPlatformCapabilities } from '../../../utils/platform';
 import { useWorkspaceState } from '../hooks/useWorkspaceState';
+import { parseExcelFile } from '../../../utils/excelUtils';
 import type { ExcelFile } from '../../../types/excel';
 
 export interface WorkspacePageProps {
@@ -35,7 +34,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
   const state = useWorkspaceState();
   const editorPanelRef = useRef<EditorPanelHandle>(null);
-  const [activeView, setActiveView] = useState<ActivityBarView>('excel');
 
   // Get undo/redo state from Redux
   const dispatch = useAppDispatch();
@@ -50,6 +48,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     activeTab,
     searchState,
     setTreeSearchQuery,
+    setSheetSearchQuery,
     saveManager,
     autoSave,
     handleTabChange: handleTabChangeRaw,
@@ -65,6 +64,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     manifestIsDirty,
     canEditManifest,
     dirtyNodeIds,
+    loadFiles,
     electron,
   } = state;
 
@@ -86,20 +86,44 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     [handleTabChangeRaw]
   );
 
-  const handleViewChange = useCallback(
-    (view: ActivityBarView) => {
-      setActiveView(view);
-      if (view === 'settings' && onOpenSettings) {
-        onOpenSettings();
-        // Revert selection back to excel after opening settings, or keep it?
-        // Keeping it on settings might be confusing if the sidebar doesn't change content.
-        // Usually settings is a dialog/drawer, so we might want to switch back.
-        // For now, let's keep it simple.
-        setTimeout(() => setActiveView('excel'), 200);
-      }
-    },
-    [onOpenSettings]
-  );
+
+  // ============================================
+  // WSL-safe file open
+  // ============================================
+
+  const handleOpenFile = useCallback(() => {
+    const electronAPI = window.electronAPI;
+
+    // WSL: native dialog freezes — use Chromium file picker, parse in renderer
+    if (!electronAPI || electronAPI.isWSL) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.xlsx,.xls';
+      input.multiple = true;
+      document.body.appendChild(input);
+      input.onchange = async () => {
+        document.body.removeChild(input);
+        const picked = Array.from(input.files || []);
+        if (!picked.length) return;
+        const excelFiles = (
+          await Promise.all(
+            picked.map(async f => {
+              try {
+                return await parseExcelFile(await f.arrayBuffer(), f.name);
+              } catch {
+                return null;
+              }
+            })
+          )
+        ).filter((f): f is ExcelFile => Boolean(f));
+        if (excelFiles.length) loadFiles(excelFiles);
+      };
+      input.click();
+    } else {
+      // Non-WSL Electron: native dialog via IPC
+      electronAPI.openFile();
+    }
+  }, [loadFiles]);
 
   // ============================================
   // Platform Capabilities (memoized once)
@@ -114,7 +138,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
         typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('win'),
       isLinux:
         typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('linux'),
-      isWeb: caps.platform === 'web',
       hasFilesystem: caps.canAccessFileSystem,
       hasShell: caps.hasSystemIntegration,
     };
@@ -354,15 +377,14 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
 
   return (
     <AppLayout
-      activityBar={<ActivityBar activeView={activeView} onViewChange={handleViewChange} />}
       header={
         <WorkspaceHeader
           onUndo={handleUndo}
           onRedo={handleRedo}
           onSave={handleSave}
           onSaveAs={handleSaveAs}
-          searchQuery={searchState.treeSearchQuery}
-          onSearchChange={setTreeSearchQuery}
+          searchQuery={searchState.sheetSearchQuery}
+          onSearchChange={setSheetSearchQuery}
           onOpenSettings={
             onOpenSettings ||
             (() => {
@@ -378,20 +400,15 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
         />
       }
       sidebar={
-        activeView === 'excel' ? (
-          <SidebarExplorer
-            workbookNodes={workbookNodes}
-            searchQuery={searchState.treeSearchQuery}
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={handleNodeSelect}
-            dirtyNodeIds={dirtyNodeIds}
-            onOpenFile={() => window.electronAPI?.openFile()}
-          />
-        ) : activeView === 'branch' ? (
-          <GitPlaceholderSidebar viewType="branch" />
-        ) : null
+        <SidebarExplorer
+          workbookNodes={workbookNodes}
+          searchQuery=""
+          selectedNodeId={selectedNodeId}
+          onNodeSelect={handleNodeSelect}
+          dirtyNodeIds={dirtyNodeIds}
+          onOpenFile={handleOpenFile}
+        />
       }
-      hideSidebar={activeView !== 'excel' && activeView !== 'branch'}
     >
       <TabContentArea
         ref={editorPanelRef}

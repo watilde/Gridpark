@@ -231,7 +231,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
       }}
     >
       {title && (
-        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ padding: '14px 14px 13px 13px', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography level="title-md">{title}</Typography>
         </Box>
       )}

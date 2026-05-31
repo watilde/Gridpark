@@ -4,7 +4,7 @@
  * Redesigned with Excel-like tabs + VSCode aesthetics
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Select,
@@ -36,6 +36,7 @@ import {
   Gesture as DrawIcon,
   Edit as HighlighterIcon,
   Clear as EraserIcon,
+  Grain as SprayIcon,
   Functions as FunctionsIcon,
   Calculate as CalculateIcon,
   TextFields as TextFieldsIcon,
@@ -55,8 +56,8 @@ interface StyleToolbarProps {
   selectedCellStyle?: CellStyleData;
   onStyleChange: (style: Partial<CellStyleData>) => void;
   onInsert?: (type: 'link' | 'table') => void;
-  activeDrawTool?: 'pen' | 'highlighter' | 'eraser' | null;
-  onDrawToolChange?: (tool: 'pen' | 'highlighter' | 'eraser' | null) => void;
+  activeDrawTool?: 'pen' | 'highlighter' | 'eraser' | 'spray' | null;
+  onDrawToolChange?: (tool: 'pen' | 'highlighter' | 'eraser' | 'spray' | null) => void;
   penColor?: string;
   onPenColorChange?: (color: string) => void;
   onFormulaAction?: (action: string) => void;
@@ -106,6 +107,13 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
   const theme = useTheme();
   const t = useT();
   const [activeTab, setActiveTab] = useState(0);
+
+  // Drawタブ(2)以外に切り替えた際にdrawツールをリセット
+  useEffect(() => {
+    if (activeTab !== 2) {
+      onDrawToolChange?.(null);
+    }
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFontFamilyChange = useCallback(
     (_: any, value: string | null) => {
@@ -598,6 +606,17 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
                   onClick={() => onDrawToolChange?.('eraser')}
                 >
                   <EraserIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={t('toolbar.draw_spray')}>
+                <IconButton
+                  size="sm"
+                  variant={activeDrawTool === 'spray' ? 'solid' : 'plain'}
+                  color={activeDrawTool === 'spray' ? 'success' : 'neutral'}
+                  onClick={() => onDrawToolChange?.('spray')}
+                >
+                  <SprayIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
 

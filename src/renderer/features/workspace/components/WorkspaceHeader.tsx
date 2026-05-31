@@ -6,6 +6,7 @@ import {
   Save as SaveIcon,
   Search as SearchIcon,
   SaveAs as ExportIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import iconImage from '../../../assets/icon.png';
 import { useT } from '../../../i18n/I18nProvider';
@@ -298,6 +299,10 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
           <SaveIcon />
         </ActionButton>
 
+        <ActionButton onClick={onSaveAs} title={t('header.export_as')} disabled={disabled}>
+          <ExportIcon />
+        </ActionButton>
+
         <ActionButton onClick={onUndo} disabled={disabled || !canUndo} title={t('header.undo')}>
           <UndoIcon />
         </ActionButton>
@@ -325,8 +330,8 @@ export const WorkspaceHeader: React.FC<HeaderProps> = ({
       </CenterSection>
 
       <RightSection>
-        <ActionButton onClick={onSaveAs} title={t('header.export_as')} disabled={disabled}>
-          <ExportIcon />
+        <ActionButton onClick={onOpenSettings} title={t('activity.settings')} disabled={disabled}>
+          <SettingsIcon />
         </ActionButton>
       </RightSection>
     </HeaderContainer>
