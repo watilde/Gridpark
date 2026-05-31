@@ -677,10 +677,10 @@ export const App = () => {
             </h2>
             <div className="tech-intro">
               <p className="tech-tagline">
-                "A workbook that behaves like a web app — scriptable, stylable, and alive."
+                "A workbook that feels alive — Excel-compatible, formula-powered, and you can draw on it."
               </p>
               <p className="tech-subtitle">
-                Gridpark = CSS + JavaScript + OOXML-Compliant .xlsx 🔥
+                Gridpark = Electron + HyperFormula + OOXML-Compliant .xlsx 🔥
               </p>
             </div>
             <div className="features-grid">
@@ -716,11 +716,11 @@ export const App = () => {
                   </svg>
                 </div>
                 <div className="feature-card-content">
-                  <h3>1. OOXML-Compliant File Structure</h3>
+                  <h3>1. Excel-Compatible .xlsx Files</h3>
                   <p>
-                    Gridpark workbooks are built on a fully OOXML-compliant architecture, meaning
-                    every .xlsx file remains 100% compatible with Excel. We embed Gridpark logic and
-                    styles inside the standard ZIP container—no proprietary format, no black boxes.
+                    Open, edit, and save real .xlsx files. Gridpark reads and writes the OOXML
+                    format via ExcelJS — your spreadsheets stay fully compatible with Excel and
+                    other tools. No proprietary format, no lock-in.
                   </p>
                 </div>
               </div>
@@ -738,11 +738,11 @@ export const App = () => {
                   </svg>
                 </div>
                 <div className="feature-card-content">
-                  <h3>2. Spreadsheet Operations as Selectors</h3>
+                  <h3>2. 400+ Formula Functions</h3>
                   <p>
-                    Rows, columns, cells, sheets—everything becomes selectable. Gridpark turns the
-                    spreadsheet into a DOM-like surface where every part can be addressed with
-                    expressive, CSS-style selectors.
+                    Powered by HyperFormula — the same formula engine trusted by Handsontable.
+                    SUM, VLOOKUP, IF, financial, statistical, date/time — all calculated instantly.
+                    Circular reference detection and array arithmetic included.
                   </p>
                 </div>
               </div>
@@ -780,12 +780,11 @@ export const App = () => {
                   </svg>
                 </div>
                 <div className="feature-card-content">
-                  <h3>3. Style with Standard CSS</h3>
+                  <h3>3. Rich Cell Styling Toolbar</h3>
                   <p>
-                    Instead of Excel's limited formatting rules, Gridpark lets you style
-                    spreadsheets using pure CSS, from typography and colors to animations,
-                    gradients, and custom effects. If the browser can render it, Gridpark can style
-                    it.
+                    Font family, size, bold, italic, underline. Text color, fill color, borders.
+                    Alignment (horizontal + vertical). Number formats — currency, percent, comma.
+                    Cell merge and unmerge. All from a clean Excel-style ribbon.
                   </p>
                 </div>
               </div>
@@ -804,11 +803,11 @@ export const App = () => {
                   </svg>
                 </div>
                 <div className="feature-card-content">
-                  <h3>4. Program with Standard JavaScript</h3>
+                  <h3>4. Draw on Your Sheet</h3>
                   <p>
-                    Logic is written in vanilla JavaScript, applied directly to spreadsheet elements
-                    via selectors. Build interactive behaviors, reactive rules, or entire mini-apps
-                    inside your workbook—no custom language needed.
+                    Pen, highlighter, spray can, eraser — layered directly on top of the grid.
+                    Annotate your data, circle the important cells, tag it like a wall. The
+                    spreadsheet becomes a canvas.
                   </p>
                 </div>
               </div>
@@ -825,11 +824,11 @@ export const App = () => {
                   </svg>
                 </div>
                 <div className="feature-card-content">
-                  <h3>5. Switchable Themes</h3>
+                  <h3>5. Dark Mode & Japanese UI</h3>
                   <p>
-                    Gridpark supports theme switching out of the box. Users can instantly switch
-                    between visual styles—minimal, playful, dark mode, or fully customized themes—to
-                    match their workflow or mood.
+                    Switch between dark and light themes instantly. The entire UI speaks English
+                    and Japanese — auto-detected from your system locale, or toggled on the fly.
+                    数表計算、ローカルで。
                   </p>
                 </div>
               </div>
