@@ -623,7 +623,7 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
               <Divider />
 
               {/* Pen Color Presets */}
-              <Stack direction="row" spacing={0.5}>
+              <Stack direction="row" spacing={0.5} alignItems="center">
                 {['#000000', '#FF0000', '#0000FF', '#008000'].map(color => (
                   <Box
                     key={color}
@@ -642,6 +642,40 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
                     }}
                   />
                 ))}
+                {/* Custom color picker */}
+                <Tooltip title={t('toolbar.custom_color')} size="sm">
+                  <Box
+                    component="label"
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      border: '1px solid',
+                      borderColor: !['#000000', '#FF0000', '#0000FF', '#008000'].includes(penColor)
+                        ? 'primary.main'
+                        : 'divider',
+                      boxShadow: !['#000000', '#FF0000', '#0000FF', '#008000'].includes(penColor)
+                        ? `0 0 0 2px rgba(0,0,0,0.2)`
+                        : 'none',
+                      background: !['#000000', '#FF0000', '#0000FF', '#008000'].includes(penColor)
+                        ? penColor
+                        : 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)',
+                      '&:hover': { transform: 'scale(1.2)' },
+                      transition: 'transform 0.1s',
+                      display: 'block',
+                      overflow: 'hidden',
+                      position: 'relative',
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={penColor}
+                      onChange={e => onPenColorChange?.(e.target.value)}
+                      style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }}
+                    />
+                  </Box>
+                </Tooltip>
               </Stack>
             </Stack>
           )}

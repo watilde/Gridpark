@@ -68,6 +68,7 @@ export const en = {
   'toolbar.draw_highlighter': 'Highlighter',
   'toolbar.draw_eraser': 'Eraser',
   'toolbar.draw_spray': 'Spray',
+  'toolbar.custom_color': 'Custom color',
 
   // ----- Toolbar tooltips (Formulas) -----
   'toolbar.insert_function': 'Insert Function (fx)',
