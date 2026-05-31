@@ -2,7 +2,13 @@
 
 **[Experimental] Excel-compatible spreadsheet with custom functions and styles**
 
-![Gridpark](screenshot.png)
+## Website
+
+![Gridpark](screenshot_website.png)
+
+## App
+
+![Gridpark](screenshot_app.png)
 
 
 ## Development
