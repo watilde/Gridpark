@@ -20,7 +20,7 @@ const TreeContainer = styled(Box)(({ theme }) => ({
 
 const TreeItem = styled(Box, {
   shouldForwardProp: prop => prop !== 'depth' && prop !== 'selected',
-})<{ depth: number; selected?: boolean }>(({ theme, depth, selected }) => ({
+})<{ depth: number; selected?: boolean }>(({ theme, depth: _depth, selected }) => ({
   display: 'flex',
   alignItems: 'center',
   minHeight: '28px',
@@ -231,7 +231,9 @@ export const FileTree: React.FC<FileTreeProps> = ({
       }}
     >
       {title && (
-        <Box sx={{ padding: '14px 14px 13px 13px', borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box
+          sx={{ padding: '14px 14px 13px 13px', borderBottom: '1px solid', borderColor: 'divider' }}
+        >
           <Typography level="title-md">{title}</Typography>
         </Box>
       )}

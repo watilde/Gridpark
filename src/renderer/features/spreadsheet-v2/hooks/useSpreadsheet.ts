@@ -38,7 +38,11 @@ interface HistoryItem {
   after: { value: any; formula?: string; type: string; style?: CellStyleData };
 }
 
-export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetParams) {
+export function useSpreadsheet({
+  tabId,
+  workbookId: _workbookId,
+  sheetName: _sheetName,
+}: UseSpreadsheetParams) {
   // Formula engine instance (one per sheet)
   const [formulaEngine] = useState(() => new FormulaEngine());
 
@@ -346,7 +350,13 @@ export function useSpreadsheet({ tabId, workbookId, sheetName }: UseSpreadsheetP
       } else {
         await db.deleteCell(tabId, row, col);
         // Clear cell in formula engine
-        formulaEngine.setCell(row, col, { row, col, value: null, formula: undefined, type: 'empty' });
+        formulaEngine.setCell(row, col, {
+          row,
+          col,
+          value: null,
+          formula: undefined,
+          type: 'empty',
+        });
         setCells(prev => {
           const next = new Map(prev);
           next.delete(key);

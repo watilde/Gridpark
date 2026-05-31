@@ -183,7 +183,7 @@ export function useWorkspaceState(): UseWorkspaceStateReturn {
     // Subscribe to database changes (event-driven)
     // FILTER: Only metadata changes (ignore cell changes for performance)
     const unsubscribe = db.subscribe(
-      event => {
+      _event => {
         console.log('[useWorkspaceState] Metadata change detected, reloading');
         loadMetadata();
       },

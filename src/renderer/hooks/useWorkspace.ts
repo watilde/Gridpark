@@ -34,7 +34,7 @@ export type DirtyTrackingDeps = Record<string, never>;
  * Unified workspace hook that consolidates workspace state management
  * NOW USING REDUX for state management instead of useReducer
  */
-export const useWorkspace = (dirtyTrackingDeps: DirtyTrackingDeps) => {
+export const useWorkspace = (_dirtyTrackingDeps: DirtyTrackingDeps) => {
   // ✅ Use Redux instead of useReducer
   const dispatch = useAppDispatch();
   const workbookNodes = useAppSelector(selectWorkbookNodes);

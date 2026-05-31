@@ -677,7 +677,8 @@ export const App = () => {
             </h2>
             <div className="tech-intro">
               <p className="tech-tagline">
-                "A workbook that feels alive — Excel-compatible, formula-powered, and you can draw on it."
+                "A workbook that feels alive — Excel-compatible, formula-powered, and you can draw
+                on it."
               </p>
               <p className="tech-subtitle">
                 Gridpark = Electron + HyperFormula + OOXML-Compliant .xlsx 🔥
@@ -740,8 +741,8 @@ export const App = () => {
                 <div className="feature-card-content">
                   <h3>2. 400+ Formula Functions</h3>
                   <p>
-                    Powered by HyperFormula — the same formula engine trusted by Handsontable.
-                    SUM, VLOOKUP, IF, financial, statistical, date/time — all calculated instantly.
+                    Powered by HyperFormula — the same formula engine trusted by Handsontable. SUM,
+                    VLOOKUP, IF, financial, statistical, date/time — all calculated instantly.
                     Circular reference detection and array arithmetic included.
                   </p>
                 </div>
@@ -826,8 +827,8 @@ export const App = () => {
                 <div className="feature-card-content">
                   <h3>5. Dark Mode & Japanese UI</h3>
                   <p>
-                    Switch between dark and light themes instantly. The entire UI speaks English
-                    and Japanese — auto-detected from your system locale, or toggled on the fly.
+                    Switch between dark and light themes instantly. The entire UI speaks English and
+                    Japanese — auto-detected from your system locale, or toggled on the fly.
                     数表計算、ローカルで。
                   </p>
                 </div>

@@ -28,7 +28,7 @@ import { ExcelFile, CellPosition, CellRange } from '../../../types/excel';
 import { SpreadsheetGrid } from './SpreadsheetGrid';
 import { StyleToolbar } from './StyleToolbar';
 import { useSpreadsheet } from '../hooks/useSpreadsheet';
-import { db, CellStyleData } from '../../../../lib/db';
+import { db } from '../../../../lib/db';
 import { useT } from '../../../i18n/I18nProvider';
 
 // Re-export types for compatibility
@@ -108,8 +108,8 @@ export const SpreadsheetContainerV2 = forwardRef<
       onCellSelect,
       onRangeSelect,
       searchQuery,
-      searchNavigation,
-      replaceCommand,
+      searchNavigation: _searchNavigation,
+      replaceCommand: _replaceCommand,
       formulaCommit,
       onActiveCellDetails,
       onFileChange,

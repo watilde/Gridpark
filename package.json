@@ -18,10 +18,7 @@
     "test:coverage": "jest --coverage",
     "docs:dev": "vite --config src/site/vite.config.ts",
     "docs:build": "vite build --config src/site/vite.config.ts",
-    "docs:preview": "vite preview --config src/site/vite.config.ts",
-    "web:dev": "vite --config vite.web.config.ts",
-    "web:build": "vite build --config vite.web.config.ts",
-    "web:preview": "vite preview --config vite.web.config.ts --outDir dist/web"
+    "docs:preview": "vite preview --config src/site/vite.config.ts"
   },
   "keywords": [],
   "author": {

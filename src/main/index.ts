@@ -339,7 +339,7 @@ ipcMain.handle('excel:create-new-file', async () => {
     workbook.modified = new Date();
 
     // Add a default sheet
-    const worksheet = workbook.addWorksheet('Sheet1');
+    workbook.addWorksheet('Sheet1');
 
     // Write the file
     await workbook.xlsx.writeFile(filePath);
@@ -607,4 +607,3 @@ ipcMain.handle('shell:open-external', async (_event, url: string) => {
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 });
-

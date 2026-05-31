@@ -113,7 +113,7 @@ export const StyleToolbar: React.FC<StyleToolbarProps> = ({
     if (activeTab !== 2) {
       onDrawToolChange?.(null);
     }
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleFontFamilyChange = useCallback(
     (_: any, value: string | null) => {

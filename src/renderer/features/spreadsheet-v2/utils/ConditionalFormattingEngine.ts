@@ -174,11 +174,11 @@ export class ConditionalFormattingEngine {
    * Evaluate expression rule (formula-based)
    */
   private evaluateExpression(
-    row: number,
-    col: number,
-    cell: StoredCellData | undefined,
-    rule: ConditionalFormattingRule,
-    allCells: Map<string, StoredCellData>
+    _row: number,
+    _col: number,
+    _cell: StoredCellData | undefined,
+    _rule: ConditionalFormattingRule,
+    _allCells: Map<string, StoredCellData>
   ): boolean {
     // TODO: Implement formula evaluation
     // For now, return false
@@ -288,8 +288,8 @@ export class ConditionalFormattingEngine {
    * Evaluate timePeriod rule
    */
   private evaluateTimePeriod(
-    cell: StoredCellData | undefined,
-    rule: ConditionalFormattingRule
+    _cell: StoredCellData | undefined,
+    _rule: ConditionalFormattingRule
   ): boolean {
     // TODO: Implement date-based rules
     return false;

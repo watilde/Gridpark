@@ -14,10 +14,7 @@
 import React from 'react';
 import { styled } from '@mui/joy/styles';
 import { Box, Tooltip } from '@mui/joy';
-import {
-  GridOn as ExcelIcon,
-  AccountTree as BranchIcon,
-} from '@mui/icons-material';
+import { GridOn as ExcelIcon, AccountTree as BranchIcon } from '@mui/icons-material';
 import { useT } from '../../i18n/I18nProvider';
 
 // ============================================================================

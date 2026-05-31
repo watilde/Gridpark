@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useRef, useImperativeHandle } from 'react';
 import Box from '@mui/joy/Box';
 import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
@@ -65,7 +65,7 @@ export const EditorPanel = forwardRef<EditorPanelHandle, EditorPanelProps>(
   (
     {
       activeTab,
-      platformCapabilities,
+      platformCapabilities: _platformCapabilities,
       onDirtyChange,
       onCellSelect,
       onRangeSelect,

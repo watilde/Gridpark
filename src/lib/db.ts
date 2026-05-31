@@ -320,7 +320,6 @@ export class AppDatabase {
     options: { silent?: boolean } = {}
   ): Promise<number> {
     const existing = this.sheetMetadataStore.get(data.tabId);
-    const action = existing ? 'update' : 'create';
 
     if (existing) {
       const updated = {
@@ -544,7 +543,7 @@ export class AppDatabase {
    */
   async getCellsForSheet(tabId: string): Promise<StoredCellData[]> {
     const cells: StoredCellData[] = [];
-    for (const [key, cell] of this.cellsStore.entries()) {
+    for (const [, cell] of this.cellsStore.entries()) {
       if (cell.tabId === tabId) {
         cells.push(cell);
       }
@@ -589,7 +588,6 @@ export class AppDatabase {
     const key = this.getCellKey(tabId, row, col);
     const existing = this.cellsStore.get(key);
     const now = new Date();
-    const action = existing ? 'update' : 'create';
 
     if (existing) {
       const updated = {

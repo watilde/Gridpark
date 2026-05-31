@@ -1232,7 +1232,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         >
           {getColumnLabel(col)}
           <div
-            onMouseDown={e => { e.stopPropagation(); startColResize(col, e); }}
+            onMouseDown={e => {
+              e.stopPropagation();
+              startColResize(col, e);
+            }}
             style={{
               position: 'absolute',
               top: 0,
@@ -1248,7 +1251,18 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return headers;
-  }, [viewport, getColumnLabel, theme, colLefts, colWidth, startColResize, scrollTop, hiddenCols, handleColHeaderMouseDown, isColSelected]);
+  }, [
+    viewport,
+    getColumnLabel,
+    theme,
+    colLefts,
+    colWidth,
+    startColResize,
+    scrollTop,
+    hiddenCols,
+    handleColHeaderMouseDown,
+    isColSelected,
+  ]);
 
   // Render row headers
   const renderRowHeaders = useMemo(() => {
@@ -1294,7 +1308,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         >
           {row + 1}
           <div
-            onMouseDown={e => { e.stopPropagation(); startRowResize(row, e); }}
+            onMouseDown={e => {
+              e.stopPropagation();
+              startRowResize(row, e);
+            }}
             style={{
               position: 'absolute',
               left: 0,
@@ -1310,7 +1327,17 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     }
 
     return headers;
-  }, [viewport, theme, rowTops, rowH, startRowResize, scrollLeft, hiddenRows, handleRowHeaderMouseDown, isRowSelected]);
+  }, [
+    viewport,
+    theme,
+    rowTops,
+    rowH,
+    startRowResize,
+    scrollLeft,
+    hiddenRows,
+    handleRowHeaderMouseDown,
+    isRowSelected,
+  ]);
 
   return (
     <Box
@@ -1322,11 +1349,12 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         overflow: 'auto',
         position: 'relative',
         backgroundColor: theme.palette.background.body,
-        cursor: activeDrawTool === 'spray'
-          ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" fill="black"><circle cx="16" cy="16" r="2"/><circle cx="10" cy="10" r="1.2"/><circle cx="22" cy="11" r="1"/><circle cx="9" cy="20" r="1.2"/><circle cx="23" cy="21" r="1"/><circle cx="16" cy="7" r="1"/><circle cx="7" cy="15" r="1"/><circle cx="25" cy="16" r="1.2"/><circle cx="14" cy="24" r="1"/><circle cx="20" cy="25" r="1.2"/></svg>') 16 16, crosshair`
-          : activeDrawTool
-          ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewport="0 0 24 24" fill="black"><circle cx="12" cy="12" r="6" /></svg>') 12 12, auto`
-          : 'default',
+        cursor:
+          activeDrawTool === 'spray'
+            ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" fill="black"><circle cx="16" cy="16" r="2"/><circle cx="10" cy="10" r="1.2"/><circle cx="22" cy="11" r="1"/><circle cx="9" cy="20" r="1.2"/><circle cx="23" cy="21" r="1"/><circle cx="16" cy="7" r="1"/><circle cx="7" cy="15" r="1"/><circle cx="25" cy="16" r="1.2"/><circle cx="14" cy="24" r="1"/><circle cx="20" cy="25" r="1.2"/></svg>') 16 16, crosshair`
+            : activeDrawTool
+              ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewport="0 0 24 24" fill="black"><circle cx="12" cy="12" r="6" /></svg>') 12 12, auto`
+              : 'default',
       }}
     >
       <div

@@ -7,7 +7,7 @@
  * Pages should import THIS component, not implement logic directly.
  */
 
-import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '../../../../stores';
 import { updateUndoRedo, selectCanUndo, selectCanRedo } from '../../../../stores/spreadsheetSlice';
 import { AppLayout } from '../../../components/layout/AppLayout';
@@ -47,7 +47,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     selectedNodeId,
     activeTab,
     searchState,
-    setTreeSearchQuery,
+    setTreeSearchQuery: _setTreeSearchQuery,
     setSheetSearchQuery,
     saveManager,
     autoSave,
@@ -85,7 +85,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ onUndo, onRedo, on
     },
     [handleTabChangeRaw]
   );
-
 
   // ============================================
   // WSL-safe file open
