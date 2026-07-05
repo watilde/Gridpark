@@ -26,6 +26,11 @@
     "email": "daijiro.wachi@gmail.com"
   },
   "license": "Apache-2.0",
+  "overrides": {
+    "extract-zip": {
+      "yauzl": "^3.2.0"
+    }
+  },
   "devDependencies": {
     "@electron-forge/cli": "^7.9.0",
     "@electron-forge/maker-deb": "^7.10.2",
