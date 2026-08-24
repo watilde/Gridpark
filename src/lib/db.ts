@@ -242,6 +242,14 @@ type SubscriptionOptions = {
   type?: 'metadata' | 'cells'; // Subscribe to specific type only
 };
 
+// Verbose DB tracing. Off by default: several of these fire on every keystroke
+// and each call serializes its payload into the devtools console, which shows
+// up as jank while typing. Flip to true when debugging the data layer.
+const DB_TRACE = false;
+function trace(...args: unknown[]): void {
+  if (DB_TRACE) console.log(...args);
+}
+
 export class AppDatabase {
   // In-memory storage
   private sheetMetadataStore: Map<string, SheetMetadata> = new Map();
@@ -254,7 +262,7 @@ export class AppDatabase {
   private listeners: Map<ChangeListener, SubscriptionOptions> = new Map();
 
   constructor() {
-    console.log('[DB] In-memory database initialized with optimized event system');
+    trace('[DB] In-memory database initialized with optimized event system');
   }
 
   // ==========================================================================
@@ -365,7 +373,7 @@ export class AppDatabase {
   async batchUpsertSheetMetadata(
     dataArray: Array<Omit<SheetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'lastAccessedAt'>>
   ): Promise<number[]> {
-    console.log(`[db] Batch upsert started: ${dataArray.length} sheets`);
+    trace(`[db] Batch upsert started: ${dataArray.length} sheets`);
 
     const ids: number[] = [];
 
@@ -381,7 +389,7 @@ export class AppDatabase {
       this.notify({ type: 'metadata', tabId: '_batch_', action: 'create' });
     }
 
-    console.log(`[db] Batch upsert completed: ${ids.length} sheets`);
+    trace(`[db] Batch upsert completed: ${ids.length} sheets`);
     return ids;
   }
 
@@ -413,7 +421,7 @@ export class AppDatabase {
    * Mark sheet as dirty (has unsaved changes)
    */
   async markSheetDirty(tabId: string, dirty = true): Promise<void> {
-    console.log('[db] === MARK SHEET DIRTY ===', { tabId, dirty });
+    trace('[db] === MARK SHEET DIRTY ===', { tabId, dirty });
 
     const metadata = await this.getSheetMetadata(tabId);
 
@@ -426,11 +434,11 @@ export class AppDatabase {
     const oldDirty = metadata.dirty;
 
     if (oldDirty === dirty) {
-      console.log('[db] Dirty flag unchanged, skipping update', { tabId, dirty });
+      trace('[db] Dirty flag unchanged, skipping update', { tabId, dirty });
       return;
     }
 
-    console.log('[db] Updating dirty flag', {
+    trace('[db] Updating dirty flag', {
       tabId,
       oldDirty,
       newDirty: dirty,
@@ -445,7 +453,7 @@ export class AppDatabase {
 
     // Verify the update
     const verified = await this.getSheetMetadata(tabId);
-    console.log('[db] === DIRTY FLAG UPDATED ===', {
+    trace('[db] === DIRTY FLAG UPDATED ===', {
       tabId,
       dirty: verified?.dirty,
       success: verified?.dirty === dirty,
@@ -646,7 +654,7 @@ export class AppDatabase {
     tabId: string,
     cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }>
   ): Promise<number> {
-    console.log('[db] bulkUpsertCells: preparing bulk insert', {
+    trace('[db] bulkUpsertCells: preparing bulk insert', {
       tabId,
       count: cellUpdates.length,
     });
@@ -674,7 +682,7 @@ export class AppDatabase {
         this.cellsStore.set(key, cellData);
       });
 
-      console.log('[db] bulkUpsertCells: completed, updating dimensions', { tabId });
+      trace('[db] bulkUpsertCells: completed, updating dimensions', { tabId });
 
       // Update sheet dimensions (preserve existing max if larger)
       const metadata = this.sheetMetadataStore.get(tabId);
@@ -696,7 +704,7 @@ export class AppDatabase {
         metadata.updatedAt = now;
         this.sheetMetadataStore.set(tabId, metadata);
 
-        console.log('[db] bulkUpsertCells: metadata updated', {
+        trace('[db] bulkUpsertCells: metadata updated', {
           tabId,
           maxRow,
           maxCol,
@@ -706,7 +714,7 @@ export class AppDatabase {
         console.warn('[db] bulkUpsertCells: metadata not found for', tabId);
       }
 
-      console.log('[db] bulkUpsertCells: completed', { tabId });
+      trace('[db] bulkUpsertCells: completed', { tabId });
 
       // Notify listeners (single event for bulk operation)
       this.notify({ type: 'cells', tabId, action: 'update' });
@@ -785,12 +793,10 @@ export class AppDatabase {
       .map(() =>
         Array(cols)
           .fill(null)
-          .map(
-            (): CellData => ({
-              value: null,
-              type: 'empty',
-            })
-          )
+          .map((): CellData => ({
+            value: null,
+            type: 'empty',
+          }))
       );
 
     // Fill with actual cell data
@@ -812,7 +818,7 @@ export class AppDatabase {
    * Save 2D array to sparse cell storage (for migration from useState)
    */
   async save2DArrayAsCells(tabId: string, data: CellData[][]): Promise<void> {
-    console.log('[db] save2DArrayAsCells called', {
+    trace('[db] save2DArrayAsCells called', {
       tabId,
       dataRows: data.length,
       dataCols: data[0]?.length || 0,
@@ -821,7 +827,7 @@ export class AppDatabase {
     try {
       // Clear existing cells
       await this.clearSheetCells(tabId);
-      console.log('[db] Cleared existing cells for', tabId);
+      trace('[db] Cleared existing cells for', tabId);
 
       // Convert to sparse format (only save non-empty cells)
       const cellUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> = [];
@@ -857,12 +863,12 @@ export class AppDatabase {
         });
       });
 
-      console.log('[db] Prepared', cellUpdates.length, 'cells to save');
+      trace('[db] Prepared', cellUpdates.length, 'cells to save');
 
       // Bulk insert
       await this.bulkUpsertCells(tabId, cellUpdates);
 
-      console.log('[db] Bulk upsert completed for', tabId);
+      trace('[db] Bulk upsert completed for', tabId);
     } catch (error) {
       console.error('[db] save2DArrayAsCells: failed', { tabId, error });
       throw new Error(
@@ -1002,7 +1008,7 @@ export const db = new AppDatabase();
 export async function resetDatabase(): Promise<void> {
   // For in-memory, just create a new instance
   // Note: This won't affect the exported singleton
-  console.log('[DB] Database reset requested (in-memory)');
+  trace('[DB] Database reset requested (in-memory)');
 }
 
 /**

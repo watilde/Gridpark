@@ -389,7 +389,6 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     return unsubscribe;
   }, [tabId, applyDrawingToCanvas]);
 
-
   // Scroll active find match into view when it changes
   useEffect(() => {
     if (!activeMatch || !containerRef.current) return;
@@ -427,7 +426,15 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     };
   }, [contextMenu]);
 
-  // Calculate viewport
+  // Calculate viewport. The object identity is kept stable while the row/col
+  // window is unchanged so a scroll inside the current window doesn't rebuild
+  // the whole cell layer.
+  const viewportRef = useRef<{
+    startRow: number;
+    endRow: number;
+    startCol: number;
+    endCol: number;
+  } | null>(null);
   const viewport = useMemo(() => {
     const containerHeight = containerRef.current?.clientHeight || 600;
     const containerWidth = containerRef.current?.clientWidth || 800;
@@ -443,15 +450,53 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
       findColAt(scrollLeft + containerWidth) + OVERSCAN_COUNT + 1
     );
 
-    return { startRow, endRow, startCol, endCol };
+    const prev = viewportRef.current;
+    if (
+      prev &&
+      prev.startRow === startRow &&
+      prev.endRow === endRow &&
+      prev.startCol === startCol &&
+      prev.endCol === endCol
+    ) {
+      return prev;
+    }
+
+    const next = { startRow, endRow, startCol, endCol };
+    viewportRef.current = next;
+    return next;
   }, [scrollTop, scrollLeft, visibleRows, visibleCols, findRowAt, findColAt]);
 
-  // Handle scroll
+  // Frozen panes are pinned by offsetting them with the live scroll position.
+  // Without a freeze the cell layer is scroll-independent (cells sit in the
+  // scrolled content), so don't let raw offsets invalidate its memo per frame.
+  const frozenScrollLeft = frozenCols > 0 ? scrollLeft : 0;
+  const frozenScrollTop = frozenRows > 0 ? scrollTop : 0;
+
+  // Handle scroll.
+  // Scroll events fire several times per frame on trackpads / smooth wheels and
+  // every state update here re-renders the whole viewport, so coalesce a burst
+  // into a single update per animation frame.
+  const pendingScroll = useRef<{ top: number; left: number } | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
-    setScrollTop(target.scrollTop);
-    setScrollLeft(target.scrollLeft);
+    pendingScroll.current = { top: target.scrollTop, left: target.scrollLeft };
+    if (scrollRafRef.current !== null) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      const next = pendingScroll.current;
+      if (!next) return;
+      setScrollTop(next.top);
+      setScrollLeft(next.left);
+    });
   }, []);
+
+  useEffect(
+    () => () => {
+      if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current);
+    },
+    []
+  );
 
   // Total content dimensions
   const contentWidth = colLefts[visibleCols];
@@ -1047,8 +1092,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         }
         const isFrozenRow = row < frozenRows;
         const isFrozenCol = col < frozenCols;
-        const left = isFrozenCol ? scrollLeft + colLefts[col] : colLefts[col];
-        const top = isFrozenRow ? scrollTop + rowTops[row] : rowTops[row];
+        const left = isFrozenCol ? frozenScrollLeft + colLefts[col] : colLefts[col];
+        const top = isFrozenRow ? frozenScrollTop + rowTops[row] : rowTops[row];
         const frozenZ = isFrozenRow && isFrozenCol ? 10 : isFrozenRow || isFrozenCol ? 5 : 1;
 
         if (isEditing) {
@@ -1230,8 +1275,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     rowH,
     frozenRows,
     frozenCols,
-    scrollLeft,
-    scrollTop,
+    frozenScrollLeft,
+    frozenScrollTop,
     merges,
     hiddenRows,
     hiddenCols,

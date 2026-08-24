@@ -38,6 +38,26 @@ interface HistoryItem {
   after: { value: any; formula?: string; type: string; style?: CellStyleData };
 }
 
+// Parse raw editor input into the stored value/formula/type triple.
+// Shared by the single-cell and batch update paths so they can't drift apart.
+function parseCellInput(value: string): {
+  rawValue: string | null;
+  formula: string | undefined;
+  type: 'empty' | 'string' | 'number';
+} {
+  const isFormula = value.startsWith('=');
+  const formula = isFormula ? value : undefined;
+  const rawValue = isFormula ? null : value;
+
+  let type: 'empty' | 'string' | 'number' = 'empty';
+  if (rawValue) {
+    const num = parseFloat(rawValue);
+    type = !isNaN(num) ? 'number' : 'string';
+  }
+
+  return { rawValue, formula, type };
+}
+
 export function useSpreadsheet({
   tabId,
   workbookId: _workbookId,
@@ -67,6 +87,12 @@ export function useSpreadsheet({
 
   // State for cells, metadata, and CF rules (replacing useLiveQuery)
   const [cells, setCells] = useState<Map<string, StoredCellData>>(new Map());
+  // Mirror of `cells` for callbacks: keeps their identity stable across edits
+  // (a `cells` dependency would rebuild every callback — and everything
+  // memoized on them — on each keystroke) and stays correct inside loops that
+  // write several cells before React re-renders.
+  const cellsRef = useRef(cells);
+  cellsRef.current = cells;
   const [metadata, setMetadata] = useState<SheetMetadata | undefined>(undefined);
   const [conditionalFormattingRules, setConditionalFormattingRules] = useState<
     ConditionalFormattingRule[]
@@ -164,8 +190,12 @@ export function useSpreadsheet({
     // Engine is already updated by loadData or updateCell
     // We just read the computed values
 
+    // Only formula cells need the engine — plain values render straight from
+    // cell.value, so asking HyperFormula about every cell was O(all cells) work
+    // on every single edit.
     const computed = new Map<string, any>();
     cells.forEach((cell, key) => {
+      if (!cell.formula) return;
       const result = formulaEngine.getCell(cell.row, cell.col);
       computed.set(key, result.value);
     });
@@ -179,28 +209,22 @@ export function useSpreadsheet({
 
     const styles = new Map<string, CellStyleData>();
 
-    // Apply conditional formatting to all cells
+    // Consumers fall back to cell.style when a key is missing, so only cells a
+    // rule actually matches need an entry here. With no rules at all there is
+    // nothing to compute — skip cloning every cell style.
+    if (conditionalFormattingRules.length === 0) return styles;
+
     cells.forEach((cell, key) => {
-      // Base style from cell
-      let style = { ...cell.style };
+      const cfStyle = cfEngine.evaluateCell(
+        cell.row,
+        cell.col,
+        cell,
+        conditionalFormattingRules,
+        cells
+      );
 
-      // Apply conditional formatting
-      if (conditionalFormattingRules.length > 0) {
-        const cfStyle = cfEngine.evaluateCell(
-          cell.row,
-          cell.col,
-          cell,
-          conditionalFormattingRules,
-          cells
-        );
-
-        if (cfStyle) {
-          // Merge CF style with base style (CF takes precedence)
-          style = { ...style, ...cfStyle };
-        }
-      }
-
-      styles.set(key, style);
+      // CF takes precedence over the cell's own style
+      if (cfStyle) styles.set(key, { ...cell.style, ...cfStyle });
     });
 
     return styles;
@@ -225,7 +249,7 @@ export function useSpreadsheet({
     async (row: number, col: number, value: string, style?: CellStyleData) => {
       // Get current cell value for history
       const key = `${row},${col}`;
-      const currentCell = cells?.get(key);
+      const currentCell = cellsRef.current?.get(key);
       const before = currentCell
         ? {
             value: currentCell.value,
@@ -235,17 +259,7 @@ export function useSpreadsheet({
           }
         : null;
 
-      // Parse value
-      const isFormula = value.startsWith('=');
-      const formula = isFormula ? value : undefined;
-      const rawValue = isFormula ? null : value;
-
-      // Determine type
-      let type: 'empty' | 'string' | 'number' = 'empty';
-      if (rawValue) {
-        const num = parseFloat(rawValue);
-        type = !isNaN(num) ? 'number' : 'string';
-      }
+      const { rawValue, formula, type } = parseCellInput(value);
 
       // Use provided style or keep existing
       const finalStyle = style || currentCell?.style || {};
@@ -297,10 +311,83 @@ export function useSpreadsheet({
       setCells(prev => {
         const next = new Map(prev);
         next.set(key, newCell);
+        cellsRef.current = next;
         return next;
       });
     },
-    [tabId, formulaEngine, cells]
+    [tabId, formulaEngine]
+  );
+
+  // Apply many cell edits as one transaction: one DB write, one HyperFormula
+  // batch, one history entry group and one React state update. Awaiting
+  // updateCell in a loop instead costs a full map clone plus a full engine
+  // recalculation per cell, which is what makes big pastes / range styling
+  // freeze the UI.
+  const updateCells = useCallback(
+    async (updates: Array<{ row: number; col: number; value: string; style?: CellStyleData }>) => {
+      if (updates.length === 0) return;
+
+      const prevCells = cellsRef.current;
+      const nextCells = new Map(prevCells);
+      const history: HistoryItem[] = [];
+      const dbUpdates: Array<{ row: number; col: number; data: Partial<StoredCellData> }> = [];
+      const engineUpdates: Array<{
+        row: number;
+        col: number;
+        cell: { row: number; col: number; value: any; formula?: string; type: string };
+      }> = [];
+      const now = new Date();
+
+      for (const { row, col, value, style } of updates) {
+        const key = `${row},${col}`;
+        const currentCell = prevCells.get(key);
+        const before = currentCell
+          ? {
+              value: currentCell.value,
+              formula: currentCell.formula,
+              type: currentCell.type,
+              style: currentCell.style,
+            }
+          : null;
+
+        const { rawValue, formula, type } = parseCellInput(value);
+        const finalStyle = style || currentCell?.style || {};
+
+        history.push({
+          row,
+          col,
+          before,
+          after: { value: rawValue, formula, type, style: finalStyle },
+        });
+        dbUpdates.push({ row, col, data: { value: rawValue, type, formula, style: finalStyle } });
+        engineUpdates.push({ row, col, cell: { row, col, value: rawValue, formula, type } });
+        nextCells.set(key, {
+          id: currentCell?.id,
+          tabId,
+          row,
+          col,
+          value: rawValue,
+          type,
+          formula,
+          style: finalStyle,
+          updatedAt: now,
+          version: (currentCell?.version || 0) + 1,
+        });
+      }
+
+      if (!isUndoRedoRef.current) {
+        setUndoStack(prev => [...prev, ...history]);
+        setRedoStack([]);
+      }
+
+      await db.bulkUpsertCells(tabId, dbUpdates);
+      formulaEngine.batchUpdate(engineUpdates);
+      await db.markSheetDirty(tabId, true);
+
+      cellsRef.current = nextCells;
+      setCells(nextCells);
+    },
+    [tabId, formulaEngine]
   );
 
   // Save to disk (mark as clean)
@@ -482,15 +569,27 @@ export function useSpreadsheet({
           const baseRow = selectedCell.row;
           const baseCol = selectedCell.col;
 
+          const updates: Array<{
+            row: number;
+            col: number;
+            value: string;
+            style?: CellStyleData;
+          }> = [];
           for (let r = 0; r < rangeData.length; r++) {
             for (let c = 0; c < rangeData[r].length; c++) {
               const cellData = rangeData[r][c];
               if (cellData) {
                 const value = cellData.formula || cellData.value?.toString() || '';
-                await updateCell(baseRow + r, baseCol + c, value, cellData.style);
+                updates.push({
+                  row: baseRow + r,
+                  col: baseCol + c,
+                  value,
+                  style: cellData.style,
+                });
               }
             }
           }
+          await updateCells(updates);
           console.log(`[Paste] Range pasted: ${rangeData.length}x${rangeData[0]?.length || 0}`);
           return;
         }
@@ -521,7 +620,7 @@ export function useSpreadsheet({
     } catch (err) {
       console.error('[Paste] Failed to paste:', err);
     }
-  }, [selectedCell, updateCell]);
+  }, [selectedCell, updateCell, updateCells]);
 
   // Update style for entire range
   const updateRangeStyle = useCallback(
@@ -534,10 +633,15 @@ export function useSpreadsheet({
         const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
 
         // Batch update all cells in range
+        const updates: Array<{
+          row: number;
+          col: number;
+          value: string;
+          style?: CellStyleData;
+        }> = [];
         for (let row = minRow; row <= maxRow; row++) {
           for (let col = minCol; col <= maxCol; col++) {
-            const key = `${row},${col}`;
-            const cell = cells?.get(key);
+            const cell = cellsRef.current?.get(`${row},${col}`);
 
             // Merge existing style with new style
             const mergedStyle = { ...(cell?.style || {}), ...style };
@@ -545,10 +649,10 @@ export function useSpreadsheet({
             // Get current value or empty string
             const currentValue = cell?.formula || cell?.value?.toString() || '';
 
-            // Update cell with new style
-            await updateCell(row, col, currentValue, mergedStyle);
+            updates.push({ row, col, value: currentValue, style: mergedStyle });
           }
         }
+        await updateCells(updates);
 
         console.log(`[Style] Range styled: ${maxRow - minRow + 1}x${maxCol - minCol + 1} cells`);
         return;
@@ -557,7 +661,7 @@ export function useSpreadsheet({
       // Apply to single cell if selected
       if (selectedCell) {
         const key = `${selectedCell.row},${selectedCell.col}`;
-        const cell = cells?.get(key);
+        const cell = cellsRef.current?.get(key);
 
         // Merge existing style with new style
         const mergedStyle = { ...(cell?.style || {}), ...style };
@@ -571,7 +675,7 @@ export function useSpreadsheet({
         console.log('[Style] Cell styled');
       }
     },
-    [selectedCell, selectedRange, cells, updateCell]
+    [selectedCell, selectedRange, updateCell, updateCells]
   );
 
   // Delete range (set all cells in range to empty)
@@ -583,12 +687,17 @@ export function useSpreadsheet({
       const minCol = Math.min(selectedRange.start.col, selectedRange.end.col);
       const maxCol = Math.max(selectedRange.start.col, selectedRange.end.col);
 
-      // Batch delete all cells in range
+      // Batch delete all cells in range. Cells that don't exist yet are
+      // skipped: clearing them is a no-op and materializing one record per
+      // selected cell is what made large "select all + delete" hang.
+      const updates: Array<{ row: number; col: number; value: string }> = [];
       for (let row = minRow; row <= maxRow; row++) {
         for (let col = minCol; col <= maxCol; col++) {
-          await updateCell(row, col, '');
+          if (!cellsRef.current.has(`${row},${col}`)) continue;
+          updates.push({ row, col, value: '' });
         }
       }
+      await updateCells(updates);
 
       console.log(`[Delete] Range deleted: ${maxRow - minRow + 1}x${maxCol - minCol + 1} cells`);
       return;
@@ -599,7 +708,7 @@ export function useSpreadsheet({
       await updateCell(selectedCell.row, selectedCell.col, '');
       console.log('[Delete] Cell deleted');
     }
-  }, [selectedCell, selectedRange, updateCell]);
+  }, [selectedCell, selectedRange, updateCell, updateCells]);
 
   // Conditional Formatting Management
   const addConditionalFormattingRule = useCallback(
@@ -663,7 +772,7 @@ export function useSpreadsheet({
     const { row, col } = selectedCell;
 
     const isNumeric = (r: number, c: number) => {
-      const cell = cells.get(`${r},${c}`);
+      const cell = cellsRef.current.get(`${r},${c}`);
       if (!cell) return false;
       if (cell.type === 'number') return true;
       if (cell.formula) return true;
@@ -693,7 +802,7 @@ export function useSpreadsheet({
     // No adjacent numbers: insert empty SUM stub for user to fill
     await updateCell(row, col, '=SUM()');
     return true;
-  }, [selectedCell, cells, updateCell]);
+  }, [selectedCell, updateCell]);
 
   // Sort selected range ascending by its first column. Operates only on values
   // currently in the range; styles and formulas are kept aligned with their row.
@@ -713,7 +822,7 @@ export function useSpreadsheet({
     for (let r = minRow; r <= maxRow; r++) {
       const data: RowSnapshot = [];
       for (let c = minCol; c <= maxCol; c++) {
-        const cell = cells.get(`${r},${c}`);
+        const cell = cellsRef.current.get(`${r},${c}`);
         data.push({
           value: cell?.value ?? null,
           formula: cell?.formula,
@@ -735,20 +844,21 @@ export function useSpreadsheet({
       return String(av).localeCompare(String(bv));
     });
 
+    const updates: Array<{ row: number; col: number; value: string; style?: CellStyleData }> = [];
     for (let i = 0; i < rows.length; i++) {
       const targetRow = minRow + i;
       const data = rows[i].data;
       for (let j = 0; j < data.length; j++) {
-        const targetCol = minCol + j;
         const snap = data[j];
         const value =
           snap.formula ??
           (snap.value === null || snap.value === undefined ? '' : String(snap.value));
-        await updateCell(targetRow, targetCol, value, snap.style);
+        updates.push({ row: targetRow, col: minCol + j, value, style: snap.style });
       }
     }
+    await updateCells(updates);
     return true;
-  }, [selectedRange, cells, updateCell]);
+  }, [selectedRange, updateCells]);
 
   // Apply lightweight table styling to the selected range (header row + zebra)
   const applyTableStyle = useCallback(async () => {
@@ -762,11 +872,12 @@ export function useSpreadsheet({
     const maxCol = Math.max(range.start.col, range.end.col);
 
     const border = '1px solid #c0c0c0';
+    const updates: Array<{ row: number; col: number; value: string; style?: CellStyleData }> = [];
     for (let r = minRow; r <= maxRow; r++) {
       for (let c = minCol; c <= maxCol; c++) {
         const isHeader = r === minRow;
         const isZebra = !isHeader && (r - minRow) % 2 === 1;
-        const cell = cells.get(`${r},${c}`);
+        const cell = cellsRef.current.get(`${r},${c}`);
         const merged: CellStyleData = {
           ...(cell?.style ?? {}),
           backgroundColor: isHeader ? '#1f6feb' : isZebra ? '#f5f7fa' : '#ffffff',
@@ -780,11 +891,12 @@ export function useSpreadsheet({
         const value =
           cell?.formula ??
           (cell?.value === null || cell?.value === undefined ? '' : String(cell.value));
-        await updateCell(r, c, value, merged);
+        updates.push({ row: r, col: c, value, style: merged });
       }
     }
+    await updateCells(updates);
     return true;
-  }, [selectedRange, selectedCell, cells, updateCell]);
+  }, [selectedRange, selectedCell, updateCells]);
 
   // Sort range descending (mirror of ascending)
   const sortRangeDescending = useCallback(async () => {
@@ -801,7 +913,7 @@ export function useSpreadsheet({
     for (let r = minRow; r <= maxRow; r++) {
       const data: RowSnapshot = [];
       for (let c = minCol; c <= maxCol; c++) {
-        const cell = cells.get(`${r},${c}`);
+        const cell = cellsRef.current.get(`${r},${c}`);
         data.push({
           value: cell?.value ?? null,
           formula: cell?.formula,
@@ -823,20 +935,21 @@ export function useSpreadsheet({
       return String(bv).localeCompare(String(av));
     });
 
+    const updates: Array<{ row: number; col: number; value: string; style?: CellStyleData }> = [];
     for (let i = 0; i < rows.length; i++) {
       const targetRow = minRow + i;
       const data = rows[i].data;
       for (let j = 0; j < data.length; j++) {
-        const targetCol = minCol + j;
         const snap = data[j];
         const value =
           snap.formula ??
           (snap.value === null || snap.value === undefined ? '' : String(snap.value));
-        await updateCell(targetRow, targetCol, value, snap.style);
+        updates.push({ row: targetRow, col: minCol + j, value, style: snap.style });
       }
     }
+    await updateCells(updates);
     return true;
-  }, [selectedRange, cells, updateCell]);
+  }, [selectedRange, updateCells]);
 
   // Apply named number format to current selection (toggles off if same format)
   const applyNumberFormat = useCallback(
@@ -849,21 +962,23 @@ export function useSpreadsheet({
       const minCol = Math.min(target.start.col, target.end.col);
       const maxCol = Math.max(target.start.col, target.end.col);
 
+      const updates: Array<{ row: number; col: number; value: string; style?: CellStyleData }> = [];
       for (let r = minRow; r <= maxRow; r++) {
         for (let c = minCol; c <= maxCol; c++) {
-          const cell = cells.get(`${r},${c}`);
+          const cell = cellsRef.current.get(`${r},${c}`);
           const current = cell?.style?.numberFormat;
           const next = current === format ? undefined : format;
           const merged: CellStyleData = { ...(cell?.style ?? {}), numberFormat: next };
           const value =
             cell?.formula ??
             (cell?.value === null || cell?.value === undefined ? '' : String(cell.value));
-          await updateCell(r, c, value, merged);
+          updates.push({ row: r, col: c, value, style: merged });
         }
       }
+      await updateCells(updates);
       return true;
     },
-    [selectedRange, selectedCell, cells, updateCell]
+    [selectedRange, selectedCell, updateCells]
   );
 
   // Shift cells by (deltaRow, deltaCol) starting at the given threshold and rebuild storage.
@@ -876,7 +991,7 @@ export function useSpreadsheet({
         col: number;
         data: Partial<StoredCellData>;
       }> = [];
-      for (const cell of cells.values()) {
+      for (const cell of cellsRef.current.values()) {
         const result = predicate(cell);
         if (!result.keep) continue;
         newCells.push({
@@ -897,7 +1012,7 @@ export function useSpreadsheet({
       await db.markSheetDirty(tabId, true);
       reloadData();
     },
-    [cells, tabId, reloadData]
+    [tabId, reloadData]
   );
 
   const insertRow = useCallback(
@@ -1195,9 +1310,12 @@ export function useSpreadsheet({
       const q = find.toLowerCase();
       let count = 0;
       const cellsToUpdate = target
-        ? ([cells.get(`${target.row},${target.col}`)].filter(Boolean) as StoredCellData[])
-        : Array.from(cells.values());
+        ? ([cellsRef.current.get(`${target.row},${target.col}`)].filter(
+            Boolean
+          ) as StoredCellData[])
+        : Array.from(cellsRef.current.values());
 
+      const updates: Array<{ row: number; col: number; value: string; style?: CellStyleData }> = [];
       for (const cell of cellsToUpdate) {
         const source =
           cell.formula !== undefined && cell.formula !== null
@@ -1209,12 +1327,13 @@ export function useSpreadsheet({
         // Replace all occurrences in the cell, preserving case of replacement
         const re = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
         const next = source.replace(re, replacement);
-        await updateCell(cell.row, cell.col, next, cell.style);
+        updates.push({ row: cell.row, col: cell.col, value: next, style: cell.style });
         count++;
       }
+      await updateCells(updates);
       return count;
     },
-    [cells, updateCell]
+    [updateCells]
   );
 
   return {
@@ -1236,6 +1355,7 @@ export function useSpreadsheet({
 
     // Actions
     updateCell,
+    updateCells,
     save,
 
     // Undo/Redo
